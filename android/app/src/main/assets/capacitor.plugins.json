@@ -1,0 +1,10 @@
+[
+	{
+		"pkg": "@capacitor/local-notifications",
+		"classpath": "com.capacitorjs.plugins.localnotifications.LocalNotificationsPlugin"
+	},
+	{
+		"pkg": "@ebarooni/capacitor-calendar",
+		"classpath": "dev.barooni.capacitor.calendar.CapacitorCalendarPlugin"
+	}
+]

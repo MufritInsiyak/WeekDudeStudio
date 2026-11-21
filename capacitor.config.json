@@ -1,0 +1,6 @@
+{
+  "appId": "com.missionmap.app",
+  "appName": "Mission Map",
+  "webDir": "www",
+  "android": { "backgroundColor": "#d6d7c0" }
+}

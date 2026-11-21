@@ -8,6 +8,8 @@
 <meta property="og:title" content="Mission Map">
 <meta property="og:description" content="Mission Map: errand and event tracker with a sketch map">
 <meta name="claude:viewport-fit-sides" content="cover">
+<link id="appFavicon" rel="icon" type="image/png" href="pins/base-smile-256.png">
+<link id="appAppleIcon" rel="apple-touch-icon" href="pins/base-smile-256.png">
 <link rel="stylesheet" href="fonts.css">
 <link id="mytheme" rel="stylesheet" href="mytheme.css">
 <style>
@@ -819,17 +821,28 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
 .aod-pin { margin: 20px auto 0; max-width: 90%; padding: 6px 10px; border: 1px solid #5a4d12; color: #b59b22; font-size: 14px; letter-spacing: .06em; }
 .aod-hint { margin-top: 28px; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: #3d3d3d; }
 
-/* patterns panel */
+/* patterns panel & app icon options */
 .pat-h { margin: 12px 0 4px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
 .bars.hrs { gap: 2px; }
 .bars.hrs .bc span { font-size: 9px; }
 .bars.hrs .bc em { font-size: 8px; }
+.bars.hrs.listen .bc i { background: #2d7a64; }
 .pat-grid { display: grid; gap: 6px; }
 .pat-row { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; }
-.pat-row b { font-weight: 400; }
-.pat-row span { color: var(--ink-soft); text-align: right; }
-.pat-row b { flex: 0 0 auto; }
-.pat-row span { white-space: nowrap; }
+.pat-row b { font-weight: 400; flex: 0 0 auto; }
+.pat-row span { color: var(--ink-soft); text-align: right; white-space: nowrap; }
+.pat-listen { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 7px 10px; border: 1.5px dashed var(--ink-soft); background: var(--map-bg); font-size: 13px; margin-bottom: 6px; }
+.pat-listen.on { border-color: var(--ink); border-style: solid; }
+.pat-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ink-soft); flex: none; opacity: .55; }
+.pat-listen.on .pat-dot { background: #2eb85c; opacity: 1; box-shadow: 0 0 6px rgba(46, 184, 92, .7); }
+.pat-rec { margin-top: 6px; padding: 8px 10px; border-left: 4px solid var(--red); background: var(--map-bg); font-size: 13px; line-height: 1.4; display: grid; gap: 3px; }
+.pat-rec b { font-weight: 400; text-transform: uppercase; letter-spacing: .07em; font-size: 11px; color: var(--red); }
+.appicon-box { display: grid; gap: 8px; margin-top: 6px; padding: 8px 10px; border: 1.5px dashed var(--ink-soft); background: var(--map-bg); }
+.appicon-top { display: flex; align-items: center; gap: 10px; }
+.appicon-prev { width: 46px; height: 46px; flex: none; object-fit: contain; border: 1.5px solid var(--ink); background: var(--paper); padding: 3px; }
+.appicon-info { min-width: 0; font-size: 13px; line-height: 1.3; }
+.appicon-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.appicon-acts .btn { min-height: 36px; padding: 4px 10px; font-size: 12px; }
 
 /* ===== hover shoebox cassette voice recorder (trigger left of Add, player UI centered) ===== */
 .tape-dock {
@@ -1190,6 +1203,34 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
 .tape-mini-btn:disabled { opacity: .45; cursor: default; }
 .tape-msg { font-size: 11px; opacity: .8; text-align: center; min-height: 1.2em; }
 
+/* now listening bar inside cassette deck */
+.tape-listen-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  padding: 4px 8px; border-radius: 4px;
+  background: linear-gradient(180deg, #0b0d10 0%, #14171c 100%);
+  border: 1px solid #2b3038; box-shadow: inset 0 1px 3px rgba(0, 0, 0, .75);
+}
+.tape-listen-main { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; }
+.tape-listen-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex: none;
+  background: #353b45; border: 1px solid rgba(255, 255, 255, .2);
+}
+.tape-listen-bar.on .tape-listen-dot {
+  background: #30d158; box-shadow: 0 0 8px rgba(48, 209, 88, .9); animation: tapePulse 1.5s ease-in-out infinite;
+}
+.tape-listen-txt { display: grid; min-width: 0; line-height: 1.15; }
+.tape-listen-kicker { font-size: 7.5px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: #9aa2ae; }
+.tape-listen-bar.on .tape-listen-kicker { color: #7ae597; }
+.tape-listen-title { font-size: 11px; color: #f2f4f8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tape-listen-acts { display: flex; align-items: center; gap: 4px; flex: none; }
+.tape-listen-edit { display: flex; gap: 5px; align-items: center; }
+.tape-listen-edit[hidden] { display: none; }
+.tape-listen-edit input {
+  flex: 1; min-width: 0; min-height: 30px; padding: 3px 8px; border-radius: 4px;
+  border: 1.5px solid #3d434f; background: #0d0f13; color: #f5efe3; font-size: 12px;
+}
+.tape-listen-edit input::placeholder { color: #8c939e; }
+
 /* UI / theme-matched style option keeping the shoebox layout */
 .tape-dock[data-style="ui"] .tape-tab {
   background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 0;
@@ -1209,8 +1250,15 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
   height: 30px; background-color: transparent; box-shadow: none;
   background-image: radial-gradient(var(--ink) 1.2px, transparent 1.5px); opacity: .48;
 }
-.tape-dock[data-style="ui"] .tape-strip {
+.tape-dock[data-style="ui"] .tape-strip,
+.tape-dock[data-style="ui"] .tape-listen-bar {
   background: var(--map-bg); border: 1.5px solid var(--ink); border-radius: 0; box-shadow: none; color: var(--ink);
+}
+.tape-dock[data-style="ui"] .tape-listen-kicker { color: var(--ink-soft); }
+.tape-dock[data-style="ui"] .tape-listen-bar.on .tape-listen-kicker { color: var(--red); }
+.tape-dock[data-style="ui"] .tape-listen-title { color: var(--ink); }
+.tape-dock[data-style="ui"] .tape-listen-edit input {
+  background: var(--map-bg); color: var(--ink); border: 2px solid var(--ink); border-radius: 0;
 }
 .tape-dock[data-style="ui"] .tape-power-grp { color: var(--ink); }
 .tape-dock[data-style="ui"] .tape-vol-led { background: var(--paper); border-color: var(--ink); box-shadow: none; }
@@ -1316,7 +1364,7 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
   .tape-speaker-panel { padding: 4px 6px; }
   .tape-grille-mesh { height: 24px; }
   .tape-dock[data-style="ui"] .tape-grille-mesh { height: 18px; }
-  .tape-strip { padding: 3px 6px; gap: 5px; }
+  .tape-strip, .tape-listen-bar { padding: 3px 6px; gap: 5px; }
   .tape-micro-btn { min-height: 24px; padding: 2px 6px; font-size: 8.5px; }
   .tape-door { padding: 6px 8px 7px; gap: 4px; }
   .tape-sticker { font-size: 14px; padding: 2px 6px; }
@@ -1419,6 +1467,21 @@ body.calm .tape-led-dot { animation: none !important; }
         <div class="seg" role="group" aria-label="Pin icon style">
           <button id="pinStyleBase" type="button" aria-pressed="true">Base badge</button>
           <button id="pinStyleAlt" type="button" aria-pressed="false">Alternate</button>
+        </div>
+        <div class="appicon-box">
+          <div class="appicon-top">
+            <img class="appicon-prev" id="appIconPreviewImg" src="pins/base-smile-256.png" alt="Current app menu icon">
+            <div class="appicon-info">
+              <div id="appIconModeLbl">Menu icon matches Do / Don't-do mode</div>
+              <small style="color:var(--ink-soft)">Switches automatically when you flip the badge, or import custom PNG/JPG icons.</small>
+            </div>
+          </div>
+          <div class="appicon-acts">
+            <label class="btn ghost filebtn">Import Do icon<input type="file" id="appIconSmileIn" accept="image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp"></label>
+            <label class="btn ghost filebtn">Import Don't-do icon<input type="file" id="appIconEvilIn" accept="image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp"></label>
+            <label class="btn ghost filebtn">Import both<input type="file" id="appIconBothIn" accept="image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp"></label>
+            <button class="btn ghost" id="appIconResetBtn" type="button">Reset icons</button>
+          </div>
         </div>
       </div>
     </details>
@@ -1852,6 +1915,25 @@ body.calm .tape-led-dot { animation: none !important; }
           <button class="tape-micro-btn" id="tapeCloseBtn" type="button" aria-label="Collapse cassette recorder">Hide</button>
         </div>
       </div>
+      <div class="tape-listen-bar" id="tapeListenBar">
+        <div class="tape-listen-main">
+          <span class="tape-listen-dot" aria-hidden="true"></span>
+          <div class="tape-listen-txt">
+            <span class="tape-listen-kicker" id="tapeListenKicker">NOT LISTENING</span>
+            <span class="tape-listen-title" id="tapeListenTitle">Silent</span>
+          </div>
+        </div>
+        <div class="tape-listen-acts">
+          <button class="tape-mini-btn" id="tapeMusToggle" type="button" title="Play or pause app music">▶ Music</button>
+          <button class="tape-mini-btn" id="tapeMusNext" type="button" title="Next track">⏭</button>
+          <button class="tape-mini-btn" id="tapeExtBtn" type="button" title="Log song you're listening to outside the app">♫ Song</button>
+        </div>
+      </div>
+      <div class="tape-listen-edit" id="tapeListenRow" hidden>
+        <input id="tapeExtInp" maxlength="64" placeholder="What are you listening to? (Artist - Track)" aria-label="Song or podcast you are listening to">
+        <button class="tape-mini-btn" id="tapeExtSave" type="button">On</button>
+        <button class="tape-mini-btn" id="tapeExtOff" type="button">Off</button>
+      </div>
       <div class="tape-door">
         <div class="tape-reticle" aria-hidden="true">
           <div class="tape-reticle-ring"></div>
@@ -2095,19 +2177,49 @@ window.__gcalAuth = {
   var ROADS = MAP_VARIANTS.town.roads.slice();
   var POOL = [
     ["Do the dishes", "home"], ["Take out the trash", "home"], ["Fold the laundry", "home"], ["Water the plants", "home"],
+    ["Wipe down kitchen counters", "home"], ["Vacuum the living room", "home"], ["Swap the bedsheets", "home"],
+    ["Sort the mail stack", "home"], ["Clean out expired fridge items", "home"],
     ["Buy milk and bread", "market"], ["Pick something for dinner", "market"], ["Restock the coffee", "market"],
-    ["Mail the parcel", "post"], ["Pick up the package", "post"],
-    ["Return the overdue book", "library"], ["Find a book for the report", "library"],
-    ["Pay the phone bill", "bank"], ["Check the account balance", "bank"],
-    ["Fill up the tank", "gas"], ["Check the tire pressure", "gas"],
+    ["Grab fresh fruit and greens", "market"], ["Pick up dish soap and sponges", "market"], ["Restock cooking oil", "market"],
+    ["Grab lunch ingredients for tomorrow", "market"],
+    ["Mail the parcel", "post"], ["Pick up the package", "post"], ["Buy stamps and padded envelopes", "post"],
+    ["Drop off the signed form", "post"], ["Check the P.O. box", "post"], ["Send the birthday card", "post"],
+    ["Print prepaid shipping label", "post"],
+    ["Return the overdue book", "library"], ["Find a book for the report", "library"], ["Reserve a quiet study room", "library"],
+    ["Pick up placed book holds", "library"], ["Renew your library card", "library"], ["Scan documents at the library", "library"],
+    ["Return borrowed reference notes", "library"],
+    ["Pay the phone bill", "bank"], ["Check the account balance", "bank"], ["Deposit the paper check", "bank"],
+    ["Review monthly subscriptions", "bank"], ["Update auto-pay settings", "bank"], ["Set aside weekly savings", "bank"],
+    ["Get small bills from ATM", "bank"],
+    ["Fill up the tank", "gas"], ["Check the tire pressure", "gas"], ["Top off windshield washer fluid", "gas"],
+    ["Quick car wash and vacuum", "gas"], ["Check wiper blades", "gas"], ["Wipe inside windshield", "gas"],
+    ["Check oil level at the pump", "gas"],
     ["Read one article", "campus"], ["Email the advisor", "campus"], ["Submit the assignment", "campus"],
-    ["Walk for 20 minutes", "park"], ["Sit outside with a book", "park"]
+    ["Review lecture notes for 20 min", "campus"], ["Print lab handouts", "campus"], ["Message group project partner", "campus"],
+    ["Check syllabus due dates", "campus"],
+    ["Walk for 20 minutes", "park"], ["Sit outside with a book", "park"], ["Stretch by the park bench", "park"],
+    ["Take a screen-free lunch outdoors", "park"], ["Snap a photo of something green", "park"], ["Drink a full bottle of water outside", "park"],
+    ["Do a 15-minute brisk walk", "park"]
   ];
   var POOL_EVIL = [
     ["Hit snooze five times", "home"], ["Eat the whole bag of chips", "home"], ["Skip the dishes again", "home"],
-    ["Check your phone in bed", "home"], ["Buy something you do not need", "market"],
-    ["Watch videos instead of the assignment", "campus"], ["Drive past the fuel light", "gas"],
-    ["Spend an hour scrolling at the park", "park"]
+    ["Check your phone in bed", "home"], ["Leave wet laundry in the washer", "home"], ["Open a second browser window of rabbit holes", "home"],
+    ["Turn a 5-minute break into 90 minutes", "home"], ["Leave clutter piled on the chair", "home"], ["Stay up scrolling past midnight", "home"],
+    ["Order late-night takeout out of boredom", "home"],
+    ["Buy something you do not need", "market"], ["Shop while hungry without a list", "market"], ["Grab checkout-aisle candy every trip", "market"],
+    ["Forget reusable bags in the trunk again", "market"], ["Buy duplicate pantry items", "market"], ["Browse clearance aisles with no plan", "market"],
+    ["Wait until closing time to ship the return", "post"], ["Let return labels expire in a drawer", "post"], ["Leave the parcel sitting by the door all week", "post"],
+    ["Forget tape before heading to the counter", "post"], ["Skip checking the mailbox for days", "post"], ["Procrastinate replying to official letters", "post"],
+    ["Put off renewing due library books", "library"], ["Lose the receipt inside a random book", "library"], ["Scroll reels in the quiet reading room", "library"],
+    ["Check out six books and read zero", "library"], ["Forget headphones in the study area", "library"], ["Skip backing up your scanned PDFs", "library"],
+    ["Ignore bank alert emails", "bank"], ["Forget to cancel an unused free trial", "bank"], ["Make an impulse purchase online", "bank"],
+    ["Put off paying a bill until late fee day", "bank"], ["Use an out-of-network ATM fee", "bank"], ["Skip checking weekly spending", "bank"],
+    ["Drive past the fuel light", "gas"], ["Ignore the low tire pressure warning", "gas"], ["Buy overpriced gas station energy drinks", "gas"],
+    ["Wait until morning rush hour to get fuel", "gas"], ["Leave fast-food wrappers in the backseat", "gas"], ["Skip cleaning foggy headlights", "gas"],
+    ["Watch videos instead of the assignment", "campus"], ["Wait until 11:55 PM to upload homework", "campus"], ["Leave emails to professors unanswered", "campus"],
+    ["Skip breakfast before an early class", "campus"], ["Rewrite notes pretty instead of practicing", "campus"], ["Cram without a single break", "campus"],
+    ["Spend an hour scrolling at the park", "park"], ["Skip fresh air all day long", "park"], ["Drink only iced coffee and zero water", "park"],
+    ["Bring stressful work chats onto a walk", "park"], ["Sit inside staring at a wall instead of stepping out", "park"], ["Compare yourself to strangers online", "park"]
   ];
   var HASSLES = ["Line out the door", "Closed for lunch", "Cash only", "Wrong form, come back later", "Out of stock",
     "Someone is already at the counter", "Rain expected", "Parking is full", "The system is down", "Take a number"];
@@ -2425,7 +2537,7 @@ window.__gcalAuth = {
       g.appendChild(svgEl("circle", { "class": "gf-ring", r: gfRingRadius(24, k) }));
       g.appendChild(svgEl("circle", { "class": "ring", r: 22 }));
       var hit = svgEl("circle", { r: 24, fill: "transparent" }); g.appendChild(hit);
-      var piu = mediaUrl("i:pinMap") || mediaUrl(evil ? "i:pinEvil" : "i:pinSmile");
+      var piu = mediaUrl("i:pinMap") || mediaUrl(evil ? "i:pinEvil" : "i:pinSmile") || mediaUrl(evil ? "i:appEvil" : "i:appSmile");
       if (piu) g.appendChild(svgEl("image", { href: piu, x: -12, y: -28, width: 24, height: 30, preserveAspectRatio: "xMidYMid meet" }));
       else g.appendChild(svgEl("use", { href: evil ? "#pinEvil" : "#pinSmile", transform: "translate(-10 -25.8) scale(.4167)" }));
       var tx = svgEl("text", { "class": "plabel", y: 13 }); tx.textContent = p.name; g.appendChild(tx);
@@ -2530,7 +2642,45 @@ window.__gcalAuth = {
     ["D", "Physicalizing", "Imagine the thought or the anxiety as an object: what shape, colour, size and weight is it?"],
     ["D", "Content on cards", "Write thoughts like \"Everyone is more successful than me\" on separate cards and read them as someone looking at a card."],
     ["D", "Passengers on the bus", "You are driving the bus. Some passengers say \"you can't do it\". Keep driving in the direction you want to go, despite them."],
-    ["D", "Hands as thoughts", "Hold your hands in front of your face: the thoughts block your view. Then slowly move them away and notice your view widen."]
+    ["D", "Hands as thoughts", "Hold your hands in front of your face: the thoughts block your view. Then slowly move them away and notice your view widen."],
+    ["A", "Slow-motion tape", "Stretch a harsh self-criticism out to ten seconds in slow motion until each syllable sounds like an odd hum rather than a command."],
+    ["A", "Chipmunk speed", "Speed the thought up mentally until it sounds like an over-fast cassette tape. Notice how quickly its authority drops."],
+    ["A", "Backwards spelling", "Spell the key fear word backwards letter by letter so your brain sees shapes and sounds instead of a verdict."],
+    ["A", "News anchor voice", "Read the worry aloud as if an overly dramatic evening newsreader were announcing minor traffic."],
+    ["A", "Chant the headline", "Repeat the headline word steadily ten times while tapping a calm rhythm on the desk."],
+    ["A", "Alphabet soup", "Imagine the sentence printed on alphabet crackers floating in a bowl, drifting apart letter by letter."],
+    ["A", "Silent subtitle", "Watch the thought cross your mind like badly translated subtitles at the bottom of a quiet movie."],
+    ["A", "Radio static", "Picture the critical voice as a distant AM station fading in and out of static while you steer the car."],
+    ["A", "Rhyme it lightly", "Find two harmless words that rhyme with the worry word to remind yourself it is just language made of mouth sounds."],
+    ["A", "Typewriter clack", "Hear each word of the thought only as mechanical typewriter keystrokes on paper—ink marks, not prophecies."],
+    ["B", "Wobbly first two minutes", "Pick the tiniest physical step—open the file, put on shoes, rinse one mug—while letting the urge to quit sit beside you."],
+    ["B", "Walk with the pebble", "Treat nagging doubt like a small pebble in your shoe: annoying to feel, yet not stopping you from walking down the block."],
+    ["B", "One-sentence bookmark", "Tell yourself \"I only have to touch this for 90 seconds\" and start before your mind finishes debating."],
+    ["B", "Two hands busy", "Notice your hands can fold laundry or type notes even while your brain keeps playing yesterday's worry loop."],
+    ["B", "Next concrete surface", "Touch the next real object you need for the task—a doorknob, bag handle, keyboard—while the anxious thought tags along."],
+    ["B", "Bring doubt to errands", "Step outside anyway while thinking \"I have no energy\"; let tired feet prove you can move without feeling pumped up."],
+    ["B", "Micro-reset bell", "Drop your shoulders, exhale twice, and take one practical action right after noticing a procrastination urge."],
+    ["B", "Action over mood", "Ask \"If a friend felt just like I do today, what tiny helpful move would I still nudge them to make?\""],
+    ["B", "Clean edge rule", "Do just the edge of the chore—clear one corner of the desk—without asking your mood for permission first."],
+    ["B", "Clock says start, not finish", "Set a 5-minute timer solely to begin; starting is a full win even if thoughts keep grumbling."],
+    ["C", "Pop-up ad test", "Label the urge to doomscroll or quit as \"Ah, another pop-up ad\"—you do not have to click every popup that appears."],
+    ["C", "Notice the storyteller", "Say \"My mind is telling me the 'I always mess this up' story again\" and notice the old familiar title."],
+    ["C", "Prediction vs weather", "Remind yourself: \"A prediction is a guess about the sky, not the actual storm outside.\""],
+    ["C", "Compare-o-meter", "When \"Everyone is ahead of me\" shows up, tag it simply: \"Comparison reflex running.\""],
+    ["C", "Perfection tax", "Notice when \"It has to be spotless\" is really charging a tax that keeps you from starting at all."],
+    ["C", "What does this serve?", "Drop asking \"Is this thought 100% true?\" and ask \"Is biting onto this thought helpful for the next ten minutes?\""],
+    ["C", "Five-year telescope", "Look back at today from five years ahead: does this tiny wobble still look like an emergency?"],
+    ["C", "Kind coach swap", "Say what your mind just shouted, then rephrase it in the calm tone you would use for a worn-out friend."],
+    ["C", "Separate urge from order", "Rename \"I must check my phone now\" to \"There is an urge to check my phone right now.\" Urges rise and pass."],
+    ["C", "Wait-and-see hypothesis", "Turn \"This will go badly\" into an experiment: \"Hypothesis: it might be awkward; let's gather data.\""],
+    ["D", "Notice-board sticky note", "Picture writing the worry on a yellow sticky note, pinning it to a cork board across the room, and walking back to your desk."],
+    ["D", "Clouds past a hilltop", "Let thoughts drift like slow clouds across a blue hill while your attention stays parked with the hilltop itself."],
+    ["D", "Luggage carousel", "Watch stressful thoughts ride past on an airport baggage belt—just because a bag passes by does not mean you must pick it up."],
+    ["D", "Train at the station", "Imagine thoughts pulling in like noisy trains; you are standing on the platform and can choose not to board."],
+    ["D", "Rain on the windshield", "See distracting thoughts as raindrops hitting glass while you keep watching the road ahead."],
+    ["D", "Glass jar shelf", "Imagine placing the loud urgency inside a clear jar on a shelf beside you—visible, contained, not steering your hands."],
+    ["D", "Sky vs storms", "Treat emotions and thoughts as shifting weather; you are the open sky holding room for them without shattering."],
+    ["D", "Stage spotlights", "Picture the critical narrator standing in a tiny spotlight at the corner of a huge stage while the rest of your life stretches wide."]
   ];
   var PR_NOTE = { A: "The aim is not to make the thought funny or to shrink it; it is to loosen its automatic hold and meaning.", B: "", C: "", D: "" };
   var PR_GROUP = { A: "Words and sounds", B: "Thought and action", C: "A different frame", D: "Outside of you" };
@@ -2544,8 +2694,10 @@ window.__gcalAuth = {
   function prPinned() { var v = -1; try { v = parseInt(localStorage.getItem("mission-map-pin"), 10); } catch (e) {} return v >= 0 && v < PRACTICE.length ? v : -1; }
   /* habits: a small private log (this phone only) feeds the patterns panel and tailors the daily practice */
   function logGet() { try { var a = JSON.parse(localStorage.getItem("mission-map-log")); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
-  function logEv(code, arg, ts) {
-    var a = logGet(); a.push([ts || Date.now(), code, String(arg === undefined ? "" : arg)]);
+  function logEv(code, arg, ts, extra) {
+    var a = logGet(), row = [ts || Date.now(), code, String(arg === undefined ? "" : arg)];
+    if (extra !== undefined && extra !== null) row.push(extra);
+    a.push(row);
     if (a.length > 2500) a = a.slice(a.length - 2500);
     try { localStorage.setItem("mission-map-log", JSON.stringify(a)); } catch (e) {}
   }
@@ -3003,23 +3155,72 @@ window.__gcalAuth = {
   }
   function renderPatterns() {
     var box = $("patterns"); if (!box) return; box.hidden = !(opts.week && patOpen); syncTopPanels(); if (box.hidden) return;
-    var log = logGet(), seen = {}, hrs = [], dh = [], wd = [], dw = [], i, total = 0, doneN = 0;
-    for (i = 0; i < 24; i++) { hrs.push(0); dh.push(0); }
+    var log = logGet(), seen = {}, hrs = [], dh = [], wd = [], dw = [], lh = [], edH = [], hmH = [], i, total = 0, doneN = 0;
+    var doneWithListen = 0, doneLogged = 0, errandDoneN = 0, homeDoneN = 0;
+    var listenPlays = 0, listenTicks = 0, listenDays = {}, listenMap = {}, listenHrs = 0;
+    for (i = 0; i < 24; i++) { hrs.push(0); dh.push(0); lh.push(0); edH.push(0); hmH.push(0); }
     for (i = 0; i < 7; i++) { wd.push(0); dw.push(0); }
-    function count(ts, isDone) { var d = new Date(ts), h = d.getHours(), w = (d.getDay() + 6) % 7; hrs[h]++; wd[w]++; total++; if (isDone) { dh[h]++; dw[w]++; doneN++; } }
-    log.forEach(function (r) { if (r[1] === "d") { seen[r[0]] = true; count(r[0], true); } else if (r[1] === "a" || r[1] === "p") count(r[0], false); });
-    items.forEach(function (it) { if (it.done && it.doneAt && !seen[it.doneAt]) count(it.doneAt, true); });
+    function isErrandPlace(pl) { return pl && pl !== "home" && pl !== "!"; }
+    function count(ts, isDone, place, withAudio) {
+      var d = new Date(ts), h = d.getHours(), w = (d.getDay() + 6) % 7;
+      hrs[h]++; wd[w]++; total++;
+      if (isDone) {
+        dh[h]++; dw[w]++; doneN++;
+        if (withAudio) doneWithListen++;
+        if (place !== undefined) {
+          doneLogged++;
+          if (isErrandPlace(place)) { edH[h]++; errandDoneN++; }
+          else if (place === "home") { hmH[h]++; homeDoneN++; }
+        }
+      }
+    }
+    log.forEach(function (r) {
+      var code = r[1];
+      if (code === "d") {
+        seen[r[0]] = true;
+        count(r[0], true, String(r[2] || ""), r[3] === 1);
+      } else if (code === "a" || code === "p") {
+        count(r[0], false);
+      } else if (code === "ls" || code === "lr" || code === "lt" || code === "lx") {
+        listenPlays++;
+        var ld = new Date(r[0]), lhk = ld.getHours();
+        lh[lhk]++; listenDays[dkey(ld)] = true;
+        var nm = String(r[2] || "").trim();
+        if (nm) listenMap[nm] = (listenMap[nm] || 0) + 1;
+      } else if (code === "lm") {
+        listenTicks++;
+        var md = new Date(r[0]);
+        lh[md.getHours()]++;
+        listenDays[dkey(md)] = true;
+      }
+    });
+    items.forEach(function (it) {
+      if (it.done && it.doneAt && !seen[it.doneAt]) {
+        count(it.doneAt, true, it.evil ? "!" : it.place, false);
+      }
+    });
+
     box.innerHTML = "";
     box.appendChild(el("h2", null, "Your patterns"));
+
+    /* live listening status & listening frequency */
+    var nowL = typeof currentListeningInfo === "function" ? currentListeningInfo() : { on: false, label: "Silent", detail: "" };
+    var lBox = el("div", "pat-listen" + (nowL.on ? " on" : ""));
+    lBox.appendChild(el("span", "pat-dot"));
+    var lTxt = el("span", null, nowL.on ? ("Listening now: " + nowL.label + (nowL.detail ? " (" + nowL.detail + ")" : "")) : "Not listening right now");
+    lBox.appendChild(lTxt);
+    box.appendChild(lBox);
+
+    function bars(vals, labels, cls) {
+      var mx = Math.max.apply(null, vals.concat([1])), wrap = el("div", "bars " + cls);
+      vals.forEach(function (c, k) { var b = el("div", "bc"); b.appendChild(el("em", null, c ? String(c) : "")); var bi = document.createElement("i"); bi.style.height = Math.round(c / mx * 70) + "%"; b.appendChild(bi); b.appendChild(el("span", null, labels[k])); wrap.appendChild(b); });
+      return wrap;
+    }
+
     var NEED = 8;
     if (total < NEED) {
-      box.appendChild(el("div", "wrapline", "Not enough to see a pattern yet: " + total + " of " + NEED + " actions so far. Add and finish missions and try practice exercises; this fills in by itself. It stays on this phone."));
+      box.appendChild(el("div", "wrapline", "Not enough to see a full task pattern yet: " + total + " of " + NEED + " actions so far. Add and finish missions and try practice exercises; this fills in by itself. It stays on this phone."));
     } else {
-      function bars(vals, labels, cls) {
-        var mx = Math.max.apply(null, vals.concat([1])), wrap = el("div", "bars " + cls);
-        vals.forEach(function (c, k) { var b = el("div", "bc"); b.appendChild(el("em", null, c ? String(c) : "")); var bi = document.createElement("i"); bi.style.height = Math.round(c / mx * 70) + "%"; b.appendChild(bi); b.appendChild(el("span", null, labels[k])); wrap.appendChild(b); });
-        return wrap;
-      }
       box.appendChild(el("div", "pat-h", "Activity by hour"));
       box.appendChild(bars(hrs, hrs.map(function (_, h) { return h % 3 === 0 ? String(h) : ""; }), "hrs"));
       var pk = hourWindow(hrs), lines = ["Most active: " + pk.label + "."];
@@ -3031,6 +3232,73 @@ window.__gcalAuth = {
       if (tl >= 5) lines.push("Finished so far: " + dn + " of " + tl + " missions (" + Math.round(dn / tl * 100) + "%).");
       lines.forEach(function (t) { box.appendChild(el("div", "wrapline", t)); });
       lines.length = 0;
+
+      /* Productive hours & errand time-of-day recommendations */
+      box.appendChild(el("div", "pat-h", "Recommended times"));
+      var todDefs = [
+        ["Morning", 6, 12, "09:00-11:00"],
+        ["Afternoon", 12, 17, "14:00-16:00"],
+        ["Evening", 17, 21, "17:30-19:30"],
+        ["Night", 21, 6, "21:00-23:00"]
+      ];
+      function sumRange(arr, from, to) {
+        var s = 0, h = from;
+        for (var c = 0; c < 24; c++) {
+          if (from < to ? (h >= from && h < to) : (h >= from || h < to)) s += arr[h];
+          h = (h + 1) % 24;
+        }
+        return s;
+      }
+      var recProd = el("div", "pat-rec");
+      recProd.appendChild(el("b", null, "Most productive focus time"));
+      if (doneN >= 3) {
+        var bestDoneWin = hourWindow(dh);
+        var bestTod = todDefs.slice().sort(function (a, b) { return sumRange(dh, b[1], b[2]) - sumRange(dh, a[1], a[2]); })[0];
+        var bestTodCnt = sumRange(dh, bestTod[1], bestTod[2]);
+        var pctTod = Math.round((bestTodCnt / doneN) * 100);
+        recProd.appendChild(document.createTextNode(
+          "Your peak task completion window is " + bestDoneWin.label + " (" + bestTod[0] + " leads at " + pctTod + "% of your completions). Save important or high-priority missions for this slot."
+        ));
+      } else {
+        recProd.appendChild(document.createTextNode(
+          "Complete at least 3 missions (" + doneN + " so far) to pinpoint your personal peak productivity hours."
+        ));
+      }
+      box.appendChild(recProd);
+
+      var openErrands = norm().filter(function (it) { return !it.done && isErrandPlace(it.place); }).length;
+      var recErr = el("div", "pat-rec");
+      recErr.appendChild(el("b", null, "Suggested times to run errands"));
+      if (errandDoneN >= 3) {
+        var errBlocks = [
+          ["Early morning (08:00-10:00)", 8, 10],
+          ["Mid-morning (10:00-12:00)", 10, 12],
+          ["Early afternoon (12:00-15:00)", 12, 15],
+          ["Late afternoon (15:00-18:00)", 15, 18],
+          ["Early evening (18:00-20:00)", 18, 20]
+        ];
+        errBlocks.sort(function (a, b) { return sumRange(edH, b[1], b[2]) - sumRange(edH, a[1], a[2]); });
+        var topErr = errBlocks[0], altErr = errBlocks[1];
+        var topErrSum = sumRange(edH, topErr[1], topErr[2]);
+        var errMsg = topErrSum > 0
+          ? ("Best window for out-of-home errands (market, post, bank, library, gas): " + topErr[0] +
+            (sumRange(edH, altErr[1], altErr[2]) > 0 ? ", or " + altErr[0] : "") + ".")
+          : ("You usually handle out-of-home errands outside standard hours (" + hourWindow(edH).label + "); mid-morning (10:00-12:00) is your best daytime fallback.");
+        if (homeDoneN >= 2) {
+          var homeBest = todDefs.slice().sort(function (a, b) { return sumRange(hmH, b[1], b[2]) - sumRange(hmH, a[1], a[2]); })[0];
+          errMsg += " Keep " + homeBest[0].toLowerCase() + " free for Home chores.";
+        }
+        if (openErrands > 0) errMsg += " You have " + openErrands + " open errand" + (openErrands === 1 ? "" : "s") + " lined up.";
+        recErr.appendChild(document.createTextNode(errMsg));
+      } else {
+        recErr.appendChild(document.createTextNode(
+          "Aim for Mid-morning (10:00-12:00) or Late afternoon (15:00-17:30) for market, post office, bank, or library runs before closing time" +
+          (openErrands ? " (" + openErrands + " open errand" + (openErrands === 1 ? "" : "s") + " waiting)" : "") +
+          ". Adapts automatically after 3 completed errands (" + errandDoneN + " so far)."
+        ));
+      }
+      box.appendChild(recErr);
+
       box.appendChild(el("div", "pat-h", "Practice style"));
       var st = prStats(), keys = ["A", "B", "C", "D"], rows = el("div", "pat-grid");
       keys.forEach(function (k) {
@@ -3043,6 +3311,38 @@ window.__gcalAuth = {
         box.appendChild(el("div", "wrapline", "Your style so far: " + PR_STYLE[rank[0]] + ". The daily practice now leans that way" + (opts.practiceTailor ? "" : " (switch it on in Options)") + ", with a little of everything mixed in."));
       } else box.appendChild(el("div", "wrapline", "Try or skip a few more practice exercises (" + st.signals + " of 5) and the daily pick will start to suit you."));
     }
+
+    /* listening frequency & history section */
+    box.appendChild(el("div", "pat-h", "Listening frequency"));
+    var dayCnt = Object.keys(listenDays).length;
+    var estMins = listenPlays * 3 + listenTicks * 3;
+    var lGrid = el("div", "pat-grid");
+    var rPlays = el("div", "pat-row"); rPlays.appendChild(el("b", null, "Plays & sessions logged")); rPlays.appendChild(el("span", null, listenPlays + (dayCnt ? " across " + dayCnt + (dayCnt === 1 ? " day" : " days") : "")));
+    lGrid.appendChild(rPlays);
+    if (listenPlays > 0) {
+      var perDay = (listenPlays / Math.max(1, dayCnt)).toFixed(1).replace(/\.0$/, "");
+      var rAvg = el("div", "pat-row"); rAvg.appendChild(el("b", null, "Average frequency")); rAvg.appendChild(el("span", null, perDay + " plays/day (~" + estMins + " min total)"));
+      lGrid.appendChild(rAvg);
+      var topNames = Object.keys(listenMap).sort(function (a, b) { return listenMap[b] - listenMap[a]; }).slice(0, 3);
+      if (topNames.length) {
+        var rTop = el("div", "pat-row"); rTop.appendChild(el("b", null, "Top audio"));
+        rTop.appendChild(el("span", null, topNames.map(function (n) { return (n.length > 20 ? n.slice(0, 19) + "…" : n) + " (" + listenMap[n] + ")"; }).join(", ")));
+        lGrid.appendChild(rTop);
+      }
+      if (doneLogged >= 3 && doneWithListen > 0) {
+        var rProd = el("div", "pat-row"); rProd.appendChild(el("b", null, "Tasks finished while listening"));
+        rProd.appendChild(el("span", null, doneWithListen + " of " + doneLogged + " (" + Math.round(doneWithListen / doneLogged * 100) + "%)"));
+        lGrid.appendChild(rProd);
+      }
+      box.appendChild(lGrid);
+      box.appendChild(bars(lh, lh.map(function (_, h) { return h % 3 === 0 ? String(h) : ""; }), "hrs listen"));
+      var lPk = hourWindow(lh);
+      box.appendChild(el("div", "wrapline", "You listen most around " + lPk.label + "."));
+    } else {
+      box.appendChild(lGrid);
+      box.appendChild(el("div", "wrapline", "Play radio/music, listen to a voice tape, or log a song from the cassette deck to track how often you listen."));
+    }
+
     var cl = el("button", "btn ghost", "Close"); cl.type = "button"; cl.addEventListener("click", function () { patOpen = false; render(); });
     var cr = el("button", "btn ghost", "Clear history"); cr.type = "button";
     cr.addEventListener("click", function () { if (window.confirm("Clear the habit history on this phone? Missions are not touched.")) { try { localStorage.removeItem("mission-map-log"); } catch (e) {} render(); } });
@@ -3191,7 +3491,8 @@ window.__gcalAuth = {
     items.forEach(function (i) { if (i.id === id) it = i; });
     if (!it) return;
     var nowT = Date.now(); it.done = !it.done; it.doneAt = it.done ? nowT : 0; lastToggled = id;
-    if (it.done) logEv("d", it.evil ? "!" : it.place, nowT);
+    var listeningNow = typeof currentListeningInfo === "function" && currentListeningInfo().on ? 1 : 0;
+    if (it.done) logEv("d", it.evil ? "!" : it.place, nowT, listeningNow);
     var gained = 0;
     if (it.done) {
       if (!it.evil) visited[it.place] = true;
@@ -3237,6 +3538,7 @@ window.__gcalAuth = {
     evil = !evil; try { localStorage.setItem(EKEY, evil ? "1" : "0"); } catch (e) {}
     filter = null; render(); fx("flip");
     musicRefresh();
+    if (typeof syncAppIcon === "function") syncAppIcon();
   }
   function setView(v) {
     view = v; try { localStorage.setItem(VKEY, v); } catch (e) {}
@@ -3788,7 +4090,7 @@ window.__gcalAuth = {
     var src = evil ? POOL_EVIL : POOL;
     var pool = src.filter(function (p) { return have.indexOf(p[0].toLowerCase()) < 0; });
     for (var i = pool.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
-    var pick = pool.slice(0, 3), box = $("sug");
+    var pick = pool.slice(0, 4), box = $("sug");
     box.innerHTML = ""; box.hidden = false;
     box.appendChild(el("h2", null, evil ? "Temptations to resist" : "Suggested missions"));
     if (!pick.length) box.appendChild(el("div", null, "All suggestions are already on your list."));
@@ -3874,6 +4176,7 @@ window.__gcalAuth = {
     highway: { root: 45, tempo: 118, pent: [0, 3, 5, 7, 10], prog: [[0, [0, 3, 7]], [-4, [0, 4, 7]], [-2, [0, 4, 7]], [-7, [0, 3, 7]]], drive: true },
     pit:     { root: 48, tempo: 104, pent: [0, 2, 4, 7, 9],  prog: [[0, [0, 4, 7]], [5, [0, 4, 7]], [7, [0, 4, 7]], [5, [0, 4, 7]]], drive: true }
   };
+  var STATION_NAMES = { map: "Dusty Map FM", notes: "Cork Board Radio", errands: "Night Shift 88", highway: "Neon Highway", pit: "Pit Stop FM" };
   var STATION_AUTO = { map: "map", notes: "notes", errands: "errands", racer: "highway", zine: "notes", wanted: "errands", receipt: "notes", comic: "pit" };
   function stationKey() {
     var k = opts.station === "auto" ? (evil ? "errands" : (STATION_AUTO[view] || "map")) : opts.station;
@@ -3916,7 +4219,8 @@ window.__gcalAuth = {
   }
   function startGen() {
     stopMusic();
-    var th = MUS[stationKey()], sd = 60 / th.tempo / 2;
+    var sk = stationKey(), th = MUS[sk], sd = 60 / th.tempo / 2;
+    mus.trackLabel = STATION_NAMES[sk] || "Built-in Radio";
     mus.bus = AC.createGain(); mus.bus.connect(musBus);
     mus.dly = AC.createDelay(2); mus.dly.delayTime.value = sd * 3;
     var fb = AC.createGain(); fb.gain.value = 0.36; mus.dly.connect(fb); fb.connect(mus.dly); mus.dly.connect(mus.bus);
@@ -3924,11 +4228,14 @@ window.__gcalAuth = {
     mus.timer = setInterval(function () {
       while (mus.next < AC.currentTime + 0.4) { stepAt(th, sd, mus.next, mus.step); mus.next += sd; mus.step++; }
     }, 100);
+    logEv("lr", mus.trackLabel);
+    if (typeof syncListenUi === "function") syncListenUi();
   }
   function stopMusic() {
     if (mus.timer) { clearInterval(mus.timer); mus.timer = null; }
     if (mus.bus && AC) { var b = mus.bus; b.gain.setTargetAtTime(0, AC.currentTime, 0.2); setTimeout(function () { try { b.disconnect(); } catch (e) {} }, 1500); mus.bus = null; }
-    mus.tok++; dropEl();
+    mus.tok++; mus.trackLabel = ""; dropEl();
+    if (typeof syncListenUi === "function") syncListenUi();
   }
   function dropEl() {
     if (mus.el) { try { mus.el.onended = null; mus.el.onerror = null; mus.el.pause(); mus.el.removeAttribute("src"); mus.el.load(); } catch (e) {} mus.el = null; }
@@ -3944,6 +4251,7 @@ window.__gcalAuth = {
     else if (want === "pl") playPl(true);
     else playBlobKey("mt:" + view, true, null, mus.tok);
     updateAd();
+    if (typeof syncListenUi === "function") syncListenUi();
   }
   function sndMsg(t) { $("sndMsg").textContent = t; }
   var adIdx = 0;
@@ -4028,6 +4336,7 @@ window.__gcalAuth = {
     if (typeof syncTapeUiOpts === "function") syncTapeUiOpts();
     if (opts.geo) geoStartWatch(); else geoStopWatch();
     applyFonts(); buildTraffic(); updateSky();
+    if (typeof syncAppIcon === "function") syncAppIcon();
   }
   function syncOpts() {
     $("sfxOn").checked = snd.sfx; $("musOn").checked = snd.music; $("vol").value = Math.round(snd.vol * 100);
@@ -4038,6 +4347,7 @@ window.__gcalAuth = {
     if ($("mapVariantBar")) $("mapVariantBar").value = opts.mapVariant;
     if ($("tapeStyleOpt")) $("tapeStyleOpt").value = opts.tapeStyle;
     $("station").value = opts.station; $("aodIdle").value = opts.aodIdle; $("aodLevel").value = opts.aodLevel; $("fontAll").value = opts.fontAll; $("fontMission").value = opts.fontMission;
+    if (typeof syncAppIcon === "function") syncAppIcon();
     renderAch();
   }
   BOXES.forEach(function (b) {
@@ -4058,10 +4368,10 @@ window.__gcalAuth = {
     $(p[0]).addEventListener("click", function () { modeTouched = true; opts.mode = p[1]; saveOpts(); applyOpts(); });
   });
   if ($("pinStyleBase")) $("pinStyleBase").addEventListener("click", function () {
-    opts.pinAlt = false; saveOpts(); applyOpts(); applyMedia(); render();
+    opts.pinAlt = false; saveOpts(); applyOpts(); applyMedia(); render(); syncAppIcon();
   });
   if ($("pinStyleAlt")) $("pinStyleAlt").addEventListener("click", function () {
-    opts.pinAlt = true; saveOpts(); applyOpts(); applyMedia(); render();
+    opts.pinAlt = true; saveOpts(); applyOpts(); applyMedia(); render(); syncAppIcon();
   });
   (function buildThemeGrid() {
     var tg = $("themeGrid");
@@ -5444,29 +5754,107 @@ window.__gcalAuth = {
       f.appendChild(im);
     }
   }
+  /* app & menu icon sync (web favicon + apple icon + Options preview + Android Recents/Task icon) */
+  var appIconCache = {}, lastAppIconSig = "";
+  function urlToPngDataUrl(srcUrl) {
+    if (!srcUrl) return Promise.resolve("");
+    if (appIconCache[srcUrl]) return Promise.resolve(appIconCache[srcUrl]);
+    return new Promise(function (res) {
+      var im = new Image();
+      im.onload = function () {
+        try {
+          var c = document.createElement("canvas"); c.width = 128; c.height = 128;
+          var ctx = c.getContext("2d");
+          var sc = Math.min(120 / (im.naturalWidth || 120), 120 / (im.naturalHeight || 120));
+          var w = Math.max(1, Math.round((im.naturalWidth || 120) * sc));
+          var h = Math.max(1, Math.round((im.naturalHeight || 120) * sc));
+          ctx.drawImage(im, Math.round((128 - w) / 2), Math.round((128 - h) / 2), w, h);
+          var out = c.toDataURL("image/png");
+          appIconCache[srcUrl] = out;
+          res(out);
+        } catch (e) { res(""); }
+      };
+      im.onerror = function () { res(""); };
+      im.src = srcUrl;
+    });
+  }
+  function activeAppIconUrl(isEvil) {
+    var defIcon = isEvil ? (opts.pinAlt ? "pins/alt-evil.webp" : "pins/base-evil-256.png") : (opts.pinAlt ? "pins/alt-smile.webp" : "pins/base-smile-256.png");
+    return urls[isEvil ? "i:appEvil" : "i:appSmile"] || urls[isEvil ? "i:pinEvil" : "i:pinSmile"] || urls["i:pinMap"] || defIcon;
+  }
+  function syncAppIcon() {
+    var iconUrl = activeAppIconUrl(evil);
+    var favFallback = evil ? "pins/base-evil-256.png" : "pins/base-smile-256.png";
+    var sig = (evil ? "1" : "0") + "|" + (opts.pinAlt ? "1" : "0") + "|" + iconUrl;
+    var pv = $("appIconPreviewImg"), lb = $("appIconModeLbl");
+    if (pv) pv.src = iconUrl;
+    if (lb) {
+      var hasCust = !!(urls[evil ? "i:appEvil" : "i:appSmile"] || urls[evil ? "i:pinEvil" : "i:pinSmile"] || urls["i:pinMap"]);
+      lb.textContent = (evil ? "Menu icon: Don't-do list" : "Menu icon: Do list") + (hasCust ? " (custom)" : "");
+    }
+    if (lastAppIconSig === sig) return;
+    lastAppIconSig = sig;
+    urlToPngDataUrl(iconUrl).then(function (pngUrl) {
+      var finalUrl = pngUrl || favFallback;
+      var fv = $("appFavicon"), ap = $("appAppleIcon");
+      if (fv) fv.href = finalUrl;
+      if (ap) ap.href = finalUrl;
+      if (NATIVE && AP && AP.setAppIcon) {
+        AP.setAppIcon({
+          label: evil ? "Mission Map (Don't-do)" : "Mission Map",
+          dataUrl: finalUrl
+        }).catch(function () {});
+      }
+    });
+  }
+  function wireAppIconImport(inputId, keys, msgOk) {
+    var inp = $(inputId); if (!inp) return;
+    inp.addEventListener("change", function () {
+      var f = this.files && this.files[0]; this.value = ""; if (!f) return;
+      shrink(f, 256, true).then(function (b) {
+        return Promise.all(keys.map(function (k) { delete appIconCache[urls[k] || ""]; return putImg(k, b); }));
+      }).then(function () {
+        lastAppIconSig = "";
+        mediaStatus(); applyMedia(); render(); syncAppIcon();
+        toast(msgOk);
+      }).catch(function () { toast("Could not read that icon image."); });
+    });
+  }
+  wireAppIconImport("appIconSmileIn", ["i:appSmile"], "Custom Do icon applied.");
+  wireAppIconImport("appIconEvilIn", ["i:appEvil"], "Custom Don't-do icon applied.");
+  wireAppIconImport("appIconBothIn", ["i:appSmile", "i:appEvil"], "Custom app icon applied for both modes.");
+  if ($("appIconResetBtn")) $("appIconResetBtn").addEventListener("click", function () {
+    Promise.all(["i:appSmile", "i:appEvil", "i:pinSmile", "i:pinEvil", "i:pinMap"].map(delImg)).then(function () {
+      lastAppIconSig = "";
+      mediaStatus(); applyMedia(); render(); syncAppIcon();
+      toast("App icons reset to defaults.");
+    });
+  });
+
   function applyMedia() {
     var m = $("map"), mu = urls["i:map"];
     if (m) { var want = mu ? 'url("' + mu + '")' : ""; if (m.style.backgroundImage !== want) m.style.backgroundImage = want; }
     $("mapcard").classList.toggle("no-sketch", !!mu && !mmeta.sketch);
     var defSmile = opts.pinAlt ? "pins/alt-smile.webp" : "pins/base-smile.png";
     var defEvil = opts.pinAlt ? "pins/alt-evil.webp" : "pins/base-evil.png";
-    setFace("front", urls["i:pinSmile"] || urls["i:pinMap"] || defSmile);
-    setFace("back", urls["i:pinEvil"] || urls["i:pinMap"] || defEvil);
+    var smileUrl = urls["i:pinSmile"] || urls["i:appSmile"] || urls["i:pinMap"] || defSmile;
+    var evilUrl = urls["i:pinEvil"] || urls["i:appEvil"] || urls["i:pinMap"] || defEvil;
+    setFace("front", smileUrl);
+    setFace("back", evilUrl);
     var imgSmile = $("pinSmileImg");
     if (imgSmile) {
-      var sUrl = urls["i:pinSmile"] || urls["i:pinMap"] || defSmile;
-      imgSmile.setAttribute("href", sUrl);
-      imgSmile.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", sUrl);
+      imgSmile.setAttribute("href", smileUrl);
+      imgSmile.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", smileUrl);
     }
     var imgEvil = $("pinEvilImg");
     if (imgEvil) {
-      var eUrl = urls["i:pinEvil"] || urls["i:pinMap"] || defEvil;
-      imgEvil.setAttribute("href", eUrl);
-      imgEvil.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", eUrl);
+      imgEvil.setAttribute("href", evilUrl);
+      imgEvil.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", evilUrl);
     }
     var w = urls["w:" + view], b = document.body;
     if (w) { if (b.style.getPropertyValue("--wall") !== 'url("' + w + '")') b.style.setProperty("--wall", 'url("' + w + '")'); } else b.style.removeProperty("--wall");
     b.classList.toggle("has-wall", !!w);
+    syncAppIcon();
   }
 
   /* sound effects: short clips decoded once */
@@ -5498,7 +5886,9 @@ window.__gcalAuth = {
     var node = null;
     try { node = AC.createMediaElementSource(a); node.connect(musBus); } catch (e) { node = null; a.volume = snd.vol; }
     mus.el = a; mus.node = node; mus.url = url;
-    if (name) sndMsg("Playing: " + name);
+    mus.trackLabel = name || "Audio track";
+    if (name) { sndMsg("Playing: " + name); logEv("ls", name); }
+    if (typeof syncListenUi === "function") syncListenUi();
     a.onended = function () { if (onEnd) onEnd(); };
     a.onerror = function () { sndMsg("Could not play " + (name || "that file") + "."); if (onEnd) onEnd(true); };
     var p = a.play(); if (p && p.catch) p.catch(function () { sndMsg("Tap anywhere on the page to start the music."); });
@@ -5521,7 +5911,9 @@ window.__gcalAuth = {
     if (mus.pos >= mus.order.length) { mus.order = plOrder(); mus.pos = 0; }
     var tr = mmeta.playlist[mus.order[mus.pos]];
     if (!tr) { mus.order = plOrder(); mus.pos = 0; return; }
+    mus.trackLabel = tr.name;
     renderPl(tr.id);
+    if (typeof syncListenUi === "function") syncListenUi();
     dbGet("pl:" + tr.id).then(function (b) {
       if (tok !== mus.tok) return;
       var next = function (bad) {
@@ -5604,6 +5996,8 @@ window.__gcalAuth = {
   }
   function buildMediaUi() {
     imgSlot($("imgSlots"), "Map picture", "i:map", 1600, false);
+    imgSlot($("imgSlots"), "App / menu icon (Do list)", "i:appSmile", 256, true);
+    imgSlot($("imgSlots"), "App / menu icon (Don't-do list)", "i:appEvil", 256, true);
     imgSlot($("imgSlots"), "Smiley pin", "i:pinSmile", 256, true);
     imgSlot($("imgSlots"), "Evil pin", "i:pinEvil", 256, true);
     imgSlot($("imgSlots"), "One pin for both (also used on the map)", "i:pinMap", 256, true);
@@ -5766,6 +6160,7 @@ window.__gcalAuth = {
         : tapeState.playing ? "Playing Tape"
         : tapeState.paused ? "Tape Paused" : "Tape Deck";
     }
+    if (typeof syncListenUi === "function") syncListenUi();
   }
   function syncTapePitchUi() {
     var dk = $("tapeDock"), r = clampTapeRate(tapeState.rate);
@@ -6110,6 +6505,8 @@ window.__gcalAuth = {
     updateTapeSeekUi(startOff, totalDur, false);
     if ($("tapeNowLbl")) $("tapeNowLbl").textContent = tp.label;
     tapeMsg((opts.tapeFilter ? "Playing (Hi-Fi tape filter): " : "Playing (raw): ") + tp.label);
+    logEv("lt", tp.label);
+    if (typeof syncListenUi === "function") syncListenUi();
 
     tapeState.playTimer = setInterval(function () {
       if (!tapeState.playing || !AC || tapeState.scrubbing) return;
@@ -6355,13 +6752,113 @@ window.__gcalAuth = {
         if ($("tapeTab")) $("tapeTab").setAttribute("aria-expanded", "false");
       }
     });
+    /* "Now Listening" display + external song toggle + listening heartbeat */
+    var EXT_LISTEN_KEY = "mission-map-listen";
+    var extListen = { on: false, title: "" };
+    try {
+      var el0 = JSON.parse(localStorage.getItem(EXT_LISTEN_KEY) || "null");
+      if (el0 && typeof el0 === "object") extListen = { on: !!el0.on, title: str(el0.title, 64) };
+    } catch (e) {}
+    function saveExtListen() { try { localStorage.setItem(EXT_LISTEN_KEY, JSON.stringify(extListen)); } catch (e) {} }
+
+    window.currentListeningInfo = function () {
+      if (tapeState.recording && !tapeState.paused) {
+        var rLbl = $("tapeNowLbl") ? $("tapeNowLbl").textContent : "Voice memo";
+        return { on: true, kind: "rec", label: rLbl, detail: "Recording tape" };
+      }
+      if (tapeState.playing) {
+        var tp = findTape(tapeActiveId);
+        return { on: true, kind: "tape", label: tp ? tp.label : "Voice tape", detail: "Cassette playback" };
+      }
+      if (snd.music && (mus.timer || mus.el)) {
+        if (mus.cur === "pl") return { on: true, kind: "song", label: mus.trackLabel || "Playlist track", detail: "Playlist" };
+        if (mus.cur && mus.cur.indexOf("t:") === 0) return { on: true, kind: "song", label: mus.trackLabel || mmeta.themeMus[view] || "Theme audio", detail: "Theme track" };
+        return { on: true, kind: "radio", label: mus.trackLabel || STATION_NAMES[stationKey()] || "Built-in Radio", detail: "Radio" };
+      }
+      if (extListen.on) {
+        return { on: true, kind: "ext", label: extListen.title || "Listening (External)", detail: "External song" };
+      }
+      if (snd.music) {
+        return { on: false, kind: "ready", label: "Radio ready (tap ▶ Music)", detail: "" };
+      }
+      return { on: false, kind: "none", label: "Not listening", detail: "" };
+    };
+
+    window.syncListenUi = function () {
+      var info = currentListeningInfo();
+      var bar = $("tapeListenBar"), kk = $("tapeListenKicker"), tt = $("tapeListenTitle");
+      if (bar) bar.classList.toggle("on", info.on);
+      if (kk) kk.textContent = info.on ? ("NOW LISTENING · " + (info.detail || "Audio")) : "NOT LISTENING";
+      if (tt) tt.textContent = info.label;
+      var mt = $("tapeMusToggle"), mn = $("tapeMusNext"), eb = $("tapeExtBtn");
+      if (mt) mt.textContent = snd.music ? "■ Music" : "▶ Music";
+      if (mn) mn.disabled = !(snd.music && mus.cur === "pl" && mmeta.playlist.length > 1);
+      if (eb) eb.setAttribute("aria-pressed", extListen.on ? "true" : "false");
+      if ($("tapeExtInp") && document.activeElement !== $("tapeExtInp") && extListen.title) $("tapeExtInp").value = extListen.title;
+      if (patOpen && opts.week && typeof renderPatterns === "function") renderPatterns();
+    };
+
+    setInterval(function () {
+      var info = currentListeningInfo();
+      if (info.on && !document.hidden && info.kind !== "rec") logEv("lm", info.label);
+    }, 180000);
+
+    if ($("tapeMusToggle")) $("tapeMusToggle").addEventListener("click", function () {
+      snd.music = !snd.music;
+      if ($("musOn")) $("musOn").checked = snd.music;
+      saveSnd();
+      if (snd.music) startMusic();
+      else { stopMusic(); updateAd(); }
+      tapeMechClick(false);
+      syncListenUi();
+    });
+    if ($("tapeMusNext")) $("tapeMusNext").addEventListener("click", function () {
+      if (!snd.music || mus.cur !== "pl") return;
+      mus.tok++; dropEl(); mus.pos++; playPl(false);
+      tapeMechClick(false);
+    });
+    if ($("tapeExtBtn")) $("tapeExtBtn").addEventListener("click", function () {
+      var row = $("tapeListenRow");
+      if (!row) return;
+      row.hidden = !row.hidden;
+      if (!row.hidden && $("tapeExtInp")) {
+        $("tapeExtInp").value = extListen.title || "";
+        $("tapeExtInp").focus();
+      }
+      tapeMechClick(false);
+    });
+    if ($("tapeExtSave")) $("tapeExtSave").addEventListener("click", function () {
+      var val = $("tapeExtInp") ? $("tapeExtInp").value.trim().slice(0, 64) : "";
+      extListen.on = true;
+      extListen.title = val || "Music / Podcast";
+      saveExtListen();
+      logEv("lx", extListen.title);
+      if ($("tapeListenRow")) $("tapeListenRow").hidden = true;
+      syncListenUi();
+      tapeMechClick(false);
+      tapeMsg("Now listening: \"" + extListen.title + "\".");
+    });
+    if ($("tapeExtOff")) $("tapeExtOff").addEventListener("click", function () {
+      extListen.on = false;
+      saveExtListen();
+      if ($("tapeListenRow")) $("tapeListenRow").hidden = true;
+      syncListenUi();
+      tapeMechClick(false);
+      tapeMsg("Marked as not listening.");
+    });
+    if ($("tapeExtInp")) $("tapeExtInp").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); if ($("tapeExtSave")) $("tapeExtSave").click(); }
+    });
+
     syncTapeUiOpts();
     drawTapeVuIdle();
     renderTapes();
+    syncListenUi();
   })();
 
   /* ---------- start ---------- */
   buildMap(); fillSelect(); applyOpts(); render(); initDb(); mediaInit(); phoneInit(); gcalInit();
+  if (typeof syncAppIcon === "function") syncAppIcon();
   setInterval(updateSky, 60000);
 })();
 </script>

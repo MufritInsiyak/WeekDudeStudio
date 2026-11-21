@@ -2,10 +2,15 @@ package com.missionmap.app;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
+import android.util.Base64;
 import android.view.View;
 import android.view.Window;
 import androidx.core.view.WindowCompat;
@@ -189,6 +194,50 @@ public class AndroidPermissionsPlugin extends Plugin {
             JSObject out = new JSObject();
             out.put("hidden", hide);
             call.resolve(out);
+        });
+    }
+
+    @PluginMethod
+    public void setAppIcon(PluginCall call) {
+        final String label = call.getString("label", "Mission Map");
+        final String dataUrl = call.getString("dataUrl", "");
+        final Activity activity = getActivity();
+        if (activity == null) {
+            call.resolve();
+            return;
+        }
+        Bitmap decoded = null;
+        try {
+            if (dataUrl != null && !dataUrl.isEmpty()) {
+                String b64 = dataUrl;
+                int comma = dataUrl.indexOf(',');
+                if (comma >= 0) b64 = dataUrl.substring(comma + 1);
+                byte[] bytes = Base64.decode(b64, Base64.DEFAULT);
+                decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+            }
+        } catch (Exception ignored) {}
+        if (decoded == null) {
+            try {
+                decoded = BitmapFactory.decodeResource(getContext().getResources(), R.mipmap.ic_launcher);
+            } catch (Exception ignored) {}
+        }
+        final Bitmap bmp = decoded;
+        activity.runOnUiThread(() -> {
+            try {
+                if (bmp != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        activity.setTaskDescription(
+                            new ActivityManager.TaskDescription.Builder()
+                                .setLabel(label)
+                                .setIcon(Icon.createWithBitmap(bmp))
+                                .build()
+                        );
+                    } else {
+                        activity.setTaskDescription(new ActivityManager.TaskDescription(label, bmp));
+                    }
+                }
+            } catch (Exception ignored) {}
+            call.resolve();
         });
     }
 }

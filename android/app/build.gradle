@@ -1,5 +1,12 @@
 apply plugin: 'com.android.application'
 
+def ciRunNum = (System.getenv("GITHUB_RUN_NUMBER") ?: "0").isInteger() ? System.getenv("GITHUB_RUN_NUMBER").toInteger() : 0
+def propVerCode = project.hasProperty("appVersionCode") ? project.property("appVersionCode").toString().toInteger() : 0
+def resolvedVersionCode = Math.max(2, propVerCode > 0 ? propVerCode : (ciRunNum > 0 ? 100 + ciRunNum : 2))
+def resolvedVersionName = project.hasProperty("appVersionName") ? project.property("appVersionName").toString() : (ciRunNum > 0 ? "1.0." + ciRunNum : "1.1")
+def ksPath = System.getenv("ANDROID_KEYSTORE_PATH") ?: (System.getProperty("user.home") + "/.android/debug.keystore")
+def ksFile = file(ksPath)
+
 android {
     namespace = "com.missionmap.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +14,8 @@ android {
         applicationId "com.missionmap.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode resolvedVersionCode
+        versionName resolvedVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +23,26 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        persistent {
+            if (ksFile.exists()) {
+                storeFile ksFile
+                storePassword System.getenv("ANDROID_KEYSTORE_PASS") ?: "android"
+                keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: "androiddebugkey"
+                keyPassword System.getenv("ANDROID_KEY_PASS") ?: "android"
+            }
+        }
+    }
     buildTypes {
+        debug {
+            if (ksFile.exists()) {
+                signingConfig signingConfigs.persistent
+            }
+        }
         release {
+            if (ksFile.exists()) {
+                signingConfig signingConfigs.persistent
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

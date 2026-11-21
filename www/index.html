@@ -94,7 +94,7 @@ body[data-view="notes"] .count { background: var(--paper); display: inline-block
 /* add bar */
 .add { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; }
 .add > * { min-width: 0; }
-.add #newText { grid-column: 1 / -1; }
+.add #newText, .add #addBtn { grid-column: 1 / -1; }
 .add input, .add select {
   background: var(--paper); color: var(--ink); border: 2px solid var(--ink); padding: 9px 10px; min-height: 44px; border-radius: 0;
 }
@@ -118,7 +118,17 @@ body[data-view="notes"] .count { background: var(--paper); display: inline-block
 /* layout */
 .layout { display: grid; gap: clamp(14px, 2vw, 24px); grid-template-columns: minmax(0, 1fr); align-items: start; }
 .layout > * { min-width: 0; }
-@media (min-width: 760px) {
+@media (max-width: 768px) {
+  .layout,
+  body[data-view="map"] .layout,
+  body[data-view="mine"] .layout { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .layout > * { width: 100%; min-width: 0; }
+  #listSec { order: -1; }
+  .mapcard,
+  body[data-view="map"] .mapcard,
+  body[data-view="mine"] .mapcard { position: relative; top: auto; width: 100%; }
+}
+@media (min-width: 769px) {
   body[data-view="map"] .layout,
   body[data-view="mine"] .layout { grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr); }
 }
@@ -365,6 +375,51 @@ body[data-view="errands"] .btn { --wob: #000; }
 
 .timer { font-size: 34px; letter-spacing: .08em; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .timer.low { color: var(--red); }
+/* GTA-style circular Pomodoro HUD */
+.pomo-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.pomo-hud {
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border-radius: 10px;
+  background: radial-gradient(circle at 68% 50%, rgba(28, 25, 20, .86), rgba(10, 10, 8, .92));
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .5), inset 0 0 0 1px rgba(255, 255, 255, .14);
+  color: #fff; flex: none;
+}
+.pomo-cyc {
+  min-width: 44px; text-align: center;
+  font-family: "Smash", "Bangers", "Permanent Marker", sans-serif;
+  font-size: 28px; font-weight: 700; line-height: 1; color: #fff;
+  text-shadow: -1.5px -1.5px 0 #111, 1.5px -1.5px 0 #111, -1.5px 1.5px 0 #111, 1.5px 1.5px 0 #111, 0 3px 6px rgba(0, 0, 0, .8);
+  letter-spacing: .03em; user-select: none;
+}
+.pomo-cyc small { display: block; font-family: inherit; font-size: 10px; letter-spacing: .12em; opacity: .82; margin-top: 3px; text-transform: uppercase; }
+.pomo-ring-box { position: relative; width: 138px; height: 138px; flex: none; }
+.pomo-svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 3px 8px rgba(0, 0, 0, .7)); }
+.pomo-arc { transition: stroke-dashoffset .35s linear, stroke .25s ease; }
+.pomo-hud-in {
+  position: absolute; inset: 18px; border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; pointer-events: none; gap: 1px;
+}
+.pomo-sketch { width: 42px; height: 34px; display: block; filter: drop-shadow(0 1.5px 1px #000); }
+.pomo-phase {
+  font-family: "Bangers", "Permanent Marker", "Smash", sans-serif;
+  font-size: 13px; letter-spacing: .09em; text-transform: uppercase; line-height: 1;
+  color: #fff; transform: rotate(-2deg);
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+}
+.pomo-clock {
+  font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.05;
+  color: #fff; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+}
+.pomo-clock.low { color: #ffd15c; }
+.pomo-side { flex: 1 1 200px; min-width: 0; display: grid; gap: 8px; }
+.pomo-opts { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.pomo-opts label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-soft); }
+.pomo-opts select { min-height: 36px; padding: 4px 6px; font-size: 13px; }
+@media (max-width: 460px) {
+  .pomo-hud { width: 100%; justify-content: center; padding: 10px 12px; }
+  .pomo-ring-box { width: 124px; height: 124px; }
+}
 .toast { position: fixed; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); max-width: 420px; margin: 0 auto; padding: 10px 14px; background: var(--ink); color: var(--paper); border: 2px solid var(--red); z-index: 50; text-align: center; font-size: 14px; }
 
 .xtra { display: block; color: var(--ink-soft); font-size: 12px; overflow-wrap: anywhere; }
@@ -386,10 +441,12 @@ body[data-view="errands"] .btn { --wob: #000; }
 .you-here { pointer-events: none; }
 .yh-bob { animation: yhBob 1.6s ease-in-out infinite; }
 @keyframes yhBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
-.yh-halo { fill: none; stroke: var(--paper); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; opacity: .9; }
+.yh-halo { fill: none; stroke: var(--paper); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; opacity: .92; }
 .yh-line { fill: none; stroke: var(--red); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.yh-scribble { fill: none; stroke: var(--red); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: .9; }
 .yh-box { fill: var(--paper); stroke: var(--red); stroke-width: 1.8; }
-.yh-txt { fill: var(--red); font-family: var(--font-type); font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-anchor: middle; }
+.yh-box-scr { fill: none; stroke: var(--red); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.yh-txt { fill: var(--red); font-family: var(--font-type); font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-anchor: middle; dominant-baseline: central; }
 body.calm .place.in-geo .gf-ring, body.calm .yh-bob { animation: none; }
 @media (prefers-reduced-motion: reduce) { .place.in-geo .gf-ring, .yh-bob { animation: none; } }
 .mapbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px; border-top: 2px solid var(--ink); background: var(--paper); color: var(--ink); font-size: 12px; }
@@ -545,10 +602,27 @@ body.calm .pinbtn { animation: none; }
 /* ===== v3: own pictures and sounds ===== */
 .thumb { flex: none; width: 44px; height: 44px; border: 2px solid var(--ink); background: #fff; overflow: hidden; }
 .thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.pic { flex: none; align-self: center; font-size: 12px; letter-spacing: .04em; padding: 6px 8px; border: 1px dashed var(--ink-soft); background: transparent; color: var(--ink-soft); cursor: pointer; position: relative; min-width: 40px; text-align: center; }
-.pic:hover { color: var(--red); border-color: var(--red); }
-.pic input { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 0; }
-.add .picpick { grid-column: 1 / -1; justify-self: start; }
+.list-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 6px 0 4px; }
+.list-head h2 { margin: 0; flex: 1 1 auto; }
+.notes-bar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin: 0 0 10px; }
+.edit-mode-btn {
+  margin-left: auto; flex: none; min-height: 34px; padding: 4px 10px; border: 2px solid var(--ink);
+  background: var(--paper); color: var(--ink); font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+}
+.edit-mode-btn:hover { border-color: var(--red); color: var(--red); }
+.edit-mode-btn[aria-pressed="true"] { background: var(--red); border-color: var(--red); color: var(--on-red); }
+.edit-mode-hint { font-size: 12px; color: var(--red); letter-spacing: .04em; font-weight: 700; }
+body[data-view="notes"] .edit-mode-hint, body[data-view="wanted"] .edit-mode-hint {
+  background: var(--paper); color: var(--red); padding: 2px 8px; border: 1px solid var(--red);
+}
+#listSec.edit-mode .paper .item .row,
+#listSec.edit-mode .note .row { cursor: pointer; }
+#listSec.edit-mode .paper .item:hover { background: rgba(196, 56, 43, .08); }
+#listSec.edit-mode .paper .item .row:hover .t,
+#listSec.edit-mode .note:hover .t { color: var(--red); }
+#listSec.edit-mode .note { outline: 2px dashed var(--red); outline-offset: 2px; }
+.add .picpick { grid-column: auto; justify-self: start; }
+.add-pic-row { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .slots { display: grid; gap: 6px; }
 .slot { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: center; }
 .slot .sn { font-size: 14px; }
@@ -653,6 +727,7 @@ body.wob-all [data-wa] { border-color: transparent !important; }
 
 
 /* ===== v16: missions first, floating add button, bigger touch targets ===== */
+html { scroll-padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
 .wrap { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
 .fab { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 25; width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--ink); background: var(--red); color: var(--on-red); font-size: 34px; line-height: 1; padding: 0 0 4px; box-shadow: 3px 3px 0 rgba(0, 0, 0, .35); transition: transform .2s; }
 .fab.x { transform: rotate(45deg); }
@@ -661,8 +736,7 @@ body.wob-all [data-wa] { border-color: transparent !important; }
 .sheethead { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; letter-spacing: .08em; text-transform: uppercase; font-size: 13px; }
 .sheethead b { font-weight: 400; }
 .toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); max-width: calc(100vw - 24px); }
-@media (max-width: 759px) { #listSec { order: -1; } }
-@media (min-width: 760px) {
+@media (min-width: 769px) {
   body[data-view="racer"] .layout,
   body[data-view="zine"] .layout,
   body[data-view="comic"] .layout { max-width: min(1040px, 100%); }
@@ -682,26 +756,54 @@ label.chk { display: flex; align-items: center; gap: 12px; min-height: 48px; }
 .suggest label.chk { font-size: 14px; }
 .seg button { min-height: 40px; }
 select, .opts select { min-height: 42px; }
-.pic { min-width: 44px; min-height: 44px; }
+.edit-mode-btn { min-height: 40px; }
 .foot, .msg { font-size: 13px; }
 .evform .chk input[type="checkbox"] { width: 24px; min-height: 24px; }
 .sample button { min-height: 44px; padding: 0 8px; }
 #raceMin { min-width: 64px; }
-body .btn.fab { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 40; width: auto; min-width: 104px; height: 52px; border-radius: 0; padding: 0 22px; background: var(--paper); color: var(--red); border: 2px solid var(--red); --wob: var(--red); font-size: 18px; letter-spacing: .14em; text-transform: uppercase; box-shadow: 3px 3px 0 rgba(0, 0, 0, .3); transform: none; }
+.days-mob-tog { display: none; }
+@media (max-width: 640px) {
+  .days-mob-tog { display: inline-flex; }
+  .week .days.views { order: -1; }
+  .days.mob-collapsed { display: none; }
+}
+body .btn.fab { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 40; width: auto; min-width: 104px; height: 52px; border-radius: 0; padding: 0 22px; background: var(--paper); color: var(--red); border: 2px solid var(--red); --wob: var(--red); font-size: 18px; letter-spacing: .14em; text-transform: uppercase; box-shadow: 3px 3px 0 rgba(0, 0, 0, .3); transform: none; touch-action: manipulation; }
 body .btn.fab:active { transform: translateY(1px); }
+@media (max-width: 768px) {
+  html { scroll-padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+  body { padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
+  .wrap { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+  .layout,
+  body[data-view="map"] .layout,
+  body[data-view="mine"] .layout { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .layout > * { width: 100%; min-width: 0; }
+  #listSec { order: -1; }
+  .mapcard,
+  body[data-view="map"] .mapcard,
+  body[data-view="mine"] .mapcard { position: relative; top: auto; width: 100%; }
+  .add.sheet { max-height: calc(100dvh - 16px); padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+  .toast { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+  body .btn.fab { min-width: 84px; height: 46px; padding: 0 14px; font-size: 15px; letter-spacing: .11em; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+}
 @media (max-width: 520px) {
-  body { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+  html { scroll-padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+  body { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+  .wrap { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
   .head { gap: 8px; }
   .seg button { padding: 6px 10px; font-size: 12px; min-height: 36px; }
   .head-act .btn { padding: 6px 10px; font-size: 11.5px; min-height: 36px; }
   .paper { padding: 8px 10px 12px; }
   .t { font-size: clamp(21px, 6vw, 24px); }
+  .mapbar { gap: 6px; padding: 6px; }
+  .mapbar .btn, .mapvar-sel { min-height: 36px; padding: 5px 8px; font-size: 11.5px; }
   .days { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .days.mob-collapsed { display: none; }
   .days.views { display: flex; flex-wrap: wrap; }
   .days .daybtn { min-width: 0; width: 100%; }
   .views .daybtn, .views .daybtn.wrapbtn { width: auto; flex: 1 1 auto; justify-content: center; }
   .calday { min-height: 42px; padding: 3px 4px; }
   .calday-slot { grid-template-columns: 44px minmax(0, 1fr); }
+  .add.sheet { max-height: calc(100dvh - 12px); padding: 12px 12px calc(76px + env(safe-area-inset-bottom, 0px)); }
   .toast { bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
   body .btn.fab { min-width: 78px; height: 44px; padding: 0 12px; font-size: 14px; letter-spacing: .1em; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
 }
@@ -1375,6 +1477,14 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
 @keyframes tapeSpin { to { transform: rotate(360deg); } }
 @keyframes tapeSpinRev { to { transform: rotate(-360deg); } }
 @keyframes tapePulse { 0%, 100% { opacity: 1; } 50% { opacity: .38; } }
+@media (max-width: 768px) {
+  .tape-dock {
+    right: calc(max(12px, env(safe-area-inset-right, 0px)) + 94px);
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    max-width: calc(100vw - 116px);
+  }
+  .tape-tab { min-height: 46px; padding: 6px 12px; }
+}
 @media (max-width: 520px) {
   .tape-dock {
     right: calc(max(12px, env(safe-area-inset-right, 0px)) + 88px);
@@ -1747,7 +1857,7 @@ body.calm .tape-led-dot { animation: none !important; }
 
   <div class="scrim" id="scrim" hidden></div>
   <form class="add sheet" id="addForm" autocomplete="off" aria-label="Add a mission" hidden>
-    <div class="sheethead"><b>New mission</b><button class="btn ghost" type="button" id="addClose">Cancel</button></div>
+    <div class="sheethead"><b id="addTitle">New mission</b><button class="btn ghost" type="button" id="addClose">Cancel</button></div>
     <input id="newText" maxlength="80" placeholder="New mission" aria-label="New mission">
     <select id="newPlace" aria-label="Where"></select>
     <select id="newPriority" aria-label="Priority">
@@ -1755,9 +1865,13 @@ body.calm .tape-led-dot { animation: none !important; }
       <option value="medium" selected>Medium priority</option>
       <option value="high">High priority</option>
     </select>
+    <input id="newDate" type="date" aria-label="Date">
     <button class="btn" type="submit" id="addBtn">Add</button>
     <input class="where" id="newWhere" maxlength="120" placeholder="Real place or address (optional, for Maps)" aria-label="Real place or address">
-    <label class="btn ghost filebtn picpick" id="newPicLbl">Add a photo<input type="file" id="newPic" accept="image/*"></label>
+    <div class="add-pic-row">
+      <label class="btn ghost filebtn picpick" id="newPicLbl">Add a photo<input type="file" id="newPic" accept="image/*"></label>
+      <button class="btn ghost" type="button" id="newPicClear" hidden>Remove photo</button>
+    </div>
     <input class="bring" id="newBring" maxlength="80" placeholder="Bring (optional): bag, ID, the parcel" aria-label="Things to bring" hidden>
   </form>
 
@@ -1831,6 +1945,7 @@ body.calm .tape-led-dot { animation: none !important; }
         <button class="btn ghost" id="geoToggleBtn" type="button" aria-pressed="false">Geofence: Off</button>
         <button class="btn ghost" id="geoEditBtn" type="button">Fence icon</button>
         <select id="mapVariantBar" class="mapvar-sel" aria-label="Map variant"></select>
+        <button class="btn ghost" id="exportMapBtn" type="button">Export PNG</button>
         <span id="pinCount"></span>
         <span class="geostatus" id="geoStatus" hidden></span>
       </div>
@@ -1874,7 +1989,11 @@ body.calm .tape-led-dot { animation: none !important; }
     <section id="listSec">
       <div class="paper" id="paper">
         <div class="rc-head" aria-hidden="true"><div>Errand receipt</div><div id="rcDate"></div><div class="dash"></div></div>
-        <h2 id="listTitle">Missions</h2>
+        <div class="list-head" id="listHead">
+          <h2 id="listTitle">Missions</h2>
+          <span class="edit-mode-hint" id="editModeHint" hidden>Tap a mission to edit</span>
+          <button class="edit-mode-btn" id="editModeBtn" type="button" aria-pressed="false" aria-label="Select a mission to edit">Edit</button>
+        </div>
         <div class="filter" id="filter" hidden></div>
         <ul class="missions" id="list"></ul>
         <div class="rc-foot" aria-hidden="true"><div class="dash"></div><div class="rc-sum"><span id="rcItems"></span><span id="rcDone"></span></div><div class="rc-bar"></div><div>Thank you. Come again.</div></div>
@@ -1883,6 +2002,7 @@ body.calm .tape-led-dot { animation: none !important; }
           <button id="clearSamples" type="button">Clear samples</button>
         </div>
       </div>
+      <div class="notes-bar" id="notesBar" hidden></div>
       <ul class="notes" id="notesList" hidden></ul>
     </section>
   </main>
@@ -1893,20 +2013,52 @@ body.calm .tape-led-dot { animation: none !important; }
       <a class="btn ghost" id="routeBtn" target="_blank" rel="noopener noreferrer" hidden>Plan route</a>
     </div>
     <section class="suggest" id="sug" hidden></section>
-    <section class="suggest race" id="race" hidden aria-label="Race the clock">
-      <h2>Race the clock</h2>
-      <div class="row-actions" id="raceIdle">
-        <label class="chk" for="raceMin">Minutes
-          <select id="raceMin"><option value="10">10</option><option value="20">20</option><option value="40" selected>40</option><option value="60">60</option></select>
-        </label>
-        <button class="btn" id="raceGo" type="button">Start race</button>
+    <section class="suggest race" id="race" hidden aria-label="Pomodoro watch">
+      <h2>Pomodoro Watch &middot; Race the Clock</h2>
+      <div class="pomo-wrap">
+        <div class="pomo-hud" id="pomoHud">
+          <div class="pomo-cyc" id="pomoCyc">&infin;<small>Loop</small></div>
+          <div class="pomo-ring-box">
+            <svg class="pomo-svg" viewBox="0 0 120 120" aria-hidden="true">
+              <circle cx="60" cy="60" r="53" fill="rgba(18,16,12,.72)" stroke="#ffffff" stroke-width="2.6"/>
+              <circle cx="60" cy="60" r="46" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="11"/>
+              <circle id="pomoArc" class="pomo-arc" cx="60" cy="60" r="46" fill="none" stroke="#289a47" stroke-width="11" stroke-linecap="butt" transform="rotate(-90 60 60)"/>
+              <circle cx="60" cy="60" r="40" fill="none" stroke="#ffffff" stroke-width="2"/>
+              <rect x="57.6" y="3.5" width="4.8" height="16" rx="1" fill="#ffffff"/>
+            </svg>
+            <div class="pomo-hud-in">
+              <svg class="pomo-sketch" id="pomoIcon" viewBox="0 0 48 38" aria-hidden="true">
+                <g fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 32V15a2 2 0 0 1 4 0v9m0-12V8a2 2 0 0 1 4 0v14m0-12a2 2 0 0 1 4 0v13m0-9a2 2 0 0 1 4 0v13c0 5-3.5 9-8.5 9H21c-4.2 0-7-3-7-7v-7a2 2 0 0 1 4 0v4"/>
+                </g>
+              </svg>
+              <span class="pomo-phase" id="pomoPhase">FOCUS</span>
+              <span class="pomo-clock" id="raceTime">25:00</span>
+            </div>
+          </div>
+        </div>
+        <div class="pomo-side">
+          <div class="pomo-opts" id="raceIdle">
+            <label for="raceMin">Focus
+              <select id="raceMin"><option value="15">15m</option><option value="25" selected>25m</option><option value="40">40m</option><option value="50">50m</option></select>
+            </label>
+            <label for="raceBreak">Break
+              <select id="raceBreak"><option value="3">3m</option><option value="5" selected>5m</option><option value="10">10m</option><option value="15">15m</option></select>
+            </label>
+            <label for="raceCycles">Cycles
+              <select id="raceCycles"><option value="0" selected>Loop &infin;</option><option value="4">4 rounds</option><option value="1">Single</option></select>
+            </label>
+          </div>
+          <div class="row-actions" id="raceBtns">
+            <button class="btn" id="raceGo" type="button">Start focus</button>
+            <button class="btn ghost" id="racePause" type="button" hidden>Pause</button>
+            <button class="btn ghost" id="raceSkip" type="button" hidden>Skip phase</button>
+            <button class="btn ghost" id="raceStop" type="button" hidden>Reset</button>
+          </div>
+          <div class="msg" id="raceInfo">Pick your focus &amp; break intervals and start the watch.</div>
+          <div class="msg" id="raceMsg" role="status"></div>
+        </div>
       </div>
-      <div id="raceRun" hidden>
-        <div class="timer" id="raceTime">00:00</div>
-        <div class="msg" id="raceInfo"></div>
-        <div class="row-actions"><button class="btn ghost" id="raceStop" type="button">Give up</button></div>
-      </div>
-      <div class="msg" id="raceMsg" role="status"></div>
     </section>
     <section class="practice" id="practice" hidden aria-label="Daily practice"></section>
   </section>
@@ -2065,7 +2217,7 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 provider.addScope("https://www.googleapis.com/auth/calendar.events");
 provider.addScope("https://www.googleapis.com/auth/calendar.calendarlist.readonly");
-provider.setCustomParameters({ prompt: "consent", access_type: "offline" });
+provider.setCustomParameters({ prompt: "select_account" });
 
 // Strictly in-memory OAuth access token cache (never persisted to localStorage/sessionStorage)
 let cachedAccessToken = null;
@@ -2089,13 +2241,21 @@ window.__gcalAuth = {
   getToken() { return cachedAccessToken; },
   clearToken() { cachedAccessToken = null; },
   async signIn() {
-    const result = await signInWithPopup(auth, provider);
-    const credential = GoogleAuthProvider.credentialFromResult(result);
-    cachedAccessToken = credential && credential.accessToken ? credential.accessToken : null;
-    if (!cachedAccessToken) throw new Error("Google did not return a calendar access token. Please try again.");
-    currentUser = result.user ? { uid: result.user.uid, email: result.user.email || "", displayName: result.user.displayName || "" } : currentUser;
-    listeners.forEach((fn) => { try { fn(currentUser); } catch (e) {} });
-    return { token: cachedAccessToken, user: currentUser };
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      cachedAccessToken = credential && credential.accessToken ? credential.accessToken : null;
+      if (!cachedAccessToken) throw new Error("Google did not return a calendar access token. Please allow Calendar access when signing in.");
+      currentUser = result.user ? { uid: result.user.uid, email: result.user.email || "", displayName: result.user.displayName || "" } : currentUser;
+      listeners.forEach((fn) => { try { fn(currentUser); } catch (e) {} });
+      return { token: cachedAccessToken, user: currentUser };
+    } catch (err) {
+      const code = err && err.code ? String(err.code) : "";
+      if (code === "auth/popup-blocked") throw new Error("Sign-in popup was blocked by the browser. Allow popups for this site and try again.");
+      if (code === "auth/popup-closed-by-user") throw new Error("Sign-in window was closed before finishing.");
+      if (code === "auth/unauthorized-domain") throw new Error("This domain (" + location.hostname + ") is not listed under Firebase Authorized Domains.");
+      throw err;
+    }
   },
   async signOut() {
     cachedAccessToken = null;
@@ -2265,9 +2425,9 @@ window.__gcalAuth = {
 
   var KEY = "mission-map-v1", XKEY = "mission-map-extra", VKEY = "mission-map-view", EKEY = "mission-map-evil";
   var items = [], pins = [], notes = [], visited = {}, geofences = {}, stats = { cash: 0, races: 0, best: {}, unlocked: {} };
-  var events = [], view = "map", evil = false, filter = null, dayFilter = null, wrapOpen = false, patOpen = false, prodOpen = false;
+  var events = [], view = "map", evil = false, filter = null, dayFilter = null, wrapOpen = false, patOpen = false, prodOpen = false, daysMobOpen = false;
   var lastToggled = null, lastAdded = null, ref = null, queue = Promise.resolve();
-  var dropping = false, tempPin = null, hoverPin = null, race = null, raceTimer = null, nbEditId = null;
+  var dropping = false, tempPin = null, hoverPin = null, race = null, raceTimer = null, nbEditId = null, editingId = null, editMode = false;
   var geoPos = null, geoWatchId = null, geoInside = {}, geoNearest = null, geoErr = "";
 
   var $ = function (id) { return document.getElementById(id); };
@@ -2522,41 +2682,106 @@ window.__gcalAuth = {
     if (!gf) return base;
     return base + Math.min(8, Math.round(Math.max(0, gf.radius - 50) / 140));
   }
+  var yhTimer = null;
+  function yhCirclePath(cx, cy, r) {
+    function j(a) { return (Math.random() - 0.5) * 2 * a; }
+    var d = "", steps = 20, endAng = Math.PI * 2.55;
+    for (var i = 0; i <= steps; i++) {
+      var a = (i / steps) * endAng - 0.5;
+      var rr = r + j(2.6);
+      var x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr;
+      d += (i === 0 ? "M" : " L") + x.toFixed(1) + " " + y.toFixed(1);
+    }
+    return d;
+  }
+  function yhBoxPath(x, y, w, h) {
+    function j(a) { return (Math.random() - 0.5) * 2 * a; }
+    var pts = [
+      [x + j(1.2), y + j(1.2)],
+      [x + w / 2 + j(1.6), y + j(1.2)],
+      [x + w + j(1.2), y + j(1.2)],
+      [x + w + j(1.2), y + h / 2 + j(1.4)],
+      [x + w + j(1.2), y + h + j(1.2)],
+      [x + w / 2 + j(1.6), y + h + j(1.2)],
+      [x + j(1.2), y + h + j(1.2)],
+      [x + j(1.2), y + h / 2 + j(1.4)],
+      [x + 1 + j(1.2), y + 2 + j(1.2)]
+    ];
+    return "M" + pts.map(function (q) { return q[0].toFixed(1) + " " + q[1].toFixed(1); }).join(" L");
+  }
+  function scribbleYouHere() {
+    var yh = $("youHereLayer"); if (!yh) return;
+    var nodes = yh.querySelectorAll(".you-here");
+    for (var i = 0; i < nodes.length; i++) {
+      var g = nodes[i];
+      var px = parseFloat(g.getAttribute("data-px")), py = parseFloat(g.getAttribute("data-py")), r = parseFloat(g.getAttribute("data-r"));
+      var bx = parseFloat(g.getAttribute("data-bx")), by = parseFloat(g.getAttribute("data-by")), bw = parseFloat(g.getAttribute("data-bw")), bh = parseFloat(g.getAttribute("data-bh"));
+      var sc = g.querySelector(".yh-scribble");
+      if (sc && isFinite(px)) sc.setAttribute("d", yhCirclePath(px, py, r));
+      var bs = g.querySelector(".yh-box-scr");
+      if (bs && isFinite(bx)) bs.setAttribute("d", yhBoxPath(bx, by, bw, bh));
+    }
+  }
   function renderYouHere() {
     var yh = $("youHereLayer"); if (!yh) return;
     yh.innerHTML = "";
+    var targets = [];
+    Object.keys(PLACES).forEach(function (k) {
+      if (geoInside[k] || (geofences[k] && (hoverPin === k || filter === k))) {
+        targets.push({ k: k, x: PLACES[k].x, y: PLACES[k].y, r: gfRingRadius(30, k) });
+      }
+    });
     pins.forEach(function (p) {
       var k = "p:" + p.id;
-      if (!(geoInside[k] || hoverPin === k || filter === k)) return;
-      var bw = 86, bh = 20;
-      var rightSide = p.x <= 265;
-      var above = p.y >= 64;
-      var bx = rightSide ? Math.min(394 - bw, p.x + 28) : Math.max(6, p.x - bw - 28);
-      var by = above ? Math.max(6, p.y - 54) : Math.min(294 - bh, p.y + 22);
-      var sx = rightSide ? bx + 12 : bx + bw - 12;
+      if (geoInside[k] || hoverPin === k || filter === k) {
+        targets.push({ k: k, x: p.x, y: p.y, r: gfRingRadius(24, k) });
+      }
+    });
+    targets.forEach(function (p) {
+      var bw = 92, bh = 21;
+      var rightSide = p.x <= 258;
+      var above = p.y >= 135;
+      var bx = rightSide ? Math.min(394 - bw, Math.max(6, p.x - bw / 2 + 24)) : Math.max(6, Math.min(394 - bw, p.x - bw / 2 - 24));
+      var by = above ? Math.max(6, p.y - p.r - bh - 18) : Math.min(294 - bh, p.y + p.r + 18);
+      var sx = bx + bw / 2;
       var sy = above ? by + bh : by;
-      var tx = Math.max(10, Math.min(390, p.x + (rightSide ? 10 : -10)));
-      var ty = Math.max(10, Math.min(290, above ? p.y - 22 : p.y - 2));
-      var cx = (sx + tx) / 2 + (rightSide ? 4 : -4);
-      var cy = above ? Math.max(sy + 4, ty - 2) : Math.min(sy - 4, ty + 2);
+      var tx = Math.max(10, Math.min(390, p.x + (rightSide ? 8 : -8)));
+      var ty = Math.max(10, Math.min(290, above ? p.y - p.r - 2 : p.y + p.r + 2));
+      var cx = (sx + tx) / 2 + (rightSide ? 6 : -6);
+      var cy = (sy + ty) / 2;
       var ang = Math.atan2(ty - cy, tx - cx), hs = 6.5;
       var a1x = tx - hs * Math.cos(ang - 0.55), a1y = ty - hs * Math.sin(ang - 0.55);
       var a2x = tx - hs * Math.cos(ang + 0.55), a2y = ty - hs * Math.sin(ang + 0.55);
       var arrowD = "M" + sx.toFixed(1) + " " + sy.toFixed(1) + " Q" + cx.toFixed(1) + " " + cy.toFixed(1) + " " + tx.toFixed(1) + " " + ty.toFixed(1);
       var headD = "M" + a1x.toFixed(1) + " " + a1y.toFixed(1) + " L" + tx.toFixed(1) + " " + ty.toFixed(1) + " L" + a2x.toFixed(1) + " " + a2y.toFixed(1);
-      var g = svgEl("g", { "class": "you-here" });
+      var scrR = p.r + 4;
+      var g = svgEl("g", {
+        "class": "you-here",
+        "data-px": p.x, "data-py": p.y, "data-r": scrR,
+        "data-bx": bx, "data-by": by, "data-bw": bw, "data-bh": bh
+      });
       var bob = svgEl("g", { "class": "yh-bob" });
-      bob.appendChild(svgEl("path", { "class": "yh-halo", d: arrowD }));
-      bob.appendChild(svgEl("path", { "class": "yh-halo", d: headD }));
-      bob.appendChild(svgEl("path", { "class": "yh-line", d: arrowD }));
-      bob.appendChild(svgEl("path", { "class": "yh-line", d: headD }));
-      bob.appendChild(svgEl("rect", { "class": "yh-box", x: bx, y: by, width: bw, height: bh, rx: 2 }));
-      var t = svgEl("text", { "class": "yh-txt", x: bx + bw / 2, y: by + 13.5 });
+      var rough = svgEl("g", { filter: "url(#rough)" });
+      rough.appendChild(svgEl("path", { "class": "yh-halo", d: yhCirclePath(p.x, p.y, scrR) }));
+      rough.appendChild(svgEl("path", { "class": "yh-scribble", d: yhCirclePath(p.x, p.y, scrR) }));
+      rough.appendChild(svgEl("path", { "class": "yh-halo", d: arrowD }));
+      rough.appendChild(svgEl("path", { "class": "yh-halo", d: headD }));
+      rough.appendChild(svgEl("path", { "class": "yh-line", d: arrowD }));
+      rough.appendChild(svgEl("path", { "class": "yh-line", d: headD }));
+      rough.appendChild(svgEl("rect", { "class": "yh-box", x: bx, y: by, width: bw, height: bh, rx: 2 }));
+      rough.appendChild(svgEl("path", { "class": "yh-box-scr", d: yhBoxPath(bx, by, bw, bh) }));
+      bob.appendChild(rough);
+      var t = svgEl("text", { "class": "yh-txt", x: bx + bw / 2, y: by + bh / 2 });
       t.textContent = "YOU ARE HERE";
       bob.appendChild(t);
       g.appendChild(bob);
       yh.appendChild(g);
     });
+    if (targets.length && !isReduced()) {
+      if (!yhTimer) yhTimer = setInterval(function () { if (!document.hidden && !isReduced()) scribbleYouHere(); }, 220);
+    } else if (yhTimer) {
+      clearInterval(yhTimer); yhTimer = null;
+    }
   }
   function renderPins(mine) {
     var layer = $("pinLayer"), act = document.activeElement, focusKey = act && act.getAttribute ? act.getAttribute("data-p") : null;
@@ -2623,7 +2848,15 @@ window.__gcalAuth = {
     row.appendChild(box);
     var th = thumbEl(it.id); if (th) row.appendChild(th);
     row.appendChild(wrap);
-    row.addEventListener("click", function () { toggle(it.id); });
+    row.addEventListener("click", function () {
+      if (editMode) {
+        editMode = false;
+        syncEditModeUi();
+        openEditMission(it.id);
+        return;
+      }
+      toggle(it.id);
+    });
     li.appendChild(row);
     if (it.where) {
       var go = el("a", "go", "Maps ↗");
@@ -2632,7 +2865,6 @@ window.__gcalAuth = {
       go.setAttribute("aria-label", "Open " + it.where + " in Maps");
       li.appendChild(go);
     }
-    var pc = picControl(it.id); if (pc) li.appendChild(pc);
     var del = el("button", "del", "×"); del.type = "button";
     del.setAttribute("aria-label", "Delete mission");
     del.addEventListener("click", function () { remove(it.id); });
@@ -2899,6 +3131,10 @@ window.__gcalAuth = {
     var box = $("week"); box.hidden = !opts.week;
     if (!opts.week) { $("wrap").hidden = true; if ($("patterns")) $("patterns").hidden = true; if ($("prodWidget")) $("prodWidget").hidden = true; if ($("cal")) $("cal").hidden = true; if (typeof syncTopPanels === "function") syncTopPanels(); return; }
     var days = weekDays(), t = todayKey(), el0 = $("days"), vw = $("views"); el0.innerHTML = ""; vw.innerHTML = "";
+    el0.classList.toggle("mob-collapsed", !daysMobOpen);
+    var totalWeekOpen = mine.filter(function (x) { return !x.done && days.indexOf(x.date) >= 0; }).length;
+    var activeDayIdx = dayFilter ? days.indexOf(dayFilter) : -1;
+    var activeDayLbl = dayFilter ? (activeDayIdx >= 0 ? DAYN[activeDayIdx] : dayFilter) : "All";
     var all = el("button", "daybtn", "All"); all.type = "button"; all.setAttribute("aria-pressed", dayFilter === null ? "true" : "false");
     all.addEventListener("click", function () { dayFilter = null; render(); });
     el0.appendChild(all);
@@ -2911,6 +3147,13 @@ window.__gcalAuth = {
       b.addEventListener("click", function () { dayFilter = dayFilter === k ? null : k; render(); fx("click"); });
       el0.appendChild(b);
     });
+    var dm = el("button", "daybtn wrapbtn days-mob-tog", "Days: " + activeDayLbl + " (" + totalWeekOpen + ") " + (daysMobOpen ? "▲" : "▼"));
+    dm.type = "button";
+    dm.setAttribute("aria-pressed", daysMobOpen ? "true" : "false");
+    dm.setAttribute("aria-expanded", daysMobOpen ? "true" : "false");
+    dm.setAttribute("aria-controls", "days");
+    dm.addEventListener("click", function () { daysMobOpen = !daysMobOpen; render(); fx("click"); });
+    vw.appendChild(dm);
     var fri = new Date().getDay() === 5;
     var w = el("button", "daybtn wrapbtn" + (fri ? " hot" : ""), "Wrap-up"); w.type = "button";
     w.setAttribute("aria-pressed", wrapOpen ? "true" : "false");
@@ -3508,8 +3751,11 @@ window.__gcalAuth = {
     tintReds();
     applyMedia();
     $("pinBtn").setAttribute("aria-pressed", evil ? "true" : "false");
-    $("newText").placeholder = evil ? "Something you shouldn't do" : "New mission";
-    $("addBtn").textContent = evil ? "Jot down" : "Add";
+    if (!editingId) {
+      $("newText").placeholder = evil ? "Something you shouldn't do" : "New mission";
+      $("addBtn").textContent = evil ? "Jot down" : "Add";
+      if ($("addTitle")) $("addTitle").textContent = evil ? "New shouldn't-do" : "New mission";
+    }
     $("day").textContent = dayName + (evil ? "" : "");
     var tb = document.querySelectorAll("#themeGrid .tbtn");
     for (var q = 0; q < tb.length; q++) tb[q].setAttribute("aria-pressed", tb[q].getAttribute("data-v") === view ? "true" : "false");
@@ -3517,8 +3763,11 @@ window.__gcalAuth = {
     $("mapcard").hidden = !showMap;
     $("paper").hidden = grid;
     $("notesList").hidden = !grid;
+    if (typeof syncEditModeHost === "function") syncEditModeHost(grid);
+    if (typeof syncEditModeUi === "function") syncEditModeUi();
     $("newBring").hidden = !opts.bring;
     $("race").hidden = !opts.race || evil;
+    if (typeof syncPomoHud === "function" && !$("race").hidden && !race) syncPomoHud();
 
     // map badges, fog, geofences, pins
     Object.keys(PLACES).forEach(function (k) {
@@ -3656,14 +3905,53 @@ window.__gcalAuth = {
     });
     items = items.filter(function (i) { return i.id !== id; }); dropPic(id); render(); persist(); fx("del");
   }
-  function add(text, place, where, bring, priority) {
-    text = (text || "").trim(); if (!text) return;
-    var it = cleanItem({ id: uid(), text: text, place: place, priority: priority, where: where, bring: bring, evil: evil, date: (opts.week && dayFilter) || todayKey() }, false);
-    if (!it) return;
+  function add(text, place, where, bring, priority, dateStr) {
+    text = (text || "").trim(); if (!text) return null;
+    var chosenDate = /^\d{4}-\d{2}-\d{2}$/.test(dateStr || "") ? dateStr : ((opts.week && dayFilter) || todayKey());
+    var it = cleanItem({ id: uid(), text: text, place: place, priority: priority, where: where, bring: bring, evil: evil, date: chosenDate }, false);
+    if (!it) return null;
     if (!evil && opts.hassles && Math.random() < 0.35) it.hassle = HASSLES[Math.floor(Math.random() * HASSLES.length)];
     items.unshift(it); lastAdded = it.id; logEv("a", it.evil ? "!" : it.place);
     render(); persist();
     fx(view === "receipt" && opts.print ? "print" : "add");
+    return it.id;
+  }
+  function syncEditModeHost(grid) {
+    var btn = $("editModeBtn"), hint = $("editModeHint"), head = $("listHead"), nbar = $("notesBar");
+    if (!btn || !head || !nbar) return;
+    nbar.hidden = !grid;
+    if (grid) {
+      if (hint && hint.parentNode !== nbar) nbar.appendChild(hint);
+      if (btn.parentNode !== nbar) nbar.appendChild(btn);
+    } else {
+      if (hint && hint.parentNode !== head) head.appendChild(hint);
+      if (btn.parentNode !== head) head.appendChild(btn);
+    }
+  }
+  function syncEditModeUi() {
+    var sec = $("listSec"), btn = $("editModeBtn"), hint = $("editModeHint");
+    if (sec) sec.classList.toggle("edit-mode", !!editMode);
+    if (btn) {
+      btn.setAttribute("aria-pressed", editMode ? "true" : "false");
+      btn.textContent = editMode ? "Cancel" : "Edit";
+    }
+    if (hint) hint.hidden = !editMode;
+  }
+  function openEditMission(id) {
+    var it = findItem(id); if (!it) return;
+    editingId = id; pendingPic = null; clearEditPic = false;
+    $("newText").value = it.text || "";
+    $("newPlace").value = it.place || "home";
+    $("newPriority").value = cleanPriority(it.priority);
+    $("newDate").value = it.date || todayKey();
+    $("newWhere").value = it.where || "";
+    $("newBring").value = it.bring || "";
+    if ($("addTitle")) $("addTitle").textContent = it.evil ? "Edit shouldn't-do" : "Edit mission";
+    $("addBtn").textContent = "Save";
+    var hasImg = !!urls["m:" + id];
+    $("newPicLbl").firstChild.nodeValue = hasImg ? "Change photo" : "Add a photo";
+    $("newPicClear").hidden = !hasImg;
+    addSheet(true);
   }
   function removePin(id) {
     pins = pins.filter(function (p) { return p.id !== id; });
@@ -3676,7 +3964,7 @@ window.__gcalAuth = {
   }
   function flipEvil() {
     evil = !evil; try { localStorage.setItem(EKEY, evil ? "1" : "0"); } catch (e) {}
-    filter = null; render(); fx("flip");
+    editMode = false; filter = null; render(); fx("flip");
     musicRefresh();
     if (typeof syncAppIcon === "function") syncAppIcon();
   }
@@ -3727,62 +4015,224 @@ window.__gcalAuth = {
     });
   }
 
-  /* ---------- race the clock ---------- */
+  /* ---------- pomodoro watch & race the clock ---------- */
+  var POMO_CIRC = 2 * Math.PI * 46;
+  var POMO_FOCUS_SVG = '<g fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 32V15a2 2 0 0 1 4 0v9m0-12V8a2 2 0 0 1 4 0v14m0-12a2 2 0 0 1 4 0v13m0-9a2 2 0 0 1 4 0v13c0 5-3.5 9-8.5 9H21c-4.2 0-7-3-7-7v-7a2 2 0 0 1 4 0v4"/></g>';
+  var POMO_BREAK_SVG = '<g fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 17h15v10a6 6 0 0 1-6 6h-3a6 6 0 0 1-6-6V17Z"/><path d="M29 19h3.5a3.5 3.5 0 0 1 0 7H29"/><path d="M18 12c0-2 2-2.5 2-4.5M24 12c0-2 2-2.5 2-4.5"/></g>';
   function fmt(s) { return pad(Math.floor(s / 60)) + ":" + pad(s % 60); }
   function findItem(id) { for (var i = 0; i < items.length; i++) if (items[i].id === id) return items[i]; return null; }
-  function startRace() {
-    var open = norm().filter(function (i) { return !i.done; });
-    if (!open.length) { $("raceMsg").textContent = "Add a mission first."; return; }
-    var mins = parseInt($("raceMin").value, 10) || 40;
-    race = { start: Date.now(), end: Date.now() + mins * 60000, ids: open.map(function (i) { return i.id; }), total: open.length };
-    $("raceIdle").hidden = true; $("raceRun").hidden = false; $("raceMsg").textContent = "";
-    clearInterval(raceTimer); raceTimer = setInterval(raceTick, 500); raceTick(); fx("click");
+  function racePending() { return race && race.ids ? race.ids.filter(function (id) { var it = findItem(id); return it && !it.done; }) : []; }
+  function setPomoRing(frac, phase, low, paused) {
+    var arc = $("pomoArc"), ico = $("pomoIcon"), ph = $("pomoPhase"), clk = $("raceTime");
+    if (!arc) return;
+    var f = Math.max(0, Math.min(1, frac));
+    arc.style.strokeDasharray = POMO_CIRC.toFixed(2);
+    arc.style.strokeDashoffset = (POMO_CIRC * (1 - f)).toFixed(2);
+    arc.setAttribute("stroke", phase === "break" ? "#3296d8" : (low ? "#e24a33" : "#289a47"));
+    if (ico) ico.innerHTML = phase === "break" ? POMO_BREAK_SVG : POMO_FOCUS_SVG;
+    if (ph) ph.textContent = paused ? "PAUSED" : (phase === "break" ? "BREAK" : "FOCUS");
+    if (clk) clk.classList.toggle("low", !!low);
   }
-  function racePending() { return race.ids.filter(function (id) { var it = findItem(id); return it && !it.done; }); }
-  function raceTick() {
+  function syncPomoHud() {
+    var mins = parseInt($("raceMin").value, 10) || 25;
+    var cycSel = $("raceCycles") ? parseInt($("raceCycles").value, 10) : 0;
+    var cycBox = $("pomoCyc");
+    if (!race) {
+      $("raceTime").textContent = fmt(mins * 60);
+      setPomoRing(1, "focus", false, false);
+      if (cycBox) cycBox.innerHTML = (cycSel === 0 ? "&infin;" : "0/" + cycSel) + "<small>" + (cycSel === 0 ? "Loop" : "Rounds") + "</small>";
+      if ($("raceInfo")) $("raceInfo").textContent = "Pick focus/break intervals and press Start focus.";
+      $("raceGo").hidden = false; $("racePause").hidden = true; $("raceSkip").hidden = true; $("raceStop").hidden = true;
+      $("raceMin").disabled = false; $("raceBreak").disabled = false; $("raceCycles").disabled = false;
+      return;
+    }
+    var left = race.paused ? race.remSec : Math.max(0, Math.ceil((race.end - Date.now()) / 1000));
+    var frac = race.durSec > 0 ? left / race.durSec : 0;
+    $("raceTime").textContent = fmt(left);
+    setPomoRing(frac, race.phase, race.phase === "focus" && left <= 60, race.paused);
+    if (cycBox) {
+      var head = race.maxRounds === 0 ? (race.round > 1 ? "&infin;&middot;" + race.round : "&infin;") : (race.round + "/" + race.maxRounds);
+      cycBox.innerHTML = head + "<small>" + (race.phase === "break" ? "Rest" : "Round") + "</small>";
+    }
+    if (race.phase === "focus") {
+      if (race.total > 0) $("raceInfo").textContent = "Focus round " + race.round + " · " + (race.total - racePending().length) + " of " + race.total + " cleared";
+      else $("raceInfo").textContent = "Focus round " + race.round + " · Stay locked in";
+    } else {
+      $("raceInfo").textContent = "Break time · Step away & recharge";
+    }
+    $("raceGo").hidden = true;
+    $("racePause").hidden = false;
+    $("racePause").textContent = race.paused ? "Resume" : "Pause";
+    $("raceSkip").hidden = false;
+    $("raceStop").hidden = false;
+    $("raceMin").disabled = true; $("raceBreak").disabled = true; $("raceCycles").disabled = true;
+  }
+  function beginPomoPhase(phase) {
+    var focusMins = parseInt($("raceMin").value, 10) || 25;
+    var breakMins = parseInt($("raceBreak").value, 10) || 5;
+    var maxRounds = parseInt($("raceCycles").value, 10) || 0;
+    var dur = (phase === "break" ? breakMins : focusMins) * 60;
+    var open = norm().filter(function (i) { return !i.done; });
+    race = {
+      phase: phase,
+      round: race ? race.round : 1,
+      maxRounds: maxRounds,
+      start: Date.now(),
+      durSec: dur,
+      end: Date.now() + dur * 1000,
+      paused: false,
+      remSec: dur,
+      ids: phase === "focus" ? open.map(function (i) { return i.id; }) : (race ? race.ids : []),
+      total: phase === "focus" ? open.length : (race ? race.total : 0),
+      wonRace: false
+    };
+    clearInterval(raceTimer); raceTimer = setInterval(raceTick, 250);
+    syncPomoHud();
+  }
+  function startRace() {
+    $("raceMsg").textContent = "";
+    race = null;
+    beginPomoPhase("focus");
+    fx("click");
+  }
+  function advancePomoPhase(manualSkip) {
     if (!race) return;
+    if (race.phase === "focus") {
+      if (!manualSkip) {
+        stats.cash += 10;
+        persist(); render();
+        fx("chime");
+        toast("Focus block done! +$10");
+      } else { fx("click"); }
+      if (race.maxRounds === 1) {
+        endRace(false, manualSkip ? "Focus stopped." : "Focus session complete! +$10.");
+        return;
+      }
+      $("raceMsg").textContent = manualSkip ? "Switched to break." : "Focus complete (+$10)! Enjoy your break.";
+      beginPomoPhase("break");
+    } else {
+      fx(manualSkip ? "click" : "chime");
+      if (race.maxRounds > 0 && race.round >= race.maxRounds) {
+        endRace(false, "All " + race.maxRounds + " Pomodoro rounds complete!");
+        return;
+      }
+      race.round++;
+      $("raceMsg").textContent = "Break over — Focus round " + race.round + "!";
+      beginPomoPhase("focus");
+    }
+  }
+  function raceTick() {
+    if (!race || race.paused) return;
     var left = Math.max(0, Math.ceil((race.end - Date.now()) / 1000));
-    $("raceTime").textContent = fmt(left); $("raceTime").classList.toggle("low", left <= 60);
-    $("raceInfo").textContent = (race.total - racePending().length) + " of " + race.total + " cleared";
-    if (left <= 0) endRace(false, "Time's up.");
+    syncPomoHud();
+    if (left <= 0) advancePomoPhase(false);
   }
   function checkRace() {
-    if (!race) return;
-    if (Date.now() >= race.end) { endRace(false, "Time's up."); return; }
-    raceTick();
-    if (race && !racePending().length) endRace(true);
-  }
-  function endRace(won, msg) {
-    var r = race; if (!r) return;
-    race = null; clearInterval(raceTimer);
-    $("raceIdle").hidden = false; $("raceRun").hidden = true;
-    if (won) {
-      var secs = Math.max(1, Math.round((Date.now() - r.start) / 1000)), key = String(r.total), prev = stats.best[key], nb = !prev || secs < prev;
+    if (!race || race.phase !== "focus" || !race.total || race.wonRace) return;
+    if (!race.paused && Date.now() >= race.end) { raceTick(); return; }
+    if (!racePending().length) {
+      race.wonRace = true;
+      var secs = Math.max(1, Math.round((Date.now() - race.start) / 1000)), key = String(race.total), prev = stats.best[key], nb = !prev || secs < prev;
       if (nb) stats.best[key] = secs;
       stats.races++; stats.cash += 25;
-      $("raceMsg").textContent = "Cleared " + r.total + " in " + fmt(secs) + (nb ? ". New best!" : ". Best: " + fmt(prev) + ".") + " +$25.";
+      $("raceMsg").textContent = "Cleared " + race.total + " in " + fmt(secs) + (nb ? ". New best!" : ". Best: " + fmt(prev) + ".") + " +$25.";
       fx("chime"); persist(); render(); checkAch();
-    } else { $("raceMsg").textContent = msg || "Race cancelled."; if (msg) fx("del"); }
+    }
+    syncPomoHud();
+  }
+  function endRace(won, msg) {
+    race = null; clearInterval(raceTimer); raceTimer = null;
+    if (msg) $("raceMsg").textContent = msg;
+    syncPomoHud();
+    if (won) fx("chime"); else if (msg && /reset|stopped/i.test(msg)) fx("del");
   }
   $("raceGo").addEventListener("click", startRace);
-  $("raceStop").addEventListener("click", function () { endRace(false, "Race cancelled."); });
+  $("racePause").addEventListener("click", function () {
+    if (!race) return;
+    if (race.paused) {
+      race.paused = false;
+      race.end = Date.now() + race.remSec * 1000;
+    } else {
+      race.remSec = Math.max(0, Math.ceil((race.end - Date.now()) / 1000));
+      race.paused = true;
+    }
+    syncPomoHud(); fx("click");
+  });
+  $("raceSkip").addEventListener("click", function () { advancePomoPhase(true); });
+  $("raceStop").addEventListener("click", function () { endRace(false, "Watch reset."); });
+  $("raceMin").addEventListener("change", function () { if (!race) syncPomoHud(); });
+  $("raceCycles").addEventListener("change", function () { if (!race) syncPomoHud(); });
+  syncPomoHud();
 
-  /* ---------- wiring: add form, map, pin ---------- */
+  /* ---------- wiring: add & edit mission form, map, pin ---------- */
   $("addForm").addEventListener("submit", function (e) {
     e.preventDefault();
-    add($("newText").value, $("newPlace").value, $("newWhere").value, $("newBring").value, $("newPriority").value);
-    $("newText").value = ""; $("newWhere").value = ""; $("newBring").value = ""; $("newPriority").value = "medium";
+    var txt = $("newText").value.trim(); if (!txt) return;
+    if (editingId) {
+      var it = findItem(editingId);
+      if (it) {
+        it.text = txt.slice(0, 80);
+        it.place = $("newPlace").value || "home";
+        it.priority = cleanPriority($("newPriority").value);
+        if (/^\d{4}-\d{2}-\d{2}$/.test($("newDate").value)) it.date = $("newDate").value;
+        it.where = str($("newWhere").value, 120);
+        it.bring = str($("newBring").value, 80);
+        var saveId = it.id;
+        var picToPut = pendingPic;
+        var doClear = clearEditPic;
+        pendingPic = null; clearEditPic = false;
+        if (doClear) dropPic(saveId);
+        render(); persist();
+        if (picToPut) putImg("m:" + saveId, picToPut).then(function () { render(); });
+        fx("click");
+      }
+      addSheet(false);
+      return;
+    }
+    var addedId = add(txt, $("newPlace").value, $("newWhere").value, $("newBring").value, $("newPriority").value, $("newDate").value);
+    if (addedId && pendingPic) {
+      var b = pendingPic; pendingPic = null;
+      putImg("m:" + addedId, b).then(function () { render(); });
+    }
     addSheet(false);
   });
   function addSheet(on) {
     $("addForm").hidden = !on; $("scrim").hidden = !on; $("fab").setAttribute("aria-expanded", String(on));
     $("fab").textContent = on ? "Close" : "Add";
-    if (on) { try { $("newText").focus(); } catch (e) {} } else { try { $("fab").focus({ preventScroll: true }); } catch (e) {} }
+    if (on) {
+      if (!editingId) {
+        $("newText").value = ""; $("newWhere").value = ""; $("newBring").value = ""; $("newPriority").value = "medium";
+        $("newDate").value = (opts.week && dayFilter) || todayKey();
+        if ($("addTitle")) $("addTitle").textContent = evil ? "New shouldn't-do" : "New mission";
+        $("addBtn").textContent = evil ? "Jot down" : "Add";
+        $("newPicLbl").firstChild.nodeValue = "Add a photo";
+        $("newPicClear").hidden = true;
+        pendingPic = null; clearEditPic = false;
+      }
+      try { $("newText").focus(); } catch (e) {}
+    } else {
+      editingId = null; pendingPic = null; clearEditPic = false;
+      $("newText").value = ""; $("newWhere").value = ""; $("newBring").value = ""; $("newPriority").value = "medium";
+      $("newPicLbl").firstChild.nodeValue = "Add a photo";
+      $("newPicClear").hidden = true;
+      try { $("fab").focus({ preventScroll: true }); } catch (e) {}
+    }
   }
-  $("fab").addEventListener("click", function () { addSheet($("addForm").hidden); fx("click"); });
+  $("fab").addEventListener("click", function () { editMode = false; syncEditModeUi(); editingId = null; addSheet($("addForm").hidden); fx("click"); });
+  if ($("editModeBtn")) $("editModeBtn").addEventListener("click", function () {
+    var visCount = $("list").querySelectorAll(".item").length + $("notesList").querySelectorAll(".note").length;
+    if (!visCount) { toast("No missions to edit here."); return; }
+    editMode = !editMode;
+    syncEditModeUi();
+    fx("click");
+  });
   $("addClose").addEventListener("click", function () { addSheet(false); });
   $("scrim").addEventListener("click", function () { addSheet(false); });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("addForm").hidden) addSheet(false); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    if (!$("addForm").hidden) addSheet(false);
+    else if (editMode) { editMode = false; syncEditModeUi(); }
+  });
   $("pinBtn").addEventListener("click", flipEvil);
   $("clearSamples").addEventListener("click", function () { items = items.filter(function (i) { return !i.sample; }); render(); persist(); });
   function toggleFilter(k) { filter = filter === k ? null : k; render(); }
@@ -3798,22 +4248,25 @@ window.__gcalAuth = {
     if (g) toggleFilter(g.getAttribute("data-p"));
   });
   $("map").addEventListener("mouseover", function (e) {
-    var g = e.target.closest ? e.target.closest(".place.pin") : null;
+    var g = e.target.closest ? e.target.closest(".place") : null;
     var k = g ? g.getAttribute("data-p") : null;
+    if (k && !isPinKey(k) && !geofences[k] && !geoInside[k]) k = null;
     if (hoverPin !== k) { hoverPin = k; renderYouHere(); }
   });
   $("map").addEventListener("mouseleave", function () {
     if (hoverPin !== null) { hoverPin = null; renderYouHere(); }
   });
   $("map").addEventListener("focusin", function (e) {
-    var g = e.target.closest ? e.target.closest(".place.pin") : null;
+    var g = e.target.closest ? e.target.closest(".place") : null;
     var k = g ? g.getAttribute("data-p") : null;
+    if (k && !isPinKey(k) && !geofences[k] && !geoInside[k]) k = null;
     if (hoverPin !== k) { hoverPin = k; renderYouHere(); }
   });
   $("map").addEventListener("focusout", function () {
     setTimeout(function () {
       var act = document.activeElement;
-      var k = act && act.classList && act.classList.contains("pin") ? act.getAttribute("data-p") : null;
+      var k = act && act.classList && act.classList.contains("place") ? act.getAttribute("data-p") : null;
+      if (k && !isPinKey(k) && !geofences[k] && !geoInside[k]) k = null;
       if (hoverPin !== k) { hoverPin = k; renderYouHere(); }
     }, 0);
   });
@@ -3854,6 +4307,410 @@ window.__gcalAuth = {
     if (!$("geoForm").hidden) { fillGeoTargets(k); syncGeoFormFields(); }
     render(); persist(); fx("pin"); toast("Pin saved. It is selected in the Where list.");
   });
+  var mapExporting = false;
+  function loadHtmlImg(src) {
+    return new Promise(function (res, rej) {
+      var im = new Image();
+      im.onload = function () { res(im); };
+      im.onerror = rej;
+      im.src = src;
+    });
+  }
+  function imgToDataUrl(src) {
+    if (!src) return Promise.resolve("");
+    if (src.indexOf("data:") === 0) return Promise.resolve(src);
+    return loadHtmlImg(src).then(function (im) {
+      var w = im.naturalWidth || 64, h = im.naturalHeight || 64;
+      var c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      c.getContext("2d").drawImage(im, 0, 0, w, h);
+      return c.toDataURL("image/png");
+    }).catch(function () { return src; });
+  }
+  function wrapCanvasText(ctx, text, maxW) {
+    var words = String(text || "").split(/\s+/), lines = [], line = "";
+    for (var i = 0; i < words.length; i++) {
+      var w = words[i], test = line ? line + " " + w : w;
+      if (ctx.measureText(test).width <= maxW) { line = test; continue; }
+      if (line) { lines.push(line); line = w; }
+      else {
+        var chunk = "";
+        for (var j = 0; j < w.length; j++) {
+          if (ctx.measureText(chunk + w.charAt(j)).width > maxW && chunk) {
+            lines.push(chunk); chunk = w.charAt(j);
+          } else chunk += w.charAt(j);
+        }
+        line = chunk;
+      }
+    }
+    if (line) lines.push(line);
+    return lines.length ? lines : [""];
+  }
+  function drawCoverImg(ctx, im, dx, dy, dw, dh) {
+    var sw = im.naturalWidth || dw, sh = im.naturalHeight || dh;
+    if (!sw || !sh) return;
+    var scale = Math.max(dw / sw, dh / sh), rw = dw / scale, rh = dh / scale;
+    var sx = (sw - rw) / 2, sy = (sh - rh) / 2;
+    ctx.drawImage(im, sx, sy, rw, rh, dx, dy, dw, dh);
+  }
+  function exportMapPng() {
+    if (mapExporting) return;
+    var mapSvg = $("map"), btn = $("exportMapBtn");
+    if (!mapSvg) return;
+    mapExporting = true;
+    if (btn) { btn.disabled = true; btn.textContent = "Exporting..."; }
+    var finishUi = function () {
+      mapExporting = false;
+      if (btn) { btn.disabled = false; btn.textContent = "Export PNG"; }
+    };
+
+    var cs = getComputedStyle(document.body);
+    var mapCs = getComputedStyle($("mapcard") || document.body);
+    var pal = {
+      bg: (cs.getPropertyValue("--bg") || "").trim() || "#d6d7c0",
+      mapBg: (mapCs.getPropertyValue("--map-bg") || cs.getPropertyValue("--map-bg") || "").trim() || "#d6d7c0",
+      paper: (cs.getPropertyValue("--paper") || "").trim() || "#e9e9da",
+      ink: (cs.getPropertyValue("--ink") || "").trim() || "#2a2c25",
+      soft: (cs.getPropertyValue("--ink-soft") || "").trim() || "#62665a",
+      red: (cs.getPropertyValue("--red") || "").trim() || "#c4382b",
+      onRed: (cs.getPropertyValue("--on-red") || "").trim() || "#fff8f0",
+      water: (mapCs.getPropertyValue("--water") || cs.getPropertyValue("--water") || "").trim() || "#9db4bb",
+      fontHand: (cs.getPropertyValue("--font-hand") || "").trim() || '"Caveat", "Segoe Print", cursive',
+      fontType: (cs.getPropertyValue("--font-type") || "").trim() || '"Special Elite", "Courier New", monospace',
+      fontStamp: (cs.getPropertyValue("--font-stamp") || "").trim() || '"Smash", "Bangers", Impact, sans-serif'
+    };
+
+    var clone = mapSvg.cloneNode(true);
+    clone.setAttribute("xmlns", NS);
+    clone.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+    clone.setAttribute("width", "1120");
+    clone.setAttribute("height", "840");
+    clone.removeAttribute("style");
+
+    ["#traffic", "#tempLayer", ".ring"].forEach(function (sel) {
+      var list = clone.querySelectorAll(sel);
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].parentNode) list[i].parentNode.removeChild(list[i]);
+      }
+    });
+    if ($("mapcard").classList.contains("no-sketch")) {
+      var roughGrp = clone.querySelector('g[filter="url(#rough)"]');
+      if (roughGrp) roughGrp.setAttribute("display", "none");
+    }
+
+    var cloneDefs = clone.querySelector("defs");
+    if (!cloneDefs) {
+      cloneDefs = document.createElementNS(NS, "defs");
+      clone.insertBefore(cloneDefs, clone.firstChild);
+    }
+    ["gMetal", "stampInk", "pinBlur", "pinSmile", "pinEvil"].forEach(function (id) {
+      if (cloneDefs.querySelector("#" + id)) return;
+      var src = document.getElementById(id);
+      if (src) cloneDefs.appendChild(src.cloneNode(true));
+    });
+
+    var styleEl = document.createElementNS(NS, "style");
+    styleEl.textContent = [
+      ".rd-o{fill:none;stroke:" + pal.ink + ";stroke-width:11;stroke-linecap:round}",
+      ".rd-i{fill:none;stroke:" + pal.mapBg + ";stroke-width:8;stroke-linecap:round}",
+      ".river{fill:none;stroke:" + pal.water + ";stroke-width:13;stroke-linecap:round}",
+      ".river-fill{fill:" + pal.water + ";stroke:" + pal.soft + ";stroke-width:1.4}",
+      ".wave{fill:none;stroke:" + pal.soft + ";stroke-width:1.2;stroke-linecap:round}",
+      ".map-grid{fill:none;stroke:" + pal.soft + ";stroke-width:.7;opacity:.28}",
+      ".map-block{fill:" + pal.paper + ";fill-opacity:.35;stroke:" + pal.soft + ";stroke-width:1;stroke-dasharray:3 2}",
+      ".map-ridge{fill:none;stroke:" + pal.soft + ";stroke-width:1.6;stroke-linejoin:round;opacity:.7}",
+      ".map-contour{fill:none;stroke:" + pal.soft + ";stroke-width:.9;stroke-dasharray:4 3;opacity:.45}",
+      ".map-pier{fill:" + pal.paper + ";stroke:" + pal.ink + ";stroke-width:1.5}",
+      ".map-comp{fill:none;stroke:" + pal.soft + ";stroke-width:1.2;opacity:.75}",
+      ".map-comptxt{fill:" + pal.soft + ";font-family:" + pal.fontType + ";font-size:7px;text-anchor:middle;letter-spacing:.08em}",
+      ".ico{fill:" + pal.mapBg + ";stroke:" + pal.ink + ";stroke-width:2;stroke-linejoin:round;stroke-linecap:round}",
+      ".plabel{font-family:" + pal.fontHand + ";font-size:17px;font-weight:700;fill:" + pal.ink + ";text-anchor:middle}",
+      ".pin .plabel{font-size:15px}",
+      ".maptitle{font-family:" + pal.fontType + ";font-size:12px;letter-spacing:.2em;fill:" + pal.soft + "}",
+      ".bdg{fill:" + pal.red + "}",
+      ".bdgt{fill:" + pal.onRed + ";font-family:" + pal.fontType + ";font-size:12px;text-anchor:middle}",
+      ".bdgx{fill:" + pal.mapBg + ";stroke:" + pal.ink + ";stroke-width:1.5}",
+      ".bdgm{stroke:" + pal.red + ";stroke-width:2.4;stroke-linecap:round;fill:none}",
+      ".place .fog{opacity:0}.place.fogged .fog{opacity:1}.fog ellipse{fill:" + pal.mapBg + ";fill-opacity:.93}.place.fogged .plabel{fill:" + pal.soft + "}",
+      ".stp{opacity:.92}.stpo{fill:none;stroke:" + pal.red + ";stroke-width:2.2}.stpi{fill:none;stroke:" + pal.red + ";stroke-width:1}",
+      ".stpt{fill:" + pal.red + ";stroke:" + pal.red + ";stroke-width:.5;font-family:" + pal.fontStamp + ";font-size:19px;text-anchor:middle}",
+      ".stpx{fill:none;stroke:" + pal.red + ";stroke-width:2.6;stroke-linecap:round}",
+      ".gf-ring{fill:none;stroke:" + pal.soft + ";stroke-width:1.4;stroke-dasharray:3 3;opacity:0}",
+      ".place.has-geo .gf-ring{opacity:.85}.place.in-geo .gf-ring{stroke:" + pal.red + ";stroke-width:2.2;stroke-dasharray:none;opacity:1}",
+      ".yh-halo{fill:none;stroke:" + pal.paper + ";stroke-width:5;stroke-linecap:round;stroke-linejoin:round;opacity:.92}",
+      ".yh-line{fill:none;stroke:" + pal.red + ";stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}",
+      ".yh-scribble{fill:none;stroke:" + pal.red + ";stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.9}",
+      ".yh-box{fill:" + pal.paper + ";stroke:" + pal.red + ";stroke-width:1.8}",
+      ".yh-box-scr{fill:none;stroke:" + pal.red + ";stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}",
+      ".yh-txt{fill:" + pal.red + ";font-family:" + pal.fontType + ";font-size:9.5px;font-weight:700;text-anchor:middle;dominant-baseline:central}"
+    ].join("");
+    cloneDefs.appendChild(styleEl);
+
+    var svgImgs = clone.querySelectorAll("image");
+    var imgJobs = [];
+    for (var ii = 0; ii < svgImgs.length; ii++) {
+      (function (imgNode) {
+        var href = imgNode.getAttribute("href") || imgNode.getAttribute("xlink:href") || "";
+        if (!href) return;
+        imgJobs.push(imgToDataUrl(href).then(function (dataU) {
+          imgNode.setAttribute("href", dataU);
+          imgNode.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", dataU);
+        }));
+      })(svgImgs[ii]);
+    }
+    var customMapSrc = urls["i:map"] || "";
+    var customMapJob = customMapSrc ? loadHtmlImg(customMapSrc).catch(function () { return null; }) : Promise.resolve(null);
+
+    Promise.all([Promise.all(imgJobs), customMapJob]).then(function (arr) {
+      var customMapIm = arr[1];
+      var svgStr = new XMLSerializer().serializeToString(clone);
+      var svgBlob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+      var svgUrl = URL.createObjectURL(svgBlob);
+      return loadHtmlImg(svgUrl).then(function (svgIm) {
+        URL.revokeObjectURL(svgUrl);
+        return { svgIm: svgIm, customMapIm: customMapIm };
+      }, function (err) {
+        URL.revokeObjectURL(svgUrl);
+        throw err;
+      });
+    }).then(function (res) {
+      var W = 1200, PAD = 40, MAP_W = 1120, MAP_H = 840, HEAD_H = 92;
+      var mine = cur().slice();
+      if (opts.week && dayFilter) mine = mine.filter(function (m) { return m.date === dayFilter; });
+
+      var groups = [];
+      pins.forEach(function (p, idx) {
+        var k = "p:" + p.id;
+        var list = mine.filter(function (m) { return m.place === k; });
+        list.sort(function (a, b) { return Number(a.done) - Number(b.done); });
+        groups.push({ isPin: true, pinNum: idx + 1, name: p.name, coords: Math.round(p.x) + "," + Math.round(p.y), items: list });
+      });
+      Object.keys(PLACES).forEach(function (k) {
+        var list = mine.filter(function (m) { return m.place === k; });
+        if (!list.length) return;
+        list.sort(function (a, b) { return Number(a.done) - Number(b.done); });
+        groups.push({ isPin: false, name: PLACES[k].n, items: list });
+      });
+
+      var measureC = document.createElement("canvas").getContext("2d");
+      var GAP = 20, COLS = groups.length > 1 ? 2 : 1;
+      var CARD_W = COLS === 2 ? Math.floor((MAP_W - GAP) / 2) : MAP_W;
+      var TEXT_MAX_W = CARD_W - 64;
+      var layoutCards = groups.map(function (grp) {
+        var h = 52;
+        var rows = [];
+        if (!grp.items.length) {
+          rows.push({ empty: true, lines: ["No missions listed for this pin."], h: 24 });
+          h += 28;
+        } else {
+          grp.items.forEach(function (it) {
+            measureC.font = '600 20px "Caveat", "Segoe Print", sans-serif';
+            var prTag = "[" + cleanPriority(it.priority).toUpperCase() + "]";
+            var lines = wrapCanvasText(measureC, it.text + "  " + prTag, TEXT_MAX_W);
+            var sub = [];
+            if (it.bring) sub.push("Bring: " + it.bring);
+            if (it.where) sub.push(it.where);
+            var subText = sub.join(" · ");
+            var rh = lines.length * 24 + (subText ? 18 : 0) + 10;
+            rows.push({ it: it, lines: lines, sub: subText, h: rh });
+            h += rh;
+          });
+        }
+        return { grp: grp, rows: rows, h: h + 14 };
+      });
+
+      var colY = COLS === 2 ? [0, 0] : [0];
+      layoutCards.forEach(function (c) {
+        var ci = COLS === 2 && colY[1] < colY[0] ? 1 : 0;
+        c.col = ci; c.x = PAD + ci * (CARD_W + GAP); c.ry = colY[ci];
+        colY[ci] += c.h + GAP;
+      });
+      var secTitleH = 44;
+      var cardsTotalH = layoutCards.length ? Math.max.apply(null, colY) : 64;
+      var FOOT_H = 54;
+      var H = HEAD_H + MAP_H + 26 + secTitleH + cardsTotalH + FOOT_H;
+
+      var canvas = document.createElement("canvas");
+      canvas.width = W; canvas.height = H;
+      var ctx = canvas.getContext("2d");
+
+      // Poster background
+      ctx.fillStyle = pal.bg;
+      ctx.fillRect(0, 0, W, H);
+
+      // Header stamp & metadata
+      var mv = activeMapVariant();
+      var stampText = evil ? "SHOULDN'T-DO MAP" : "MISSION MAP";
+      ctx.save();
+      ctx.font = '700 26px "Special Elite", "Courier New", monospace';
+      var stW = Math.ceil(ctx.measureText(stampText).width) + 26;
+      ctx.translate(PAD + stW / 2, PAD + 20);
+      ctx.rotate(-0.025);
+      ctx.strokeStyle = pal.red; ctx.lineWidth = 4;
+      ctx.strokeRect(-stW / 2, -20, stW, 40);
+      ctx.fillStyle = pal.red; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(stampText, 0, 1);
+      ctx.restore();
+
+      var openTotal = mine.filter(function (m) { return !m.done; }).length;
+      var doneTotal = mine.filter(function (m) { return m.done; }).length;
+      ctx.fillStyle = pal.ink;
+      ctx.font = '400 17px "Special Elite", "Courier New", monospace';
+      ctx.textAlign = "left"; ctx.textBaseline = "top";
+      var dayTag = (opts.week && dayFilter) ? ("Day: " + dayFilter + " · ") : "";
+      ctx.fillText(mv.name + " · " + dayTag + todayKey(), PAD + stW + 22, PAD + 4);
+      ctx.fillStyle = pal.soft;
+      ctx.font = '400 15px "Special Elite", "Courier New", monospace';
+      ctx.fillText(openTotal + " open · " + doneTotal + " done · " + pins.length + " dropped " + (pins.length === 1 ? "pin" : "pins"), PAD + stW + 22, PAD + 28);
+
+      // Town sketch map frame
+      var mapY = HEAD_H;
+      ctx.fillStyle = pal.mapBg;
+      ctx.fillRect(PAD, mapY, MAP_W, MAP_H);
+      ctx.save();
+      ctx.beginPath(); ctx.rect(PAD, mapY, MAP_W, MAP_H); ctx.clip();
+      if (res.customMapIm) drawCoverImg(ctx, res.customMapIm, PAD, mapY, MAP_W, MAP_H);
+      ctx.drawImage(res.svgIm, PAD, mapY, MAP_W, MAP_H);
+      ctx.restore();
+      ctx.strokeStyle = pal.ink; ctx.lineWidth = 4;
+      ctx.strokeRect(PAD, mapY, MAP_W, MAP_H);
+
+      // Section heading below map
+      var listTop = mapY + MAP_H + 26;
+      ctx.fillStyle = pal.ink;
+      ctx.font = '700 18px "Special Elite", "Courier New", monospace';
+      ctx.textAlign = "left"; ctx.textBaseline = "top";
+      ctx.fillText("DROPPED PINS & TOWN MISSIONS", PAD, listTop + 6);
+      ctx.strokeStyle = pal.ink; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(PAD, listTop + 32); ctx.lineTo(PAD + MAP_W, listTop + 32); ctx.stroke();
+
+      var cardsY = listTop + secTitleH;
+      if (!layoutCards.length) {
+        ctx.fillStyle = pal.paper;
+        ctx.fillRect(PAD, cardsY, MAP_W, 52);
+        ctx.strokeStyle = pal.ink; ctx.lineWidth = 2;
+        ctx.strokeRect(PAD, cardsY, MAP_W, 52);
+        ctx.fillStyle = pal.soft;
+        ctx.font = '400 18px "Special Elite", "Courier New", monospace';
+        ctx.fillText("No dropped pins or missions to list yet.", PAD + 16, cardsY + 16);
+      } else {
+        layoutCards.forEach(function (card) {
+          var cx = card.x, cy = cardsY + card.ry, g = card.grp;
+          ctx.fillStyle = pal.paper;
+          ctx.fillRect(cx, cy, CARD_W, card.h);
+          ctx.strokeStyle = g.isPin ? pal.red : pal.ink;
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(cx, cy, CARD_W, card.h);
+
+          // Card header
+          var hy = cy + 12, hx = cx + 14;
+          if (g.isPin) {
+            var pBadge = "PIN #" + g.pinNum;
+            ctx.font = '700 12px "Special Elite", "Courier New", monospace';
+            var pbW = Math.ceil(ctx.measureText(pBadge).width) + 14;
+            ctx.fillStyle = pal.red;
+            ctx.fillRect(hx, hy, pbW, 22);
+            ctx.fillStyle = pal.onRed;
+            ctx.textAlign = "left"; ctx.textBaseline = "middle";
+            ctx.fillText(pBadge, hx + 7, hy + 11);
+            hx += pbW + 10;
+          }
+          ctx.fillStyle = pal.ink;
+          ctx.font = '700 17px "Special Elite", "Courier New", monospace';
+          ctx.textAlign = "left"; ctx.textBaseline = "middle";
+          ctx.fillText(g.name, hx, hy + 11);
+
+          var gOpen = g.items.filter(function (x) { return !x.done; }).length;
+          var cntTxt = g.items.length ? (gOpen + "/" + g.items.length + " open") : "0 missions";
+          ctx.fillStyle = pal.soft;
+          ctx.font = '400 13px "Special Elite", "Courier New", monospace';
+          ctx.textAlign = "right";
+          ctx.fillText(cntTxt, cx + CARD_W - 14, hy + 11);
+          ctx.textAlign = "left";
+
+          ctx.strokeStyle = pal.soft; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(cx + 14, cy + 42); ctx.lineTo(cx + CARD_W - 14, cy + 42); ctx.stroke();
+
+          var ry = cy + 52;
+          card.rows.forEach(function (row) {
+            if (row.empty) {
+              ctx.fillStyle = pal.soft;
+              ctx.font = 'italic 15px "Special Elite", "Courier New", monospace';
+              ctx.textBaseline = "top";
+              ctx.fillText(row.lines[0], cx + 14, ry + 2);
+              ry += row.h;
+              return;
+            }
+            var it = row.it;
+            // Checkbox square
+            ctx.strokeStyle = pal.ink; ctx.lineWidth = 2;
+            ctx.strokeRect(cx + 16, ry + 4, 15, 15);
+            if (it.done) {
+              ctx.strokeStyle = pal.red; ctx.lineWidth = 2.4;
+              ctx.beginPath();
+              ctx.moveTo(cx + 18, ry + 6); ctx.lineTo(cx + 29, ry + 17);
+              ctx.moveTo(cx + 29, ry + 6); ctx.lineTo(cx + 18, ry + 17);
+              ctx.stroke();
+            }
+            ctx.fillStyle = it.done ? pal.soft : pal.ink;
+            ctx.font = '600 20px "Caveat", "Segoe Print", sans-serif';
+            ctx.textBaseline = "top";
+            row.lines.forEach(function (ln, li) {
+              var ly = ry + li * 24;
+              ctx.fillText(ln, cx + 42, ly);
+              if (it.done) {
+                var lw = Math.min(TEXT_MAX_W, ctx.measureText(ln).width);
+                ctx.strokeStyle = pal.red; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(cx + 40, ly + 11); ctx.lineTo(cx + 44 + lw, ly + 11); ctx.stroke();
+              }
+            });
+            if (row.sub) {
+              ctx.fillStyle = pal.soft;
+              ctx.font = '400 12px "Special Elite", "Courier New", monospace';
+              ctx.fillText(row.sub, cx + 42, ry + row.lines.length * 24 + 2);
+            }
+            ry += row.h;
+          });
+        });
+      }
+
+      // Footer
+      ctx.fillStyle = pal.soft;
+      ctx.font = '400 13px "Special Elite", "Courier New", monospace';
+      ctx.textAlign = "left"; ctx.textBaseline = "bottom";
+      ctx.fillText("Mission Map · " + mv.name + " · Exported " + new Date().toLocaleDateString(), PAD, H - 16);
+
+      var activeVarKey = (opts && MAP_VARIANTS[opts.mapVariant]) ? opts.mapVariant : "town";
+      var filename = "mission-map-" + activeVarKey + "-" + todayKey() + ".png";
+      if (NATIVE && AP && typeof AP.savePng === "function") {
+        var dataUrl = canvas.toDataURL("image/png");
+        return AP.savePng({ filename: filename, dataUrl: dataUrl }).then(function (r) {
+          toast(r && r.mode === "share" ? "Choose an app to save " + filename : "Saved to Pictures/Mission Map/" + filename);
+          fx("chime", 0.2);
+        });
+      }
+      return new Promise(function (resolve, reject) {
+        canvas.toBlob(function (blob) {
+          if (!blob) { reject(new Error("PNG encoding failed")); return; }
+          var u = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = u;
+          a.download = filename;
+          a.style.display = "none";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function () { URL.revokeObjectURL(u); }, 2500);
+          toast("Exported " + filename);
+          fx("chime", 0.2);
+          resolve();
+        }, "image/png");
+      });
+    }).catch(function () {
+      toast("Could not export map PNG.");
+    }).then(finishUi, finishUi);
+  }
+  if ($("exportMapBtn")) $("exportMapBtn").addEventListener("click", exportMapPng);
   $("refog").addEventListener("click", function () { visited = {}; stats.fogFrom = Date.now(); persist(); render(); $("mapMsg").textContent = "The fog is back. Finish a mission somewhere to clear it."; });
 
   /* ---------- geofencing ---------- */
@@ -4539,7 +5396,7 @@ window.__gcalAuth = {
     ];
     return "M" + p.map(function (q) { return q[0].toFixed(1) + " " + q[1].toFixed(1); }).join(" L");
   }
-  var WA_SEL = "#prodWidget,.prod-score-box,#patterns,.practice,.practice select,.practice .btn,.notebook,.notebook textarea,.nb-ico-box,.seg,.sug,.suggest,.mapcard,.mapvar-sel,.paper,.note,.box,.tbtn,.rankbox,.stress .meter,.daybtn,.lane,.toast,.mapbar,.pinform,.pinform input,.pinform select,.geoform,.geoform input,.geoform select,.dash,.thumb,.pic,.cal,.calbtn,.calmodes,.calday,.calwk-col,.opts details,.opts select,.add input,.add select,.suggest textarea,.stamp,.go,.pinbtn,.evform,.evform input,.evform select,.evform textarea";
+  var WA_SEL = "#prodWidget,.prod-score-box,#patterns,.practice,.practice select,.practice .btn,.notebook,.notebook textarea,.nb-ico-box,.seg,.sug,.suggest,.mapcard,.mapvar-sel,.paper,.note,.box,.tbtn,.rankbox,.stress .meter,.daybtn,.lane,.toast,.mapbar,.pinform,.pinform input,.pinform select,.geoform,.geoform input,.geoform select,.dash,.thumb,.edit-mode-btn,.cal,.calbtn,.calmodes,.calday,.calwk-col,.opts details,.opts select,.add input,.add select,.suggest textarea,.stamp,.go,.pinbtn,.evform,.evform input,.evform select,.evform textarea";
   var waSvg = null, waTick = 0;
   function waOn() { return opts.wobble && opts.wobAll; }
   function inClosedDetails(e) {
@@ -4589,7 +5446,7 @@ window.__gcalAuth = {
   function wobTick() {
     if (!opts.wobble || document.hidden) return;
     wobAllTick();
-    if (!isReduced()) { if (!$("stressBox").hidden) drawStress(); drawBoxes(); }
+    if (!isReduced()) { if (!$("stressBox").hidden) drawStress(); drawBoxes(); scribbleYouHere(); }
     var still = isReduced(), els = document.querySelectorAll(".btn, .chip, .tape-dock[data-style=\"ui\"] .tape-tab, .tape-dock[data-style=\"ui\"] .tape-deck");
     for (var i = 0; i < els.length; i++) {
       var e0 = els[i], w = e0.offsetWidth, h = e0.offsetHeight; if (!w || !h) continue;
@@ -5852,32 +6709,21 @@ window.__gcalAuth = {
     var u = urls["m:" + id]; if (!u) return null;
     var t = el("span", "thumb"), im = new Image(); im.alt = ""; im.src = u; t.appendChild(im); return t;
   }
-  function picControl(id) {
-    if (urls["m:" + id]) {
-      var b = el("button", "pic", "No pic"); b.type = "button"; b.setAttribute("aria-label", "Remove this mission's picture");
-      b.addEventListener("click", function () { delImg("m:" + id); render(); });
-      return b;
-    }
-    var l = el("label", "pic", "Pic"), inp = document.createElement("input");
-    inp.type = "file"; inp.accept = "image/*"; inp.setAttribute("aria-label", "Add a picture to this mission");
-    inp.addEventListener("change", function () {
-      var f = this.files && this.files[0]; this.value = ""; if (!f) return;
-      shrink(f, 360, false).then(function (b) { return putImg("m:" + id, b); }).then(function () { render(); }).catch(function () { toast("Could not read that picture."); });
-    });
-    l.appendChild(inp); return l;
-  }
   function dropPic(id) { if (urls["m:" + id]) delImg("m:" + id); }
-  var pendingPic = null, preLen = 0;
+  var pendingPic = null, clearEditPic = false;
   $("newPic").addEventListener("change", function () {
     var f = this.files && this.files[0]; this.value = ""; if (!f) return;
-    shrink(f, 360, false).then(function (b) { pendingPic = b; $("newPicLbl").firstChild.nodeValue = "Photo ready: " + (f.name.length > 22 ? f.name.slice(0, 20) + "..." : f.name); })
-      .catch(function () { pendingPic = null; toast("Could not read that picture."); });
+    shrink(f, 360, false).then(function (b) {
+      pendingPic = b; clearEditPic = false;
+      $("newPicLbl").firstChild.nodeValue = "Photo ready: " + (f.name.length > 22 ? f.name.slice(0, 20) + "..." : f.name);
+      $("newPicClear").hidden = false;
+    }).catch(function () { pendingPic = null; toast("Could not read that picture."); });
   });
-  $("addForm").addEventListener("submit", function () { preLen = items.length; }, true);
-  $("addForm").addEventListener("submit", function () {
-    if (!pendingPic || items.length <= preLen || !items[0]) return;
-    var id = items[0].id, b = pendingPic; pendingPic = null; $("newPicLbl").firstChild.nodeValue = "Add a photo";
-    putImg("m:" + id, b).then(function () { render(); });
+  $("newPicClear").addEventListener("click", function () {
+    pendingPic = null;
+    clearEditPic = true;
+    $("newPicLbl").firstChild.nodeValue = "Add a photo";
+    $("newPicClear").hidden = true;
   });
 
   /* looks: map picture, pin pictures, theme wallpaper */

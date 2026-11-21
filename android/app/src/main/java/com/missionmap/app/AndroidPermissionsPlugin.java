@@ -3,15 +3,20 @@ package com.missionmap.app;
 import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.util.Base64;
 import android.view.View;
 import android.view.Window;
+import androidx.core.content.FileProvider;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
@@ -23,6 +28,9 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 
 @CapacitorPlugin(
     name = "AndroidPermissions",
@@ -229,5 +237,81 @@ public class AndroidPermissionsPlugin extends Plugin {
             } catch (Exception ignored) {}
             call.resolve();
         });
+    }
+
+    @PluginMethod
+    public void savePng(PluginCall call) {
+        final String rawName = call.getString("filename", "mission-map.png");
+        final String safeName = (rawName != null ? rawName : "mission-map.png").replaceAll("[^a-zA-Z0-9._-]", "_");
+        final String filename = safeName.toLowerCase().endsWith(".png") ? safeName : (safeName + ".png");
+        final String dataUrl = call.getString("dataUrl", "");
+        if (dataUrl == null || dataUrl.isEmpty()) {
+            call.reject("No image data provided.");
+            return;
+        }
+        final byte[] pngBytes;
+        try {
+            String b64 = dataUrl;
+            int comma = dataUrl.indexOf(',');
+            if (comma >= 0) b64 = dataUrl.substring(comma + 1);
+            pngBytes = Base64.decode(b64, Base64.DEFAULT);
+        } catch (Exception e) {
+            call.reject("Invalid image data.");
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                ContentResolver resolver = getContext().getContentResolver();
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.Images.Media.DISPLAY_NAME, filename);
+                values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+                values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/Mission Map");
+                values.put(MediaStore.Images.Media.IS_PENDING, 1);
+                Uri uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+                if (uri != null) {
+                    try (OutputStream out = resolver.openOutputStream(uri)) {
+                        if (out != null) {
+                            out.write(pngBytes);
+                            out.flush();
+                        }
+                    }
+                    values.clear();
+                    values.put(MediaStore.Images.Media.IS_PENDING, 0);
+                    resolver.update(uri, values, null, null);
+                    JSObject res = new JSObject();
+                    res.put("saved", true);
+                    res.put("mode", "mediastore");
+                    res.put("location", "Pictures/Mission Map/" + filename);
+                    call.resolve(res);
+                    return;
+                }
+            } catch (Exception ignored) {}
+        }
+
+        try {
+            File outFile = new File(getContext().getCacheDir(), filename);
+            try (FileOutputStream fos = new FileOutputStream(outFile)) {
+                fos.write(pngBytes);
+                fos.flush();
+            }
+            String authority = getContext().getPackageName() + ".fileprovider";
+            Uri shareUri = FileProvider.getUriForFile(getContext(), authority, outFile);
+            Intent share = new Intent(Intent.ACTION_SEND);
+            share.setType("image/png");
+            share.putExtra(Intent.EXTRA_STREAM, shareUri);
+            share.putExtra(Intent.EXTRA_SUBJECT, filename);
+            share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            Intent chooser = Intent.createChooser(share, "Save or share Mission Map");
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(chooser);
+            JSObject res = new JSObject();
+            res.put("saved", true);
+            res.put("mode", "share");
+            res.put("location", filename);
+            call.resolve(res);
+        } catch (Exception e) {
+            call.reject("Could not export map PNG.");
+        }
     }
 }

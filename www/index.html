@@ -844,6 +844,36 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
 .appicon-acts { display: flex; flex-wrap: wrap; gap: 6px; }
 .appicon-acts .btn { min-height: 36px; padding: 4px 10px; font-size: 12px; }
 
+/* dashboard productivity score menu & widget */
+.prod-nav b { font-size: 13px; font-weight: 700; color: var(--red); font-variant-numeric: tabular-nums; }
+.prod-nav[aria-pressed="true"] b { color: inherit; }
+.prod-dash {
+  margin: 0; display: flex; align-items: stretch; gap: 12px; flex-wrap: wrap;
+  padding: 10px 12px; border: 2px solid var(--ink); background: var(--paper); color: var(--ink);
+}
+.prod-dash[hidden] { display: none; }
+.prod-score-box {
+  flex: 0 0 auto; min-width: 82px; padding: 6px 10px;
+  border: 2px solid var(--ink); background: var(--map-bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+}
+.prod-score-box.peak-now { border-color: var(--red); }
+.prod-score-num { font-size: 26px; font-weight: 700; line-height: 1; color: var(--red); font-variant-numeric: tabular-nums; }
+.prod-score-lbl { font-size: 9px; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-soft); margin-top: 3px; }
+.prod-body { flex: 1 1 200px; min-width: 0; display: grid; gap: 4px; align-content: center; }
+.prod-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px; }
+.prod-title { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
+.prod-best { font-size: 13px; color: var(--ink); }
+.prod-best strong { color: var(--red); font-weight: 700; }
+.prod-tip { font-size: 13px; line-height: 1.35; color: var(--ink); }
+.prod-actions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; flex-wrap: wrap; align-self: center; }
+.prod-actions .btn { min-height: 36px; padding: 5px 10px; font-size: 12px; }
+@media (max-width: 520px) {
+  .prod-dash { padding: 8px 10px; gap: 8px; }
+  .prod-score-box { min-width: 68px; padding: 5px 8px; }
+  .prod-score-num { font-size: 22px; }
+}
+
 /* ===== hover shoebox cassette voice recorder (trigger left of Add, player UI centered) ===== */
 .tape-dock {
   --tape-speed: 1;
@@ -1738,6 +1768,7 @@ body.calm .tape-led-dot { animation: none !important; }
   <section class="suggest" id="wrap" hidden aria-label="Week wrap-up"></section>
   <div class="top-panels" id="topPanels">
     <section class="suggest" id="patterns" hidden aria-label="Your patterns"></section>
+    <section class="prod-dash" id="prodWidget" hidden aria-label="Productivity score"></section>
     <section class="notebook" id="notebook" aria-label="Notebook">
       <div class="nb-head">
         <div class="nb-title">
@@ -2234,7 +2265,7 @@ window.__gcalAuth = {
 
   var KEY = "mission-map-v1", XKEY = "mission-map-extra", VKEY = "mission-map-view", EKEY = "mission-map-evil";
   var items = [], pins = [], notes = [], visited = {}, geofences = {}, stats = { cash: 0, races: 0, best: {}, unlocked: {} };
-  var events = [], view = "map", evil = false, filter = null, dayFilter = null, wrapOpen = false, patOpen = false;
+  var events = [], view = "map", evil = false, filter = null, dayFilter = null, wrapOpen = false, patOpen = false, prodOpen = false;
   var lastToggled = null, lastAdded = null, ref = null, queue = Promise.resolve();
   var dropping = false, tempPin = null, hoverPin = null, race = null, raceTimer = null, nbEditId = null;
   var geoPos = null, geoWatchId = null, geoInside = {}, geoNearest = null, geoErr = "";
@@ -2864,9 +2895,9 @@ window.__gcalAuth = {
       $("rankBox").textContent = rk.n + " · $" + stats.cash + (rk.next ? " · next at $" + rk.next[0] : "");
     }
   }
-  function renderWeek(mine) {
+  function renderWeek(mine, pd) {
     var box = $("week"); box.hidden = !opts.week;
-    if (!opts.week) { $("wrap").hidden = true; if ($("patterns")) $("patterns").hidden = true; if ($("cal")) $("cal").hidden = true; if (typeof syncTopPanels === "function") syncTopPanels(); return; }
+    if (!opts.week) { $("wrap").hidden = true; if ($("patterns")) $("patterns").hidden = true; if ($("prodWidget")) $("prodWidget").hidden = true; if ($("cal")) $("cal").hidden = true; if (typeof syncTopPanels === "function") syncTopPanels(); return; }
     var days = weekDays(), t = todayKey(), el0 = $("days"), vw = $("views"); el0.innerHTML = ""; vw.innerHTML = "";
     var all = el("button", "daybtn", "All"); all.type = "button"; all.setAttribute("aria-pressed", dayFilter === null ? "true" : "false");
     all.addEventListener("click", function () { dayFilter = null; render(); });
@@ -2893,6 +2924,18 @@ window.__gcalAuth = {
     pb.setAttribute("aria-pressed", patOpen ? "true" : "false");
     pb.addEventListener("click", function () { patOpen = !patOpen; render(); fx("click"); });
     vw.appendChild(pb);
+    var stProd = pd || collectPatternStats();
+    var nowH0 = new Date().getHours();
+    var peakNow0 = !!(stProd.doneN >= 3 && stProd.bestDoneWin && (nowH0 === stProd.bestDoneWin.from || nowH0 === (stProd.bestDoneWin.from + 1) % 24));
+    var psb = el("button", "daybtn wrapbtn prod-nav" + (peakNow0 ? " hot" : "")); psb.type = "button";
+    psb.setAttribute("aria-pressed", prodOpen ? "true" : "false");
+    psb.setAttribute("aria-expanded", prodOpen ? "true" : "false");
+    psb.setAttribute("aria-controls", "prodWidget");
+    psb.setAttribute("aria-label", "Productivity score" + (stProd.score !== null ? ": " + stProd.score : ""));
+    psb.appendChild(document.createTextNode("Productivity"));
+    psb.appendChild(el("b", null, stProd.score !== null ? String(stProd.score) : "--"));
+    psb.addEventListener("click", function () { prodOpen = !prodOpen; render(); fx("click"); });
+    vw.appendChild(psb);
     var nb = el("button", "daybtn wrapbtn nb-nav"); nb.type = "button";
     nb.setAttribute("aria-pressed", nbOpen ? "true" : "false");
     nb.setAttribute("aria-expanded", nbOpen ? "true" : "false");
@@ -2904,7 +2947,7 @@ window.__gcalAuth = {
       render(); fx("click");
     });
     vw.appendChild(nb);
-    renderWrap(days); renderCal(mine); renderPatterns();
+    renderWrap(days); renderCal(mine); renderPatterns(stProd); renderProductivityWidget(stProd);
   }
   var MONTHN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   var calOpen = false, calM = null, calMode = "month", calFocus = todayKey();
@@ -3151,13 +3194,27 @@ window.__gcalAuth = {
   var PR_STYLE = { A: "playing with words and sounds", B: "acting alongside the thought", C: "reframing the thought", D: "picturing the thought outside you" };
   function syncTopPanels() {
     var tp = $("topPanels");
-    if (tp) tp.hidden = $("patterns").hidden && $("notebook").hidden;
+    if (tp) tp.hidden = $("patterns").hidden && $("prodWidget").hidden && $("notebook").hidden;
   }
-  function renderPatterns() {
-    var box = $("patterns"); if (!box) return; box.hidden = !(opts.week && patOpen); syncTopPanels(); if (box.hidden) return;
+  var PROD_TOD_DEFS = [
+    ["Morning", 6, 12, "09:00-11:00", "Tackle high-focus missions before midday distractions build up."],
+    ["Afternoon", 12, 17, "14:00-16:00", "Batch phone calls, errands, or medium tasks during your afternoon stride."],
+    ["Evening", 17, 21, "17:30-19:30", "Use early evening momentum to wrap up quick chores and prep tomorrow."],
+    ["Night", 21, 6, "21:00-23:00", "Keep late sessions for low-friction wrap-up, reading, or planning ahead."]
+  ];
+  function sumHourRange(arr, from, to) {
+    var s = 0, h = from;
+    for (var c = 0; c < 24; c++) {
+      if (from < to ? (h >= from && h < to) : (h >= from || h < to)) s += arr[h];
+      h = (h + 1) % 24;
+    }
+    return s;
+  }
+  function collectPatternStats() {
     var log = logGet(), seen = {}, hrs = [], dh = [], wd = [], dw = [], lh = [], edH = [], hmH = [], i, total = 0, doneN = 0;
-    var doneWithListen = 0, doneLogged = 0, errandDoneN = 0, homeDoneN = 0;
-    var listenPlays = 0, listenTicks = 0, listenDays = {}, listenMap = {}, listenHrs = 0;
+    var doneWithListen = 0, doneLogged = 0, errandDoneN = 0, homeDoneN = 0, weekDone = 0;
+    var listenPlays = 0, listenTicks = 0, listenDays = {}, listenMap = {};
+    var weekAgo = Date.now() - 7 * 864e5;
     for (i = 0; i < 24; i++) { hrs.push(0); dh.push(0); lh.push(0); edH.push(0); hmH.push(0); }
     for (i = 0; i < 7; i++) { wd.push(0); dw.push(0); }
     function isErrandPlace(pl) { return pl && pl !== "home" && pl !== "!"; }
@@ -3166,6 +3223,7 @@ window.__gcalAuth = {
       hrs[h]++; wd[w]++; total++;
       if (isDone) {
         dh[h]++; dw[w]++; doneN++;
+        if (ts >= weekAgo) weekDone++;
         if (withAudio) doneWithListen++;
         if (place !== undefined) {
           doneLogged++;
@@ -3200,6 +3258,104 @@ window.__gcalAuth = {
       }
     });
 
+    var tl = items.length, dn = items.filter(function (x) { return x.done; }).length;
+    var today = todayKey(), overdueN = norm().filter(function (x) { return !x.done && x.date < today; }).length;
+    var bestDoneWin = doneN > 0 ? hourWindow(dh) : null;
+    var bestTod = doneN > 0 ? PROD_TOD_DEFS.slice().sort(function (a, b) {
+      return sumHourRange(dh, b[1], b[2]) - sumHourRange(dh, a[1], a[2]);
+    })[0] : null;
+    var bestTodCnt = bestTod ? sumHourRange(dh, bestTod[1], bestTod[2]) : 0;
+    var pctTod = (doneN > 0 && bestTod) ? Math.round((bestTodCnt / doneN) * 100) : 0;
+    var score = null;
+    if (doneN > 0 || tl > 0) {
+      var compPts = tl > 0 ? (dn / tl) * 40 : (doneN > 0 ? 28 : 0);
+      var momPts = Math.min(1, weekDone / 7) * 35;
+      var onTimePts = Math.max(0, 25 - overdueN * 6);
+      score = doneN > 0 ? Math.max(5, Math.min(100, Math.round(compPts + momPts + onTimePts))) : Math.min(25, Math.round(onTimePts));
+    }
+
+    return {
+      hrs: hrs, dh: dh, wd: wd, dw: dw, lh: lh, edH: edH, hmH: hmH,
+      total: total, doneN: doneN, weekDone: weekDone, tl: tl, dn: dn, overdueN: overdueN,
+      doneWithListen: doneWithListen, doneLogged: doneLogged, errandDoneN: errandDoneN, homeDoneN: homeDoneN,
+      listenPlays: listenPlays, listenTicks: listenTicks, listenDays: listenDays, listenMap: listenMap,
+      isErrandPlace: isErrandPlace, bestDoneWin: bestDoneWin, bestTod: bestTod, bestTodCnt: bestTodCnt,
+      pctTod: pctTod, score: score
+    };
+  }
+  function renderProductivityWidget(pd) {
+    var box = $("prodWidget"); if (!box) return;
+    box.hidden = !(opts.week && prodOpen);
+    syncTopPanels();
+    if (box.hidden) return;
+    var st = pd || collectPatternStats();
+    var nowH = new Date().getHours();
+    var inPeakNow = false;
+    if (st.doneN >= 3 && st.bestDoneWin) {
+      var pf = st.bestDoneWin.from;
+      inPeakNow = (nowH === pf || nowH === (pf + 1) % 24);
+    }
+    box.innerHTML = "";
+
+    var sBox = el("div", "prod-score-box" + (inPeakNow ? " peak-now" : ""));
+    sBox.appendChild(el("span", "prod-score-num", st.score !== null ? String(st.score) : "--"));
+    sBox.appendChild(el("span", "prod-score-lbl", "Prod. Score"));
+    box.appendChild(sBox);
+
+    var body = el("div", "prod-body");
+    var top = el("div", "prod-top");
+    top.appendChild(el("span", "prod-title", "Productivity & Best Hours"));
+    var bestEl = el("span", "prod-best");
+    if (st.doneN >= 3 && st.bestDoneWin && st.bestTod) {
+      bestEl.appendChild(document.createTextNode("Peak time: "));
+      bestEl.appendChild(el("strong", null, st.bestTod[0] + " (" + st.bestDoneWin.label + ")"));
+      bestEl.appendChild(document.createTextNode(" · " + st.pctTod + "% of completions"));
+    } else if (st.doneN > 0 && st.bestDoneWin) {
+      bestEl.appendChild(document.createTextNode("Early trend: "));
+      bestEl.appendChild(el("strong", null, st.bestTod[0] + " (" + st.bestDoneWin.label + ")"));
+      bestEl.appendChild(document.createTextNode(" · " + st.doneN + "/3 to calibrate"));
+    } else {
+      bestEl.appendChild(document.createTextNode("Best time of day: calibrating (finish 3 tasks)"));
+    }
+    top.appendChild(bestEl);
+    body.appendChild(top);
+
+    var tipTxt = "";
+    if (st.doneN >= 3 && st.bestTod && st.bestDoneWin) {
+      if (inPeakNow) {
+        tipTxt = "Tip: You're in your most productive " + st.bestTod[0].toLowerCase() + " window right now (" + st.bestDoneWin.label + ") — knock out a high-priority task first.";
+      } else {
+        tipTxt = "Tip: " + st.bestTod[4] + (st.overdueN ? " Clear " + st.overdueN + " overdue item" + (st.overdueN === 1 ? "" : "s") + " next." : "");
+      }
+    } else if (st.doneN > 0) {
+      tipTxt = "Tip: You've finished " + st.doneN + " task" + (st.doneN === 1 ? "" : "s") + " (" + st.weekDone + " this week). Complete " + Math.max(1, 3 - st.doneN) + " more to lock in your peak focus hours.";
+    } else {
+      tipTxt = "Tip: Check off missions as you finish them—your score and peak productivity window will automatically tune to your schedule.";
+    }
+    body.appendChild(el("div", "prod-tip", tipTxt));
+    box.appendChild(body);
+
+    var act = el("div", "prod-actions");
+    if (opts.week) {
+      var btn = el("button", "btn ghost", patOpen ? "Hide patterns" : "Details");
+      btn.type = "button";
+      btn.addEventListener("click", function () { patOpen = !patOpen; render(); fx("click"); });
+      act.appendChild(btn);
+    }
+    var cl = el("button", "btn ghost", "Close");
+    cl.type = "button";
+    cl.addEventListener("click", function () { prodOpen = false; render(); fx("click"); });
+    act.appendChild(cl);
+    box.appendChild(act);
+  }
+  function renderPatterns(pd) {
+    var box = $("patterns"); if (!box) return; box.hidden = !(opts.week && patOpen); syncTopPanels(); if (box.hidden) return;
+    var st = pd || collectPatternStats();
+    var hrs = st.hrs, dh = st.dh, wd = st.wd, dw = st.dw, lh = st.lh, edH = st.edH, hmH = st.hmH;
+    var total = st.total, doneN = st.doneN, errandDoneN = st.errandDoneN, homeDoneN = st.homeDoneN;
+    var listenPlays = st.listenPlays, listenTicks = st.listenTicks, listenDays = st.listenDays, listenMap = st.listenMap;
+    var doneWithListen = st.doneWithListen, doneLogged = st.doneLogged, isErrandPlace = st.isErrandPlace;
+
     box.innerHTML = "";
     box.appendChild(el("h2", null, "Your patterns"));
 
@@ -3224,40 +3380,22 @@ window.__gcalAuth = {
       box.appendChild(el("div", "pat-h", "Activity by hour"));
       box.appendChild(bars(hrs, hrs.map(function (_, h) { return h % 3 === 0 ? String(h) : ""; }), "hrs"));
       var pk = hourWindow(hrs), lines = ["Most active: " + pk.label + "."];
-      if (doneN >= 5) { var pd = hourWindow(dh); lines.push("You finish most missions around " + pd.label + "."); }
+      if (doneN >= 5) { var pdW = hourWindow(dh); lines.push("You finish most missions around " + pdW.label + "."); }
       box.appendChild(el("div", "pat-h", "Activity by weekday"));
       box.appendChild(bars(wd, DAYN, "wk"));
       var bw = wd.indexOf(Math.max.apply(null, wd)); lines.push("Busiest day: " + DAYN[bw] + (doneN >= 5 ? ". You finish the most on " + DAYN[dw.indexOf(Math.max.apply(null, dw))] + "." : "."));
-      var tl = items.length, dn = items.filter(function (x) { return x.done; }).length;
+      var tl = st.tl, dn = st.dn;
       if (tl >= 5) lines.push("Finished so far: " + dn + " of " + tl + " missions (" + Math.round(dn / tl * 100) + "%).");
       lines.forEach(function (t) { box.appendChild(el("div", "wrapline", t)); });
       lines.length = 0;
 
       /* Productive hours & errand time-of-day recommendations */
       box.appendChild(el("div", "pat-h", "Recommended times"));
-      var todDefs = [
-        ["Morning", 6, 12, "09:00-11:00"],
-        ["Afternoon", 12, 17, "14:00-16:00"],
-        ["Evening", 17, 21, "17:30-19:30"],
-        ["Night", 21, 6, "21:00-23:00"]
-      ];
-      function sumRange(arr, from, to) {
-        var s = 0, h = from;
-        for (var c = 0; c < 24; c++) {
-          if (from < to ? (h >= from && h < to) : (h >= from || h < to)) s += arr[h];
-          h = (h + 1) % 24;
-        }
-        return s;
-      }
       var recProd = el("div", "pat-rec");
       recProd.appendChild(el("b", null, "Most productive focus time"));
-      if (doneN >= 3) {
-        var bestDoneWin = hourWindow(dh);
-        var bestTod = todDefs.slice().sort(function (a, b) { return sumRange(dh, b[1], b[2]) - sumRange(dh, a[1], a[2]); })[0];
-        var bestTodCnt = sumRange(dh, bestTod[1], bestTod[2]);
-        var pctTod = Math.round((bestTodCnt / doneN) * 100);
+      if (doneN >= 3 && st.bestDoneWin && st.bestTod) {
         recProd.appendChild(document.createTextNode(
-          "Your peak task completion window is " + bestDoneWin.label + " (" + bestTod[0] + " leads at " + pctTod + "% of your completions). Save important or high-priority missions for this slot."
+          "Your peak task completion window is " + st.bestDoneWin.label + " (" + st.bestTod[0] + " leads at " + st.pctTod + "% of your completions). Save important or high-priority missions for this slot."
         ));
       } else {
         recProd.appendChild(document.createTextNode(
@@ -3277,15 +3415,15 @@ window.__gcalAuth = {
           ["Late afternoon (15:00-18:00)", 15, 18],
           ["Early evening (18:00-20:00)", 18, 20]
         ];
-        errBlocks.sort(function (a, b) { return sumRange(edH, b[1], b[2]) - sumRange(edH, a[1], a[2]); });
+        errBlocks.sort(function (a, b) { return sumHourRange(edH, b[1], b[2]) - sumHourRange(edH, a[1], a[2]); });
         var topErr = errBlocks[0], altErr = errBlocks[1];
-        var topErrSum = sumRange(edH, topErr[1], topErr[2]);
+        var topErrSum = sumHourRange(edH, topErr[1], topErr[2]);
         var errMsg = topErrSum > 0
           ? ("Best window for out-of-home errands (market, post, bank, library, gas): " + topErr[0] +
-            (sumRange(edH, altErr[1], altErr[2]) > 0 ? ", or " + altErr[0] : "") + ".")
+            (sumHourRange(edH, altErr[1], altErr[2]) > 0 ? ", or " + altErr[0] : "") + ".")
           : ("You usually handle out-of-home errands outside standard hours (" + hourWindow(edH).label + "); mid-morning (10:00-12:00) is your best daytime fallback.");
         if (homeDoneN >= 2) {
-          var homeBest = todDefs.slice().sort(function (a, b) { return sumRange(hmH, b[1], b[2]) - sumRange(hmH, a[1], a[2]); })[0];
+          var homeBest = PROD_TOD_DEFS.slice().sort(function (a, b) { return sumHourRange(hmH, b[1], b[2]) - sumHourRange(hmH, a[1], a[2]); })[0];
           errMsg += " Keep " + homeBest[0].toLowerCase() + " free for Home chores.";
         }
         if (openErrands > 0) errMsg += " You have " + openErrands + " open errand" + (openErrands === 1 ? "" : "s") + " lined up.";
@@ -3300,16 +3438,16 @@ window.__gcalAuth = {
       box.appendChild(recErr);
 
       box.appendChild(el("div", "pat-h", "Practice style"));
-      var st = prStats(), keys = ["A", "B", "C", "D"], rows = el("div", "pat-grid");
+      var ps = prStats(), keys = ["A", "B", "C", "D"], rows = el("div", "pat-grid");
       keys.forEach(function (k) {
-        var q = st.g[k], r = el("div", "pat-row"); r.appendChild(el("b", null, PR_GROUP[k]));
+        var q = ps.g[k], r = el("div", "pat-row"); r.appendChild(el("b", null, PR_GROUP[k]));
         r.appendChild(el("span", null, q[1] + " tried, " + q[2] + " skipped")); rows.appendChild(r);
       });
       box.appendChild(rows);
-      if (st.signals >= 5) {
-        var rank = keys.slice().sort(function (a, b) { var A = st.g[a], B = st.g[b]; return (B[1] + 1) / (B[1] + B[2] + 2) - (A[1] + 1) / (A[1] + A[2] + 2); });
+      if (ps.signals >= 5) {
+        var rank = keys.slice().sort(function (a, b) { var A = ps.g[a], B = ps.g[b]; return (B[1] + 1) / (B[1] + B[2] + 2) - (A[1] + 1) / (A[1] + A[2] + 2); });
         box.appendChild(el("div", "wrapline", "Your style so far: " + PR_STYLE[rank[0]] + ". The daily practice now leans that way" + (opts.practiceTailor ? "" : " (switch it on in Options)") + ", with a little of everything mixed in."));
-      } else box.appendChild(el("div", "wrapline", "Try or skip a few more practice exercises (" + st.signals + " of 5) and the daily pick will start to suit you."));
+      } else box.appendChild(el("div", "wrapline", "Try or skip a few more practice exercises (" + ps.signals + " of 5) and the daily pick will start to suit you."));
     }
 
     /* listening frequency & history section */
@@ -3454,7 +3592,9 @@ window.__gcalAuth = {
     } else { rb.hidden = true; rb.removeAttribute("href"); }
     $("sample").hidden = !(!grid && items.some(function (i) { return i.sample; }));
 
-    renderMeters(); renderWeek(mine); renderRoad(); renderNext(); renderNotebook(); renderPractice();
+    var patData = collectPatternStats();
+    renderMeters(); renderWeek(mine, patData); renderRoad(); renderNext(); renderNotebook(); renderPractice();
+    if ($("week") && !opts.week) { renderPatterns(patData); renderProductivityWidget(patData); }
     if ($("options") && !$("options").hidden) renderAch();
 
     if (lastToggled) {
@@ -4399,7 +4539,7 @@ window.__gcalAuth = {
     ];
     return "M" + p.map(function (q) { return q[0].toFixed(1) + " " + q[1].toFixed(1); }).join(" L");
   }
-  var WA_SEL = "#patterns,.practice,.practice select,.practice .btn,.notebook,.notebook textarea,.nb-ico-box,.seg,.sug,.suggest,.mapcard,.mapvar-sel,.paper,.note,.box,.tbtn,.rankbox,.stress .meter,.daybtn,.lane,.toast,.mapbar,.pinform,.pinform input,.pinform select,.geoform,.geoform input,.geoform select,.dash,.thumb,.pic,.cal,.calbtn,.calmodes,.calday,.calwk-col,.opts details,.opts select,.add input,.add select,.suggest textarea,.stamp,.go,.pinbtn,.evform,.evform input,.evform select,.evform textarea";
+  var WA_SEL = "#prodWidget,.prod-score-box,#patterns,.practice,.practice select,.practice .btn,.notebook,.notebook textarea,.nb-ico-box,.seg,.sug,.suggest,.mapcard,.mapvar-sel,.paper,.note,.box,.tbtn,.rankbox,.stress .meter,.daybtn,.lane,.toast,.mapbar,.pinform,.pinform input,.pinform select,.geoform,.geoform input,.geoform select,.dash,.thumb,.pic,.cal,.calbtn,.calmodes,.calday,.calwk-col,.opts details,.opts select,.add input,.add select,.suggest textarea,.stamp,.go,.pinbtn,.evform,.evform input,.evform select,.evform textarea";
   var waSvg = null, waTick = 0;
   function waOn() { return opts.wobble && opts.wobAll; }
   function inClosedDetails(e) {

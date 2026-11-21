@@ -6,7 +6,6 @@ import android.app.ActivityManager;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
@@ -225,16 +224,7 @@ public class AndroidPermissionsPlugin extends Plugin {
         activity.runOnUiThread(() -> {
             try {
                 if (bmp != null) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        activity.setTaskDescription(
-                            new ActivityManager.TaskDescription.Builder()
-                                .setLabel(label)
-                                .setIcon(Icon.createWithBitmap(bmp))
-                                .build()
-                        );
-                    } else {
-                        activity.setTaskDescription(new ActivityManager.TaskDescription(label, bmp));
-                    }
+                    activity.setTaskDescription(new ActivityManager.TaskDescription(label, bmp));
                 }
             } catch (Exception ignored) {}
             call.resolve();

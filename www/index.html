@@ -292,8 +292,8 @@ body.calm *, body.calm *::before, body.calm *::after { transition: none !importa
 body.hide-tags .tag { display: none; }
 .bottom { display: grid; gap: 12px; }
 .filebtn input { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 0; }
-.btn, .chip { position: relative; }
-body.wob .btn, body.wob .chip { border-color: transparent !important; }
+.btn, .chip, .tape-tab { position: relative; }
+body.wob .btn, body.wob .chip, body.wob .tape-dock[data-style="ui"] .tape-tab, body.wob .tape-dock[data-style="ui"] .tape-deck { border-color: transparent !important; }
 .wobs { position: absolute; left: -4px; top: -4px; pointer-events: none; overflow: visible; }
 .wobs path { fill: none; stroke: var(--wob, var(--ink)); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .chip { --wob: var(--red); }
@@ -845,10 +845,10 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
 .tape-tab {
   display: inline-flex; align-items: center; justify-content: center; gap: 9px;
   min-width: 176px; min-height: 52px; padding: 6px 16px;
-  border: 2px solid #2b2f36; border-radius: 6px 6px 9px 9px;
+  border: 0; border-radius: 6px 6px 9px 9px;
   background: linear-gradient(180deg, #272b32 0%, #111317 58%, #07080a 100%);
   color: #eef1f5; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, .48), inset 0 2px 0 rgba(255, 255, 255, .16), inset 0 -2px 3px rgba(0, 0, 0, .85);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .48), inset 0 1px 0 rgba(255, 255, 255, .18), inset 0 -2px 3px rgba(0, 0, 0, .85);
   white-space: nowrap; position: relative; max-width: 100%;
   transition: transform .18s cubic-bezier(.16, 1, .3, 1), box-shadow .18s;
 }
@@ -879,11 +879,15 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
 
 .tape-deck {
   position: fixed; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-  width: min(392px, calc(100vw - 24px)); max-height: calc(100dvh - 96px); overflow-y: auto;
+  width: min(392px, calc(100vw - 24px)); overflow: visible;
   margin: 0;
   opacity: 0; visibility: hidden; transform: translateX(-50%) translateY(16px) scale(.97); pointer-events: none;
   transition: opacity .22s cubic-bezier(.16, 1, .3, 1), transform .22s cubic-bezier(.16, 1, .3, 1), visibility .22s;
   transform-origin: center bottom;
+}
+.tape-deck-in {
+  display: grid; gap: 7px; padding: 10px 12px 11px;
+  max-height: calc(100dvh - 96px); overflow-y: auto;
 }
 .tape-dock.open .tape-deck,
 .tape-dock:focus-within .tape-deck {
@@ -895,12 +899,11 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
   }
 }
 
-/* realistic QFX-style shoebox cassette deck */
+/* realistic QFX-style shoebox cassette deck (borderless molded chassis) */
 .tape-dock[data-style="realistic"] .tape-deck {
   background: linear-gradient(178deg, #272b32 0%, #17191e 38%, #101216 100%);
-  color: #eef1f5; border: 2px solid #3c424d; border-radius: 12px 12px 8px 8px; padding: 10px 12px 11px;
-  box-shadow: 0 22px 48px rgba(0, 0, 0, .68), inset 0 1.5px 0 rgba(255, 255, 255, .2), inset 0 -3px 0 rgba(0, 0, 0, .7);
-  display: grid; gap: 7px;
+  color: #eef1f5; border: 0; border-radius: 12px 12px 8px 8px; padding: 0;
+  box-shadow: 0 22px 48px rgba(0, 0, 0, .68), inset 0 1px 0 rgba(255, 255, 255, .14), inset 0 -3px 0 rgba(0, 0, 0, .7);
 }
 
 /* top recessed perforated speaker grille */
@@ -1056,7 +1059,39 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
   border-radius: 2px; border: 1px solid #07080a;
 }
 
-/* tape label input & pitch/speed fader */
+/* tape seek scrubber, label input & pitch/speed fader */
+.tape-seek-row {
+  display: flex; align-items: center; gap: 7px; padding: 4px 8px; border-radius: 4px;
+  background: linear-gradient(180deg, #0b0d10 0%, #14171c 100%);
+  border: 1px solid #2b3038; box-shadow: inset 0 1px 3px rgba(0, 0, 0, .75);
+}
+.tape-seek-time {
+  min-width: 3.1em; font-family: var(--font-type); font-size: 10.5px;
+  font-variant-numeric: tabular-nums; color: #c7cdd6; flex: none;
+}
+.tape-seek-time.dur { text-align: right; color: #8c939e; }
+.tape-seek-row input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  flex: 1; min-width: 0; height: 24px; margin: 0; background: transparent; cursor: pointer;
+}
+.tape-seek-row input[type="range"]:disabled { opacity: .42; cursor: default; }
+.tape-seek-row input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14);
+  background: linear-gradient(90deg, #e84b38 0%, #e84b38 var(--seek-pct, 0%), rgba(255, 255, 255, .16) var(--seek-pct, 0%), rgba(255, 255, 255, .16) 100%);
+}
+.tape-seek-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 14px; height: 14px; margin-top: -5px; border-radius: 50%;
+  background: #f4f6f9; border: 2px solid #dc2f24; box-shadow: 0 1px 4px rgba(0, 0, 0, .7);
+}
+.tape-seek-row input[type="range"]::-moz-range-track {
+  height: 6px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14);
+  background: linear-gradient(90deg, #e84b38 0%, #e84b38 var(--seek-pct, 0%), rgba(255, 255, 255, .16) var(--seek-pct, 0%), rgba(255, 255, 255, .16) 100%);
+}
+.tape-seek-row input[type="range"]::-moz-range-thumb {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #f4f6f9; border: 2px solid #dc2f24; box-shadow: 0 1px 4px rgba(0, 0, 0, .7);
+}
 .tape-meta-row { display: flex; gap: 6px; align-items: center; }
 .tape-meta-row input {
   flex: 1; min-width: 0; min-height: 34px; padding: 4px 9px; border-radius: 4px;
@@ -1164,8 +1199,8 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
 .tape-dock[data-style="ui"] .tape-tab-reels i { border-color: var(--ink); }
 .tape-dock[data-style="ui"] .tape-tab-reels i::after { border-color: var(--red); }
 .tape-dock[data-style="ui"] .tape-deck {
-  background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 0; padding: 10px 12px;
-  box-shadow: 5px 5px 0 rgba(0, 0, 0, .28); display: grid; gap: 7px;
+  background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 0; padding: 0;
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, .28);
 }
 .tape-dock[data-style="ui"] .tape-speaker-panel {
   background: var(--map-bg); border: 2px solid var(--ink); border-radius: 0; box-shadow: none;
@@ -1210,6 +1245,25 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
 .tape-dock[data-style="ui"] .tape-vu i { background: var(--ink); border-radius: 0; }
 .tape-dock[data-style="ui"] .tape-vu i.hot { background: var(--red); }
 .tape-dock[data-style="ui"] .tape-ribs { background: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 5px); border-color: var(--ink); }
+.tape-dock[data-style="ui"] .tape-seek-row {
+  background: var(--map-bg); border: 1.5px solid var(--ink); border-radius: 0; box-shadow: none;
+}
+.tape-dock[data-style="ui"] .tape-seek-time { color: var(--ink); }
+.tape-dock[data-style="ui"] .tape-seek-time.dur { color: var(--ink-soft); }
+.tape-dock[data-style="ui"] .tape-seek-row input[type="range"]::-webkit-slider-runnable-track {
+  border-radius: 0; border-color: var(--ink);
+  background: linear-gradient(90deg, var(--red) 0%, var(--red) var(--seek-pct, 0%), var(--paper) var(--seek-pct, 0%), var(--paper) 100%);
+}
+.tape-dock[data-style="ui"] .tape-seek-row input[type="range"]::-webkit-slider-thumb {
+  border-radius: 0; background: var(--paper); border: 2px solid var(--ink); box-shadow: none;
+}
+.tape-dock[data-style="ui"] .tape-seek-row input[type="range"]::-moz-range-track {
+  border-radius: 0; border-color: var(--ink);
+  background: linear-gradient(90deg, var(--red) 0%, var(--red) var(--seek-pct, 0%), var(--paper) var(--seek-pct, 0%), var(--paper) 100%);
+}
+.tape-dock[data-style="ui"] .tape-seek-row input[type="range"]::-moz-range-thumb {
+  border-radius: 0; background: var(--paper); border: 2px solid var(--ink); box-shadow: none;
+}
 .tape-dock[data-style="ui"] .tape-meta-row input {
   background: var(--map-bg); color: var(--ink); border: 2px solid var(--ink); border-radius: 0;
 }
@@ -1256,9 +1310,9 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
   .tape-dock[data-style="realistic"] .tape-deck,
   .tape-dock[data-style="ui"] .tape-deck {
     bottom: calc(64px + env(safe-area-inset-bottom, 0px));
-    width: min(376px, calc(100vw - 16px)); max-height: calc(100dvh - 78px);
-    padding: 8px 9px 9px; gap: 5px;
+    width: min(376px, calc(100vw - 16px)); padding: 0;
   }
+  .tape-deck-in { padding: 8px 9px 9px; gap: 5px; max-height: calc(100dvh - 78px); }
   .tape-speaker-panel { padding: 4px 6px; }
   .tape-grille-mesh { height: 24px; }
   .tape-dock[data-style="ui"] .tape-grille-mesh { height: 18px; }
@@ -1270,6 +1324,8 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
   .tape-window { padding: 4px 10px; gap: 8px; }
   .tape-reel { width: 28px; height: 28px; }
   .tape-badge-mark { font-size: 13px; }
+  .tape-seek-row { padding: 3px 6px; gap: 5px; }
+  .tape-seek-time { font-size: 9.5px; min-width: 2.9em; }
   .tape-meta-row input { min-height: 32px; font-size: 12px; padding: 3px 8px; }
   .tape-pitch-row { padding: 3px 6px; gap: 5px; }
   .tape-pitch-lbl { font-size: 8px; }
@@ -1780,81 +1836,88 @@ body.calm .tape-led-dot { animation: none !important; }
     <span id="tapeTabLbl">Tape Deck</span>
   </button>
   <section class="tape-deck" id="tapeDeck" aria-label="Cassette recorder deck">
-    <div class="tape-speaker-panel" aria-hidden="true">
-      <div class="tape-grille-mesh"></div>
-    </div>
-    <div class="tape-strip">
-      <div class="tape-power-grp">
-        <span class="tape-led-dot" aria-hidden="true"></span>
-        <span>POWER</span>
-        <span class="tape-vol-led" id="tapeVolLed" title="Volume level LED" aria-hidden="true"></span>
+    <div class="tape-deck-in">
+      <div class="tape-speaker-panel" aria-hidden="true">
+        <div class="tape-grille-mesh"></div>
       </div>
-      <div class="tape-strip-btns">
-        <button class="tape-micro-btn" id="tapeFltBtn" type="button" aria-pressed="true" title="Toggle Hi-Fi analog tape sound filter">Hi-Fi: On</button>
-        <button class="tape-micro-btn" id="tapeStyleBtn" type="button">UI Look</button>
-        <button class="tape-micro-btn" id="tapeCloseBtn" type="button" aria-label="Collapse cassette recorder">Hide</button>
-      </div>
-    </div>
-    <div class="tape-door">
-      <div class="tape-reticle" aria-hidden="true">
-        <div class="tape-reticle-ring"></div>
-        <div class="tape-scale">
-          <span>100</span><span class="short"></span><span class="short"></span><span>50</span><span class="short"></span><span class="short"></span><span>0</span>
+      <div class="tape-strip">
+        <div class="tape-power-grp">
+          <span class="tape-led-dot" aria-hidden="true"></span>
+          <span>POWER</span>
+          <span class="tape-vol-led" id="tapeVolLed" title="Volume level LED" aria-hidden="true"></span>
+        </div>
+        <div class="tape-strip-btns">
+          <button class="tape-micro-btn" id="tapeFltBtn" type="button" aria-pressed="true" title="Toggle Hi-Fi analog tape sound filter">Hi-Fi: On</button>
+          <button class="tape-micro-btn" id="tapeStyleBtn" type="button">UI Look</button>
+          <button class="tape-micro-btn" id="tapeCloseBtn" type="button" aria-label="Collapse cassette recorder">Hide</button>
         </div>
       </div>
-      <div class="tape-door-top">
-        <div class="tape-sticker">
-          <span class="tape-sticker-name" id="tapeNowLbl">Blank Cassette</span>
-          <span class="tape-sticker-time" id="tapeCounter">00:00</span>
+      <div class="tape-door">
+        <div class="tape-reticle" aria-hidden="true">
+          <div class="tape-reticle-ring"></div>
+          <div class="tape-scale">
+            <span>100</span><span class="short"></span><span class="short"></span><span>50</span><span class="short"></span><span class="short"></span><span>0</span>
+          </div>
         </div>
-        <span class="tape-autostop" aria-hidden="true">Automatic Stop</span>
-      </div>
-      <div class="tape-window">
-        <div class="tape-reel l" aria-hidden="true">
-          <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="7" fill="none" stroke="#c8bfae" stroke-width="1.5"/><path d="M18 11v4M18 21v4M11 18h4M21 18h4M13 13l3 3M20 20l3 3" stroke="#d9d0be" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <div class="tape-door-top">
+          <div class="tape-sticker">
+            <span class="tape-sticker-name" id="tapeNowLbl">Blank Cassette</span>
+            <span class="tape-sticker-time" id="tapeCounter">00:00</span>
+          </div>
+          <span class="tape-autostop" aria-hidden="true">Automatic Stop</span>
         </div>
-        <div class="tape-bridge">
-          <div class="tape-ribbon"></div>
-          <div class="tape-prog"><i id="tapeProgBar"></i></div>
+        <div class="tape-window">
+          <div class="tape-reel l" aria-hidden="true">
+            <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="7" fill="none" stroke="#c8bfae" stroke-width="1.5"/><path d="M18 11v4M18 21v4M11 18h4M21 18h4M13 13l3 3M20 20l3 3" stroke="#d9d0be" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <div class="tape-bridge">
+            <div class="tape-ribbon"></div>
+            <div class="tape-prog"><i id="tapeProgBar"></i></div>
+          </div>
+          <div class="tape-reel r" aria-hidden="true">
+            <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="7" fill="none" stroke="#c8bfae" stroke-width="1.5"/><path d="M18 11v4M18 21v4M11 18h4M21 18h4M13 13l3 3M20 20l3 3" stroke="#d9d0be" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
         </div>
-        <div class="tape-reel r" aria-hidden="true">
-          <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="7" fill="none" stroke="#c8bfae" stroke-width="1.5"/><path d="M18 11v4M18 21v4M11 18h4M21 18h4M13 13l3 3M20 20l3 3" stroke="#d9d0be" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <div class="tape-door-bot" aria-hidden="true">
+          <span>VOICE TAPE</span>
+          <span class="tape-play-wedge">PLAY</span>
         </div>
       </div>
-      <div class="tape-door-bot" aria-hidden="true">
-        <span>VOICE TAPE</span>
-        <span class="tape-play-wedge">PLAY</span>
+      <div class="tape-mid-bar">
+        <span class="tape-badge-mark" aria-hidden="true">MISSION</span>
+        <div class="tape-vu" id="tapeVu" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="tape-ribs" aria-hidden="true"></div>
       </div>
-    </div>
-    <div class="tape-mid-bar">
-      <span class="tape-badge-mark" aria-hidden="true">MISSION</span>
-      <div class="tape-vu" id="tapeVu" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-      <div class="tape-ribs" aria-hidden="true"></div>
-    </div>
-    <div class="tape-meta-row">
-      <input id="tapeLabelInp" maxlength="48" placeholder="Label voice tape (optional)" aria-label="Voice recording label">
-    </div>
-    <div class="tape-pitch-row">
-      <label class="tape-pitch-lbl" for="tapePitchInp">Speed / Pitch</label>
-      <input id="tapePitchInp" type="range" min="0.5" max="1.75" step="0.05" value="1" aria-label="Cassette playback speed and pitch">
-      <span class="tape-pitch-val" id="tapePitchVal">1.00×</span>
-      <button class="tape-mini-btn" id="tapePitchReset" type="button" title="Reset speed and pitch to 1.00x">1×</button>
-    </div>
-    <div class="tape-bank">
-      <div class="tape-keys-lbl" aria-hidden="true">
-        <span>REC</span><span>PLAY</span><span>REW</span><span>F.F.</span><span>STOP/EJ</span><span>PAUSE</span>
+      <div class="tape-seek-row">
+        <span class="tape-seek-time" id="tapeSeekCur">00:00</span>
+        <input id="tapeSeekInp" type="range" min="0" max="1000" step="1" value="0" aria-label="Seek voice recording position" disabled>
+        <span class="tape-seek-time dur" id="tapeSeekDur">00:00</span>
       </div>
-      <div class="tape-keys">
-        <button class="tape-key rec" id="tapeRecBtn" type="button" aria-label="Record voice" aria-pressed="false"></button>
-        <button class="tape-key play" id="tapePlayBtn" type="button" aria-label="Play tape" aria-pressed="false"></button>
-        <button class="tape-key" id="tapeRewBtn" type="button" aria-label="Rewind 5 seconds or previous tape"></button>
-        <button class="tape-key" id="tapeFfBtn" type="button" aria-label="Fast forward 5 seconds or next tape"></button>
-        <button class="tape-key" id="tapeStopBtn" type="button" aria-label="Stop or eject"></button>
-        <button class="tape-key pause" id="tapePauseBtn" type="button" aria-label="Pause or resume" aria-pressed="false"></button>
+      <div class="tape-meta-row">
+        <input id="tapeLabelInp" maxlength="48" placeholder="Label voice tape (optional)" aria-label="Voice recording label">
       </div>
+      <div class="tape-pitch-row">
+        <label class="tape-pitch-lbl" for="tapePitchInp">Speed / Pitch</label>
+        <input id="tapePitchInp" type="range" min="0.5" max="1.75" step="0.05" value="1" aria-label="Cassette playback speed and pitch">
+        <span class="tape-pitch-val" id="tapePitchVal">1.00×</span>
+        <button class="tape-mini-btn" id="tapePitchReset" type="button" title="Reset speed and pitch to 1.00x">1×</button>
+      </div>
+      <div class="tape-bank">
+        <div class="tape-keys-lbl" aria-hidden="true">
+          <span>REC</span><span>PLAY</span><span>REW</span><span>F.F.</span><span>STOP/EJ</span><span>PAUSE</span>
+        </div>
+        <div class="tape-keys">
+          <button class="tape-key rec" id="tapeRecBtn" type="button" aria-label="Record voice" aria-pressed="false"></button>
+          <button class="tape-key play" id="tapePlayBtn" type="button" aria-label="Play tape" aria-pressed="false"></button>
+          <button class="tape-key" id="tapeRewBtn" type="button" aria-label="Rewind 5 seconds or previous tape"></button>
+          <button class="tape-key" id="tapeFfBtn" type="button" aria-label="Fast forward 5 seconds or next tape"></button>
+          <button class="tape-key" id="tapeStopBtn" type="button" aria-label="Stop or eject"></button>
+          <button class="tape-key pause" id="tapePauseBtn" type="button" aria-label="Pause or resume" aria-pressed="false"></button>
+        </div>
+      </div>
+      <ul class="tape-list" id="tapeList" aria-label="Recorded voice tapes"></ul>
+      <div class="tape-msg" id="tapeMsg" role="status">Ready. Press red REC key or label a tape.</div>
     </div>
-    <ul class="tape-list" id="tapeList" aria-label="Recorded voice tapes"></ul>
-    <div class="tape-msg" id="tapeMsg" role="status">Ready. Press red REC key or label a tape.</div>
   </section>
 </div>
 <button class="btn fab" id="fab" type="button" aria-expanded="false" aria-controls="addForm">Add</button>
@@ -4026,7 +4089,7 @@ window.__gcalAuth = {
     ];
     return "M" + p.map(function (q) { return q[0].toFixed(1) + " " + q[1].toFixed(1); }).join(" L");
   }
-  var WA_SEL = "#patterns,.practice,.practice select,.practice .btn,.notebook,.notebook textarea,.nb-ico-box,.seg,.sug,.suggest,.mapcard,.mapvar-sel,.paper,.note,.box,.tbtn,.rankbox,.stress .meter,.daybtn,.lane,.toast,.mapbar,.pinform,.pinform input,.pinform select,.geoform,.geoform input,.geoform select,.dash,.thumb,.pic,.cal,.calbtn,.calmodes,.calday,.calwk-col,.opts details,.opts select,.add input,.add select,.suggest textarea,.stamp,.go,.pinbtn,.evform,.evform input,.evform select,.evform textarea,.tape-dock[data-style=\"ui\"] .tape-tab,.tape-dock[data-style=\"ui\"] .tape-deck";
+  var WA_SEL = "#patterns,.practice,.practice select,.practice .btn,.notebook,.notebook textarea,.nb-ico-box,.seg,.sug,.suggest,.mapcard,.mapvar-sel,.paper,.note,.box,.tbtn,.rankbox,.stress .meter,.daybtn,.lane,.toast,.mapbar,.pinform,.pinform input,.pinform select,.geoform,.geoform input,.geoform select,.dash,.thumb,.pic,.cal,.calbtn,.calmodes,.calday,.calwk-col,.opts details,.opts select,.add input,.add select,.suggest textarea,.stamp,.go,.pinbtn,.evform,.evform input,.evform select,.evform textarea";
   var waSvg = null, waTick = 0;
   function waOn() { return opts.wobble && opts.wobAll; }
   function inClosedDetails(e) {
@@ -4077,7 +4140,7 @@ window.__gcalAuth = {
     if (!opts.wobble || document.hidden) return;
     wobAllTick();
     if (!isReduced()) { if (!$("stressBox").hidden) drawStress(); drawBoxes(); }
-    var still = isReduced(), els = document.querySelectorAll(".btn, .chip");
+    var still = isReduced(), els = document.querySelectorAll(".btn, .chip, .tape-dock[data-style=\"ui\"] .tape-tab, .tape-dock[data-style=\"ui\"] .tape-deck");
     for (var i = 0; i < els.length; i++) {
       var e0 = els[i], w = e0.offsetWidth, h = e0.offsetHeight; if (!w || !h) continue;
       var s = e0.querySelector("svg.wobs");
@@ -5648,9 +5711,9 @@ window.__gcalAuth = {
     if (!isFinite(n)) n = 1;
     return Math.round(Math.min(1.75, Math.max(0.5, n)) * 100) / 100;
   }
-  var tapeState = { recording: false, playing: false, paused: false, startedAt: 0, recAccum: 0, offset: 0, rate: clampTapeRate(opts.tapeRate),
+  var tapeState = { recording: false, playing: false, paused: false, scrubbing: false, scrubWasPlaying: false, startedAt: 0, recAccum: 0, offset: 0, rate: clampTapeRate(opts.tapeRate),
     dur: 0, chunks: [], stream: null, mr: null, micSrc: null, analyser: null, vuRaf: 0, recTimer: null, playTimer: null, playSrc: null,
-    playStartCtx: 0, playGain: null, hissSrc: null, hissGain: null, lfo1: null, lfo2: null, dryBus: null, wetBus: null, curBuf: null, spinT: null };
+    playStartCtx: 0, playGain: null, hissSrc: null, hissGain: null, lfo1: null, lfo2: null, dryBus: null, wetBus: null, curBuf: null, curBufId: null, spinT: null };
 
   function loadTapesMeta() {
     try {
@@ -5669,6 +5732,23 @@ window.__gcalAuth = {
     return pad(Math.floor(sec / 60)) + ":" + pad(sec % 60);
   }
   function tapeMsg(t) { var m = $("tapeMsg"); if (m) m.textContent = t; }
+  function updateTapeSeekUi(pos, totalDur, skipRangeVal) {
+    var dur = totalDur > 0 ? Math.max(0.2, totalDur) : 0;
+    var p = dur > 0 ? Math.min(dur, Math.max(0, pos || 0)) : 0;
+    var pct = dur > 0 ? Math.min(100, Math.max(0, (p / dur) * 100)) : 0;
+    if ($("tapeProgBar")) $("tapeProgBar").style.width = pct.toFixed(2) + "%";
+    if ($("tapeSeekCur")) $("tapeSeekCur").textContent = tapeFmt(p);
+    if ($("tapeSeekDur")) $("tapeSeekDur").textContent = tapeFmt(dur);
+    var inp = $("tapeSeekInp");
+    if (inp) {
+      inp.style.setProperty("--seek-pct", pct.toFixed(2) + "%");
+      if (!skipRangeVal && !tapeState.scrubbing) inp.value = String(Math.round(pct * 10));
+      inp.disabled = tapeState.recording || (!tapes.length && !tapeState.playing && !tapeState.paused);
+    }
+    if ($("tapeCounter") && (tapeState.playing || tapeState.paused || tapeState.scrubbing) && dur > 0) {
+      $("tapeCounter").textContent = tapeFmt(p) + "/" + tapeFmt(dur);
+    }
+  }
   function tapeSetClass() {
     var dk = $("tapeDock"); if (!dk) return;
     dk.classList.toggle("recording", tapeState.recording && !tapeState.paused);
@@ -5679,6 +5759,7 @@ window.__gcalAuth = {
     if ($("tapeRecBtn")) $("tapeRecBtn").setAttribute("aria-pressed", tapeState.recording ? "true" : "false");
     if ($("tapePlayBtn")) $("tapePlayBtn").setAttribute("aria-pressed", tapeState.playing ? "true" : "false");
     if ($("tapePauseBtn")) $("tapePauseBtn").setAttribute("aria-pressed", tapeState.paused ? "true" : "false");
+    if ($("tapeSeekInp")) $("tapeSeekInp").disabled = tapeState.recording || (!tapes.length && !tapeState.playing && !tapeState.paused);
     if ($("tapeTabLbl")) {
       $("tapeTabLbl").textContent = tapeState.recording
         ? (tapeState.paused ? "Rec Paused" : "Recording...")
@@ -5712,6 +5793,11 @@ window.__gcalAuth = {
     var dk = $("tapeDock"); if (!dk) return;
     var st = opts.tapeStyle === "ui" ? "ui" : "realistic";
     dk.setAttribute("data-style", st);
+    if (st !== "ui") {
+      dk.querySelectorAll("svg.wobs").forEach(function (n) { if (n.parentNode) n.parentNode.removeChild(n); });
+    } else if (opts.wobble) {
+      wobTick();
+    }
     if ($("tapeStyleBtn")) $("tapeStyleBtn").textContent = st === "ui" ? "Realistic" : "UI Look";
     if ($("tapeFltBtn")) {
       $("tapeFltBtn").setAttribute("aria-pressed", opts.tapeFilter ? "true" : "false");
@@ -5798,10 +5884,11 @@ window.__gcalAuth = {
     if (!tapeState.recording && $("tapeNowLbl")) {
       $("tapeNowLbl").textContent = active ? active.label : "Blank Cassette";
     }
-    if (!tapeState.recording && !tapeState.playing && !tapeState.paused && $("tapeCounter")) {
-      $("tapeCounter").textContent = active ? tapeFmt(active.dur) : "00:00";
-      if ($("tapeProgBar")) $("tapeProgBar").style.width = "0%";
+    if (!tapeState.recording && !tapeState.playing && !tapeState.paused) {
+      if ($("tapeCounter")) $("tapeCounter").textContent = active ? tapeFmt(active.dur) : "00:00";
+      updateTapeSeekUi(0, active ? active.dur : 0, false);
     }
+    if (opts.wobble && opts.tapeStyle === "ui") wobTick();
     if (!tapes.length) {
       var empty = el("li", "tape-item");
       empty.textContent = "No voice tapes yet. Press red REC key to record.";
@@ -5876,7 +5963,7 @@ window.__gcalAuth = {
     if (tapeState.playGain) { try { tapeState.playGain.disconnect(); } catch (e) {} tapeState.playGain = null; }
     tapeState.dryBus = null; tapeState.wetBus = null; tapeState.hissGain = null;
     tapeState.playing = false;
-    if (!keepPausedState) { tapeState.paused = false; tapeState.offset = 0; tapeState.curBuf = null; }
+    if (!keepPausedState) { tapeState.paused = false; tapeState.offset = 0; tapeState.curBuf = null; tapeState.curBufId = null; }
   }
 
   function stopTapeTransport() {
@@ -5934,7 +6021,7 @@ window.__gcalAuth = {
       tapeState.recTimer = setInterval(function () {
         var elapsed = tapeState.recAccum + (tapeState.paused ? 0 : (Date.now() - tapeState.startedAt) / 1000);
         if ($("tapeCounter")) $("tapeCounter").textContent = tapeFmt(elapsed);
-        if ($("tapeProgBar")) $("tapeProgBar").style.width = Math.min(100, (elapsed / 300) * 100) + "%";
+        updateTapeSeekUi(elapsed, 300, false);
         if (elapsed >= 300) stopTapeTransport();
       }, 200);
 
@@ -6014,20 +6101,20 @@ window.__gcalAuth = {
     tapeState.playSrc = src; tapeState.hissSrc = hiss; tapeState.lfo1 = lfo1; tapeState.lfo2 = lfo2;
     tapeState.playGain = master; tapeState.dryBus = dry; tapeState.wetBus = wet; tapeState.hissGain = hissG;
     tapeState.analyser = analyser; tapeState.playing = true; tapeState.paused = false;
-    tapeState.offset = startOff; tapeState.playStartCtx = AC.currentTime; tapeState.curBuf = buf;
+    tapeState.offset = startOff; tapeState.playStartCtx = AC.currentTime; tapeState.curBuf = buf; tapeState.curBufId = tp.id;
 
     lfo1.start(); lfo2.start(); hiss.start(); src.start(0, startOff);
     startTapeVu(analyser);
     tapeSetClass();
     renderTapes();
+    updateTapeSeekUi(startOff, totalDur, false);
     if ($("tapeNowLbl")) $("tapeNowLbl").textContent = tp.label;
     tapeMsg((opts.tapeFilter ? "Playing (Hi-Fi tape filter): " : "Playing (raw): ") + tp.label);
 
     tapeState.playTimer = setInterval(function () {
-      if (!tapeState.playing || !AC) return;
+      if (!tapeState.playing || !AC || tapeState.scrubbing) return;
       var pos = Math.min(totalDur, Math.max(0, tapeState.offset + (AC.currentTime - tapeState.playStartCtx) * tapeState.rate));
-      if ($("tapeCounter")) $("tapeCounter").textContent = tapeFmt(pos) + "/" + tapeFmt(totalDur);
-      if ($("tapeProgBar")) $("tapeProgBar").style.width = Math.min(100, (pos / totalDur) * 100) + "%";
+      updateTapeSeekUi(pos, totalDur, false);
     }, 100);
 
     src.onended = function () {
@@ -6099,7 +6186,7 @@ window.__gcalAuth = {
       stopTapePlaybackNodes(true);
       cancelAnimationFrame(tapeState.vuRaf); drawTapeVuIdle();
       tapeMechClick(false); tapeSetClass();
-      if ($("tapeCounter")) $("tapeCounter").textContent = tapeFmt(tapeState.offset) + "/" + tapeFmt(totalDur);
+      updateTapeSeekUi(tapeState.offset, totalDur, false);
       tapeMsg("Paused \"" + (tp ? tp.label : "tape") + "\".");
     } else if (tapeState.paused && tapeState.curBuf && tp) {
       tapeMechClick(false);
@@ -6120,8 +6207,7 @@ window.__gcalAuth = {
       var curPos = tapeState.playing ? (tapeState.offset + (AC.currentTime - tapeState.playStartCtx) * tapeState.rate) : tapeState.offset;
       var nextPos = Math.min(Math.max(0, totalDur - 0.15), Math.max(0, curPos + dir * 5));
       tapeState.offset = nextPos;
-      if ($("tapeCounter")) $("tapeCounter").textContent = tapeFmt(nextPos) + "/" + tapeFmt(totalDur);
-      if ($("tapeProgBar")) $("tapeProgBar").style.width = Math.min(100, (nextPos / totalDur) * 100) + "%";
+      updateTapeSeekUi(nextPos, totalDur, false);
       if (tapeState.playing) startDecodedBuffer(tp, tapeState.curBuf, nextPos);
       else tapeMsg((dir < 0 ? "Rewound to " : "Cued to ") + tapeFmt(nextPos) + ".");
       return;
@@ -6192,6 +6278,55 @@ window.__gcalAuth = {
         setTapePitchRate(1, true);
         tapeMechClick(false);
         tapeMsg("Speed & pitch reset to 1.00×.");
+      });
+    }
+    if ($("tapeSeekInp")) {
+      var seekInp = $("tapeSeekInp");
+      function getSeekTotalDur(tp) {
+        if (tapeState.curBuf && tapeState.curBufId === tp.id) return Math.max(0.2, tapeState.curBuf.duration || tp.dur || 1);
+        return Math.max(0.2, tp.dur || 1);
+      }
+      function startScrub() {
+        if (tapeState.recording) return;
+        tapeState.scrubbing = true;
+        tapeState.scrubWasPlaying = tapeState.playing;
+      }
+      function endScrubFallback() {
+        setTimeout(function () {
+          if (tapeState.scrubbing) { tapeState.scrubbing = false; tapeState.scrubWasPlaying = false; }
+        }, 0);
+      }
+      seekInp.addEventListener("pointerdown", startScrub);
+      seekInp.addEventListener("touchstart", startScrub, { passive: true });
+      seekInp.addEventListener("pointerup", endScrubFallback);
+      seekInp.addEventListener("pointercancel", endScrubFallback);
+      seekInp.addEventListener("blur", endScrubFallback);
+      seekInp.addEventListener("input", function () {
+        if (tapeState.recording) return;
+        var tp = findTape(tapeActiveId) || tapes[0]; if (!tp) return;
+        if (!tapeState.scrubbing) { tapeState.scrubbing = true; tapeState.scrubWasPlaying = tapeState.playing; }
+        var totalDur = getSeekTotalDur(tp);
+        var frac = Math.min(1, Math.max(0, (+this.value || 0) / 1000));
+        var pos = frac * totalDur;
+        updateTapeSeekUi(pos, totalDur, true);
+      });
+      seekInp.addEventListener("change", function () {
+        var shouldPlay = tapeState.playing || tapeState.scrubWasPlaying;
+        tapeState.scrubbing = false; tapeState.scrubWasPlaying = false;
+        if (tapeState.recording) return;
+        var tp = findTape(tapeActiveId) || tapes[0]; if (!tp) return;
+        var totalDur = getSeekTotalDur(tp);
+        var frac = Math.min(1, Math.max(0, (+this.value || 0) / 1000));
+        var nextPos = Math.min(Math.max(0, totalDur - 0.12), Math.max(0, frac * totalDur));
+        tapeState.offset = nextPos;
+        updateTapeSeekUi(nextPos, totalDur, false);
+        if (shouldPlay && tapeState.curBuf && tapeState.curBufId === tp.id) {
+          startDecodedBuffer(tp, tapeState.curBuf, nextPos);
+        } else if (tapeState.paused && tapeState.curBuf && tapeState.curBufId === tp.id) {
+          tapeMsg("Cued to " + tapeFmt(nextPos) + ".");
+        } else {
+          playTapeById(tp.id, nextPos);
+        }
       });
     }
     $("tapeFltBtn").addEventListener("click", function () {

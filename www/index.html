@@ -2985,46 +2985,42 @@ function gisSignIn() {
   return loadGis().then((oauth2) => runGisTokenRequest(oauth2));
 }
 
-async function safeFirebasePopupSignIn() {
-  let opDone = false;
-  let opRejected = false;
-  let lastAuthWin = null;
-  const base = browserPopupRedirectResolver;
-  const safeResolver = {
-    _redirectPersistence: base._redirectPersistence,
-    _completeRedirectFn: base._completeRedirectFn,
-    _overrideRedirectResult: base._overrideRedirectResult,
-    get _shouldInitProactively() { return base._shouldInitProactively; },
-    _initialize(a) { return base._initialize(a); },
-    async _openPopup(a, p, t, ev) {
-      const w = await base._openPopup(a, p, t, ev);
-      lastAuthWin = w;
-      return w;
-    },
-    _openRedirect(a, p, t, ev) { return base._openRedirect(a, p, t, ev); },
-    _originValidation(a) {
-      return Promise.resolve(base._originValidation(a)).catch((err) => {
-        if (opDone || opRejected || !lastAuthWin || !lastAuthWin.window || lastAuthWin.window.closed) return;
-        opRejected = true;
-        throw err;
+const activeOp = { done: true, rejected: false, win: null };
+
+class SafePopupRedirectResolver extends browserPopupRedirectResolver {
+  async _openPopup(a, p, t, ev) {
+    const w = await super._openPopup(a, p, t, ev);
+    activeOp.win = w;
+    return w;
+  }
+  _originValidation(a) {
+    return Promise.resolve(super._originValidation(a)).catch((err) => {
+      if (activeOp.done || activeOp.rejected || !activeOp.win || !activeOp.win.window || activeOp.win.window.closed) return;
+      activeOp.rejected = true;
+      throw err;
+    });
+  }
+  _isIframeWebStorageSupported(a, cb) {
+    try {
+      return super._isIframeWebStorageSupported(a, (ok) => {
+        if (activeOp.done || (!ok && activeOp.rejected)) return;
+        if (!ok) activeOp.rejected = true;
+        cb(ok);
       });
-    },
-    _isIframeWebStorageSupported(a, cb) {
-      try {
-        return base._isIframeWebStorageSupported(a, (ok) => {
-          if (opDone || (!ok && opRejected)) return;
-          if (!ok) opRejected = true;
-          cb(ok);
-        });
-      } catch (_err) {
-        // Guard against Firebase 11.6.1 throwing internal-error after webStorageSupport callback
-      }
+    } catch (_err) {
+      // Guard against Firebase 11.6.1 throwing internal-error after webStorageSupport callback
     }
-  };
+  }
+}
+
+async function safeFirebasePopupSignIn() {
+  activeOp.done = false;
+  activeOp.rejected = false;
+  activeOp.win = null;
   try {
-    return await signInWithPopup(auth, provider, safeResolver);
+    return await signInWithPopup(auth, provider, SafePopupRedirectResolver);
   } finally {
-    opDone = true;
+    activeOp.done = true;
   }
 }
 

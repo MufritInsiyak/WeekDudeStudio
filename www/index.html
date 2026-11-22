@@ -1533,6 +1533,51 @@ body.calm .tape-led-dot { animation: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .tape-tab-reels i, .tape-reel svg, .tape-led-dot { animation: none !important; }
 }
+/* ===== Windows Desktop & Always-on-Top Mini Mode ===== */
+.win-kbd {
+  display: inline-block; padding: 1px 6px; border: 1px solid var(--ink-soft);
+  background: var(--map-bg); color: var(--ink);
+  font-family: ui-monospace, Consolas, monospace; font-size: 11px; line-height: 1.4;
+}
+.win-shortcuts { display: grid; gap: 6px; font-size: 12.5px; color: var(--ink); }
+.win-shortcut-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+body.win-mini {
+  padding: 8px 10px calc(72px + env(safe-area-inset-bottom, 0px));
+}
+body.win-mini .wrap { gap: 8px; padding-bottom: 64px; }
+body.win-mini .head { gap: 6px; }
+body.win-mini .pinbtn { width: 42px; height: 42px; }
+body.win-mini .stamp { font-size: 14px; padding: 1px 7px; border-width: 2px; }
+body.win-mini .count { font-size: 18px; margin-top: 2px; }
+body.win-mini .nextev { font-size: 11.5px; }
+body.win-mini .head-act .btn { min-height: 32px; padding: 4px 8px; font-size: 11px; }
+body.win-mini #meters,
+body.win-mini #week,
+body.win-mini #wrap,
+body.win-mini #topPanels,
+body.win-mini #cal,
+body.win-mini #road,
+body.win-mini #mapcard,
+body.win-mini #practice,
+body.win-mini .foot { display: none !important; }
+body.win-mini .layout { grid-template-columns: minmax(0, 1fr) !important; gap: 8px; }
+body.win-mini #listSec { order: -1; }
+body.win-mini .paper { padding: 8px 10px 10px; }
+body.win-mini .t { font-size: 20px; }
+body.win-mini .pomo-hud { width: 100%; justify-content: center; padding: 8px 10px; gap: 8px; }
+body.win-mini .pomo-ring-box { width: 106px; height: 106px; }
+body.win-mini .pomo-clock { font-size: 17px; }
+body.win-mini .pomo-cyc { font-size: 22px; min-width: 34px; }
+body.win-mini .pomo-side { flex-basis: 100%; }
+body.win-mini .tape-dock {
+  right: calc(max(10px, env(safe-area-inset-right, 0px)) + 84px);
+  bottom: 10px;
+  max-width: calc(100vw - 104px);
+}
+body.win-mini .tape-tab { min-width: 104px; min-height: 40px; padding: 4px 10px; font-size: 9.5px; }
+body.win-mini .btn.fab {
+  right: 10px; bottom: 10px; min-width: 74px; height: 40px; padding: 0 12px; font-size: 13px;
+}
 </style>
 </head>
 <body>
@@ -1580,6 +1625,7 @@ body.calm .tape-led-dot { animation: none !important; }
       </div>
     </div>
     <div class="head-act">
+      <button class="btn ghost" id="winMiniHeadBtn" type="button" aria-pressed="false" hidden>Mini</button>
       <button class="btn ghost" id="optBtn" type="button" aria-expanded="false" aria-controls="options">Options</button>
       <button class="btn ghost" id="aodBtn" type="button">Ambient</button>
     </div>
@@ -1850,6 +1896,25 @@ body.calm .tape-led-dot { animation: none !important; }
           <button class="btn ghost" id="importPasted" type="button">Import pasted JSON</button>
         </div>
         <div class="msg" id="bkMsg" role="status"></div>
+      </div>
+    </details>
+    <details id="desktopSec" hidden>
+      <summary>Windows Desktop</summary>
+      <div class="grp">
+        <div class="row-actions">
+          <button class="btn ghost" id="winMiniBtn" type="button" aria-pressed="false">Enter mini mode</button>
+        </div>
+        <label class="chk"><input type="checkbox" id="winTopOn"> Keep window always on top</label>
+        <label class="chk"><input type="checkbox" id="winTrayOn" checked> Minimize to system tray when closing</label>
+        <div class="mh">Shortcuts</div>
+        <div class="win-shortcuts">
+          <div class="win-shortcut-row"><span>Quick add mission (global)</span><span class="win-kbd">Ctrl+Shift+A</span></div>
+          <div class="win-shortcut-row"><span>Always-on-top mini mode (global)</span><span class="win-kbd">Ctrl+Shift+M</span></div>
+          <div class="win-shortcut-row"><span>Start / pause Pomodoro (global)</span><span class="win-kbd">Ctrl+Shift+P</span></div>
+          <div class="win-shortcut-row"><span>Flip Do / Don't-do mode</span><span class="win-kbd">Ctrl+Shift+D</span></div>
+          <div class="win-shortcut-row"><span>Export town map as PNG</span><span class="win-kbd">Ctrl+E</span></div>
+        </div>
+        <div class="msg">Taskbar and tray icons update automatically when you switch Do / Don't-do modes or import a custom pin icon.</div>
       </div>
     </details>
     <div class="row-actions"><button class="btn ghost" id="optClose" type="button">Close</button></div>
@@ -3977,6 +4042,20 @@ window.__gcalAuth = {
     var t = $("toast"); t.textContent = msg; t.hidden = false;
     clearTimeout(toast.t); toast.t = setTimeout(function () { t.hidden = true; }, 3200);
   }
+  var DESKTOP = window.desktopAPI && window.desktopAPI.isDesktop ? window.desktopAPI : null;
+  function fireDesktopNotif(title, body, action) {
+    if (DESKTOP && typeof DESKTOP.notify === "function") {
+      DESKTOP.notify({ title: title || "Mission Map", body: body || "", action: action || "" }).catch(function () {});
+      return true;
+    }
+    try {
+      if (!NATIVE && window.Notification && Notification.permission === "granted") {
+        new Notification(title || "Mission Map", { body: body || "" });
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
 
   /* ---------- achievements ---------- */
   var ACH = [
@@ -4103,6 +4182,7 @@ window.__gcalAuth = {
         persist(); render();
         fx("chime");
         toast("Focus block done! +$10");
+        fireDesktopNotif("Pomodoro Watch", "Focus block complete (+$10). Time for a break!", "");
       } else { fx("click"); }
       if (race.maxRounds === 1) {
         endRace(false, manualSkip ? "Focus stopped." : "Focus session complete! +$10.");
@@ -4113,11 +4193,13 @@ window.__gcalAuth = {
     } else {
       fx(manualSkip ? "click" : "chime");
       if (race.maxRounds > 0 && race.round >= race.maxRounds) {
+        if (!manualSkip) fireDesktopNotif("Pomodoro Watch", "All " + race.maxRounds + " Pomodoro rounds complete!", "");
         endRace(false, "All " + race.maxRounds + " Pomodoro rounds complete!");
         return;
       }
       race.round++;
       $("raceMsg").textContent = "Break over — Focus round " + race.round + "!";
+      if (!manualSkip) fireDesktopNotif("Pomodoro Watch", "Break is over — Focus round " + race.round + " started.", "");
       beginPomoPhase("focus");
     }
   }
@@ -4135,7 +4217,9 @@ window.__gcalAuth = {
       var secs = Math.max(1, Math.round((Date.now() - race.start) / 1000)), key = String(race.total), prev = stats.best[key], nb = !prev || secs < prev;
       if (nb) stats.best[key] = secs;
       stats.races++; stats.cash += 25;
-      $("raceMsg").textContent = "Cleared " + race.total + " in " + fmt(secs) + (nb ? ". New best!" : ". Best: " + fmt(prev) + ".") + " +$25.";
+      var winMsg = "Cleared " + race.total + " in " + fmt(secs) + (nb ? ". New best!" : ". Best: " + fmt(prev) + ".") + " +$25.";
+      $("raceMsg").textContent = winMsg;
+      fireDesktopNotif("Mission Sweep!", winMsg, "");
       fx("chime"); persist(); render(); checkAch();
     }
     syncPomoHud();
@@ -4689,6 +4773,19 @@ window.__gcalAuth = {
           fx("chime", 0.2);
         });
       }
+      if (DESKTOP && typeof DESKTOP.savePng === "function") {
+        var deskDataUrl = canvas.toDataURL("image/png");
+        return DESKTOP.savePng({ filename: filename, dataUrl: deskDataUrl }).then(function (r) {
+          if (r && r.ok) {
+            toast("Saved " + filename);
+            fx("chime", 0.2);
+          } else if (r && r.canceled) {
+            toast("PNG export canceled.");
+          } else {
+            throw new Error((r && r.error) || "Desktop PNG save failed");
+          }
+        });
+      }
       return new Promise(function (resolve, reject) {
         canvas.toBlob(function (blob) {
           if (!blob) { reject(new Error("PNG encoding failed")); return; }
@@ -4837,7 +4934,7 @@ window.__gcalAuth = {
         var openHere = norm().filter(function (i) { return !i.done && i.place === k; }).length;
         var msg = "Entered geofence: " + placeInfo(k).n + (openHere ? " (" + openHere + " open)" : "");
         toast(msg);
-        try { if (!NATIVE && window.Notification && Notification.permission === "granted") new Notification("Mission Map", { body: msg }); } catch (e) {}
+        fireDesktopNotif("Mission Map", msg, "");
       });
       notifyGeofenceAndroid(entered);
       fx("pin");
@@ -5630,7 +5727,7 @@ window.__gcalAuth = {
         FIRED[key] = now; changed = true;
         var msg = e.title + (e.allDay || !e.start ? " (today)" : " at " + e.start);
         toast("Reminder: " + msg); fx("chime");
-        try { if (window.Notification && Notification.permission === "granted") new Notification(e.title, { body: msg }); } catch (x) {}
+        fireDesktopNotif(e.title, msg, "");
       }
     });
     Object.keys(FIRED).forEach(function (k) { if (now - FIRED[k] > 3 * 86400000) { delete FIRED[k]; changed = true; } });
@@ -6791,6 +6888,13 @@ window.__gcalAuth = {
           dataUrl: finalUrl
         }).catch(function () {});
       }
+      if (DESKTOP && typeof DESKTOP.setAppIcon === "function") {
+        DESKTOP.setAppIcon({
+          label: evil ? "Mission Map (Don't-do)" : "Mission Map",
+          evil: !!evil,
+          dataUrl: finalUrl
+        }).catch(function () {});
+      }
     });
   }
   function wireAppIconImport(inputId, keys, msgOk) {
@@ -7842,8 +7946,110 @@ window.__gcalAuth = {
     syncListenUi();
   })();
 
+  function desktopInit() {
+    var sec = $("desktopSec"), headBtn = $("winMiniHeadBtn"), optBtn = $("winMiniBtn"), topChk = $("winTopOn"), trayChk = $("winTrayOn");
+    function applyDesktopState(st) {
+      if (!st || typeof st !== "object") return;
+      document.body.classList.toggle("win-mini", !!st.miniMode);
+      if (headBtn) {
+        headBtn.textContent = st.miniMode ? "Full" : "Mini";
+        headBtn.setAttribute("aria-pressed", st.miniMode ? "true" : "false");
+        headBtn.title = st.miniMode ? "Restore full desktop window (Ctrl+Shift+M)" : "Always-on-top mini mode (Ctrl+Shift+M)";
+      }
+      if (optBtn) {
+        optBtn.textContent = st.miniMode ? "Exit mini mode" : "Enter mini mode";
+        optBtn.setAttribute("aria-pressed", st.miniMode ? "true" : "false");
+      }
+      if (topChk) topChk.checked = !!st.alwaysOnTop;
+      if (trayChk) trayChk.checked = st.minimizeToTray !== false;
+    }
+    if (DESKTOP) {
+      if (sec) sec.hidden = false;
+      if (headBtn) headBtn.hidden = false;
+      if (DESKTOP.onState) DESKTOP.onState(applyDesktopState);
+      if (DESKTOP.getState) DESKTOP.getState().then(applyDesktopState).catch(function () {});
+      if (headBtn) headBtn.addEventListener("click", function () {
+        if (DESKTOP.toggleMiniMode) DESKTOP.toggleMiniMode().then(applyDesktopState).catch(function () {});
+        fx("click");
+      });
+      if (optBtn) optBtn.addEventListener("click", function () {
+        if (DESKTOP.toggleMiniMode) DESKTOP.toggleMiniMode().then(applyDesktopState).catch(function () {});
+        fx("click");
+      });
+      if (topChk) topChk.addEventListener("change", function () {
+        if (DESKTOP.setAlwaysOnTop) DESKTOP.setAlwaysOnTop(this.checked).then(applyDesktopState).catch(function () {});
+      });
+      if (trayChk) trayChk.addEventListener("change", function () {
+        if (DESKTOP.setMinimizeToTray) DESKTOP.setMinimizeToTray(this.checked).then(applyDesktopState).catch(function () {});
+      });
+      if (DESKTOP.onCommand) {
+        DESKTOP.onCommand(function (msg) {
+          var cmd = msg && msg.command;
+          if (cmd === "add-mission") {
+            editMode = false; syncEditModeUi(); editingId = null; addSheet(true); fx("click");
+          } else if (cmd === "toggle-evil") {
+            flipEvil();
+          } else if (cmd === "toggle-pomo") {
+            if ($("race") && $("race").hidden) {
+              opts.race = true;
+              if ($("raceOn")) $("raceOn").checked = true;
+              saveOpts(); applyOpts();
+            }
+            if (race && $("racePause")) $("racePause").click();
+            else if ($("raceGo")) $("raceGo").click();
+          } else if (cmd === "export-png") {
+            exportMapPng();
+          } else if (cmd === "open-options") {
+            if ($("options")) {
+              $("options").hidden = !$("options").hidden;
+              if ($("optBtn")) $("optBtn").setAttribute("aria-expanded", String(!$("options").hidden));
+            }
+          }
+        });
+      }
+    }
+    document.addEventListener("keydown", function (e) {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      var k = String(e.key || "").toLowerCase();
+      var tag = e.target && e.target.tagName ? e.target.tagName.toLowerCase() : "";
+      var editing = tag === "input" || tag === "textarea" || tag === "select" || (e.target && e.target.isContentEditable);
+      if (e.shiftKey && k === "d") {
+        e.preventDefault(); flipEvil(); return;
+      }
+      if (e.shiftKey && k === "m" && DESKTOP && DESKTOP.toggleMiniMode) {
+        e.preventDefault(); DESKTOP.toggleMiniMode().then(applyDesktopState).catch(function () {}); return;
+      }
+      if (e.shiftKey && k === "a") {
+        e.preventDefault(); editMode = false; syncEditModeUi(); editingId = null; addSheet(true); return;
+      }
+      if (e.shiftKey && k === "p") {
+        e.preventDefault();
+        if ($("race") && $("race").hidden) {
+          opts.race = true; if ($("raceOn")) $("raceOn").checked = true; saveOpts(); applyOpts();
+        }
+        if (race && $("racePause")) $("racePause").click();
+        else if ($("raceGo")) $("raceGo").click();
+        return;
+      }
+      if (editing) return;
+      if (!e.shiftKey && k === "n") {
+        e.preventDefault(); editMode = false; syncEditModeUi(); editingId = null; addSheet(true);
+      } else if (!e.shiftKey && k === "m" && DESKTOP && DESKTOP.toggleMiniMode) {
+        e.preventDefault(); DESKTOP.toggleMiniMode().then(applyDesktopState).catch(function () {});
+      } else if (!e.shiftKey && k === "e") {
+        e.preventDefault(); exportMapPng();
+      } else if (!e.shiftKey && k === ",") {
+        e.preventDefault();
+        if ($("options")) {
+          $("options").hidden = !$("options").hidden;
+          if ($("optBtn")) $("optBtn").setAttribute("aria-expanded", String(!$("options").hidden));
+        }
+      }
+    });
+  }
+
   /* ---------- start ---------- */
-  buildMap(); fillSelect(); applyOpts(); render(); initDb(); mediaInit(); phoneInit(); gcalInit();
+  buildMap(); fillSelect(); applyOpts(); render(); initDb(); mediaInit(); phoneInit(); gcalInit(); desktopInit();
   if (typeof syncAppIcon === "function") syncAppIcon();
   setInterval(updateSky, 60000);
 })();

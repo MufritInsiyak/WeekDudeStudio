@@ -6,10 +6,13 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
-    "build": "node --check server.js",
-    "lint": "node --check server.js",
+    "build": "node --check server.js && node --check desktop/main.js && node --check desktop/preload.js && node --check desktop/prepare-assets.js",
+    "lint": "node --check server.js && node --check desktop/main.js && node --check desktop/preload.js && node --check desktop/prepare-assets.js",
     "sync": "cap sync android",
-    "apk": "cap sync android && cd android && ./gradlew assembleDebug"
+    "apk": "cap sync android && cd android && ./gradlew assembleDebug",
+    "win:install": "npm --prefix desktop install",
+    "win:dev": "npm --prefix desktop start",
+    "win:build": "npm --prefix desktop run dist"
   },
   "dependencies": {
     "@capacitor-community/keep-awake": "^8.0.1",

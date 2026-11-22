@@ -1,0 +1,54 @@
+{
+  "name": "mission-map-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mission Map Windows Desktop Edition (Electron)",
+  "author": "Mission Map",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "prepare-assets": "node prepare-assets.js",
+    "start": "electron .",
+    "dist": "node prepare-assets.js && electron-builder --win --x64",
+    "dist:dir": "node prepare-assets.js && electron-builder --win --x64 --dir"
+  },
+  "build": {
+    "appId": "com.missionmap.app",
+    "productName": "Mission Map",
+    "forceCodeSigning": false,
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json",
+      "app-www/**/*",
+      "build/icon.ico",
+      "build/icon.png",
+      "!dist/**"
+    ],
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "artifactName": "Mission-Map-Setup-${version}.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "portable": {
+      "artifactName": "Mission-Map-Portable-${version}.${ext}"
+    }
+  },
+  "devDependencies": {
+    "electron": "^35.1.5",
+    "electron-builder": "^25.1.8"
+  }
+}

@@ -15,6 +15,7 @@ const {
   session
 } = require("electron");
 const http = require("http");
+const https = require("https");
 const fs = require("fs");
 const path = require("path");
 
@@ -60,7 +61,9 @@ let serverUrl = "";
 let isQuitting = false;
 let currentEvilMode = false;
 let currentTitle = "Mission Map";
+let currentTooltip = "Mission Map";
 let currentIconImage = null;
+let currentTrayStatus = { openCount: 0, doneCount: 0, totalCount: 0, expiredCount: 0, pomoState: "" };
 let trayHintShown = false;
 
 let prefs = {
@@ -69,7 +72,8 @@ let prefs = {
   maximized: false,
   miniMode: false,
   alwaysOnTop: false,
-  minimizeToTray: true
+  minimizeToTray: true,
+  evilMode: false
 };
 
 function resolveWwwDir() {
@@ -126,6 +130,8 @@ function loadPrefs() {
       prefs.miniMode = !!parsed.miniMode;
       prefs.alwaysOnTop = !!parsed.alwaysOnTop;
       prefs.minimizeToTray = parsed.minimizeToTray !== false;
+      prefs.evilMode = !!parsed.evilMode;
+      currentEvilMode = prefs.evilMode;
     }
   } catch (_err) {}
 }
@@ -241,10 +247,27 @@ function setMinimizeToTray(enable) {
   return getDesktopState();
 }
 
+function formatTrayStatusLabel() {
+  const modeTxt = currentEvilMode ? "Don't-do List" : "Do List";
+  const st = currentTrayStatus || {};
+  let countTxt = "Ready";
+  if (st.totalCount > 0) {
+    countTxt = st.openCount > 0 ? `${st.openCount} open` : "All done";
+    if (st.expiredCount > 0) countTxt += ` (${st.expiredCount} due)`;
+  }
+  const pomoTxt = st.pomoState ? ` · Pomodoro: ${st.pomoState}` : "";
+  return `${modeTxt} · ${countTxt}${pomoTxt}`;
+}
+
 function rebuildTrayMenu() {
   if (!tray || tray.isDestroyed()) return;
   const winVisible = !!(mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible());
   const menu = Menu.buildFromTemplate([
+    {
+      label: formatTrayStatusLabel(),
+      enabled: false
+    },
+    { type: "separator" },
     {
       label: winVisible ? "Hide to Tray" : "Open Mission Map",
       click: () => {
@@ -277,7 +300,7 @@ function rebuildTrayMenu() {
       click: () => setAlwaysOnTop(!prefs.alwaysOnTop)
     },
     {
-      label: currentEvilMode ? "Switch to Do List" : "Switch to Don't-do List",
+      label: (currentEvilMode ? "Switch to Do List" : "Switch to Don't-do List") + " (Ctrl+Shift+D)",
       click: () => {
         sendRendererCommand("toggle-evil");
       }
@@ -286,6 +309,20 @@ function rebuildTrayMenu() {
       label: "Start / Pause Pomodoro (Ctrl+Shift+P)",
       click: () => {
         sendRendererCommand("toggle-pomo");
+      }
+    },
+    {
+      label: "Export Town Map PNG (Ctrl+E)",
+      click: () => {
+        showWindow();
+        sendRendererCommand("export-png");
+      }
+    },
+    {
+      label: "Keyboard Shortcuts (?)",
+      click: () => {
+        showWindow();
+        sendRendererCommand("show-shortcuts");
       }
     },
     { type: "separator" },
@@ -308,12 +345,15 @@ function rebuildTrayMenu() {
 }
 
 function isAllowedOAuthPopupUrl(rawUrl) {
+  if (rawUrl === "about:blank") return true;
   try {
     const u = new URL(rawUrl);
     if (u.protocol !== "https:") return false;
     const h = u.hostname.toLowerCase();
     return (
       h === "accounts.google.com" ||
+      h === "myaccount.google.com" ||
+      h === "gds.google.com" ||
       h === "gen-lang-client-0300203338.firebaseapp.com" ||
       h.endsWith(".firebaseapp.com") ||
       h.endsWith(".web.app")
@@ -332,19 +372,74 @@ function isSafeExternalUrl(rawUrl) {
   }
 }
 
+function isAllowedGoogleIcalUrl(raw) {
+  try {
+    const u = new URL(String(raw || ""));
+    return u.protocol === "https:" && u.hostname === "calendar.google.com" && u.pathname.startsWith("/calendar/ical/");
+  } catch (_e) {
+    return false;
+  }
+}
+
+function handleIcalProxy(reqUrl, res) {
+  const target = (reqUrl.searchParams.get("url") || "").trim();
+  if (!isAllowedGoogleIcalUrl(target)) {
+    res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("Only https://calendar.google.com/calendar/ical/ URLs are allowed.");
+    return;
+  }
+  const req = https.get(target, { headers: { "Accept": "text/calendar,text/plain;q=0.9,*/*;q=0.8" } }, (up) => {
+    if (up.statusCode && up.statusCode >= 400) {
+      res.writeHead(up.statusCode, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("Upstream error: HTTP " + up.statusCode);
+      up.resume();
+      return;
+    }
+    const chunks = [];
+    let total = 0;
+    up.on("data", (c) => {
+      total += c.length;
+      if (total > 2 * 1024 * 1024) {
+        req.destroy();
+        if (!res.headersSent) res.writeHead(413, { "Content-Type": "text/plain; charset=utf-8" });
+        res.end("Calendar feed too large.");
+        return;
+      }
+      chunks.push(c);
+    });
+    up.on("end", () => {
+      if (!res.headersSent) {
+        res.writeHead(200, { "Content-Type": "text/calendar; charset=utf-8", "Cache-Control": "no-store" });
+        res.end(Buffer.concat(chunks).toString("utf8"));
+      }
+    });
+  });
+  req.setTimeout(10000, () => { req.destroy(new Error("Request timed out")); });
+  req.on("error", (err) => {
+    if (!res.headersSent) {
+      res.writeHead(502, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end(err && err.message ? err.message : "Failed to fetch calendar feed.");
+    }
+  });
+}
+
 function startAssetServer() {
   const wwwDir = resolveWwwDir();
   const rootResolved = path.resolve(wwwDir);
 
   return new Promise((resolve, reject) => {
     const createSrv = () => http.createServer((req, res) => {
-      const reqUrl = new URL(req.url || "/", "http://127.0.0.1");
+      const reqUrl = new URL(req.url || "/", "http://localhost");
       let pathname = "/";
       try {
         pathname = decodeURIComponent(reqUrl.pathname || "/");
       } catch (_err) {
         res.writeHead(400);
         res.end("Bad Request");
+        return;
+      }
+      if (pathname === "/api/ical-proxy" && req.method === "GET") {
+        handleIcalProxy(reqUrl, res);
         return;
       }
       if (pathname === "/") pathname = "/index.html";
@@ -369,29 +464,39 @@ function startAssetServer() {
       });
     });
 
+    const listenOnHost = (s, port, host, onSuccess, onError) => {
+      s.once("error", onError);
+      s.listen(port, host, () => {
+        s.removeListener("error", onError);
+        assetServer = s;
+        const addr = s.address();
+        onSuccess("http://localhost:" + addr.port);
+      });
+    };
+
     const srv = createSrv();
-    const tryListen = (port, allowFallback) => {
-      srv.once("error", (err) => {
-        if (allowFallback && (err.code === "EADDRINUSE" || err.code === "EACCES")) {
-          const fallbackSrv = createSrv();
-          fallbackSrv.once("error", reject);
-          fallbackSrv.listen(0, "127.0.0.1", () => {
-            assetServer = fallbackSrv;
-            const addr = fallbackSrv.address();
-            resolve("http://127.0.0.1:" + addr.port);
+    const tryListen = (port, host, allowPortFallback) => {
+      listenOnHost(srv, port, host, resolve, (err) => {
+        if ((err.code === "EADDRNOTAVAIL" || err.code === "ENOTFOUND") && host === "localhost") {
+          const fallbackIpSrv = createSrv();
+          listenOnHost(fallbackIpSrv, port, "127.0.0.1", resolve, (err2) => {
+            if (allowPortFallback && (err2.code === "EADDRINUSE" || err2.code === "EACCES")) {
+              const randSrv = createSrv();
+              listenOnHost(randSrv, 0, "127.0.0.1", resolve, reject);
+            } else {
+              reject(err2);
+            }
           });
+        } else if (allowPortFallback && (err.code === "EADDRINUSE" || err.code === "EACCES")) {
+          const fallbackSrv = createSrv();
+          listenOnHost(fallbackSrv, 0, host, resolve, reject);
         } else {
           reject(err);
         }
       });
-      srv.listen(port, "127.0.0.1", () => {
-        assetServer = srv;
-        const addr = srv.address();
-        resolve("http://127.0.0.1:" + addr.port);
-      });
     };
 
-    tryListen(PREFERRED_PORT, true);
+    tryListen(PREFERRED_PORT, "localhost", true);
   });
 }
 
@@ -400,9 +505,26 @@ function updateAppIcons(payload) {
   const label = payload && typeof payload.label === "string" && payload.label.trim()
     ? payload.label.trim().slice(0, 80)
     : (evil ? "Mission Map (Don't-do)" : "Mission Map");
+  const tooltip = payload && typeof payload.tooltip === "string" && payload.tooltip.trim()
+    ? payload.tooltip.trim().slice(0, 120)
+    : label;
 
+  if (prefs.evilMode !== evil) {
+    prefs.evilMode = evil;
+    savePrefs();
+  }
   currentEvilMode = evil;
   currentTitle = label;
+  currentTooltip = tooltip;
+  if (payload && typeof payload === "object") {
+    currentTrayStatus = {
+      openCount: Number(payload.openCount) || 0,
+      doneCount: Number(payload.doneCount) || 0,
+      totalCount: Number(payload.totalCount) || 0,
+      expiredCount: Number(payload.expiredCount) || 0,
+      pomoState: typeof payload.pomoState === "string" ? payload.pomoState : ""
+    };
+  }
 
   let img = null;
   if (payload && typeof payload.dataUrl === "string" && payload.dataUrl.startsWith("data:image/")) {
@@ -412,27 +534,40 @@ function updateAppIcons(payload) {
   if (!img || img.isEmpty()) {
     img = loadDefaultIcon(evil);
   }
+
+  let traySrcImg = null;
+  if (payload && typeof payload.trayDataUrl === "string" && payload.trayDataUrl.startsWith("data:image/")) {
+    const parsedTray = nativeImage.createFromDataURL(payload.trayDataUrl);
+    if (!parsedTray.isEmpty()) traySrcImg = parsedTray;
+  }
+  if (!traySrcImg || traySrcImg.isEmpty()) {
+    traySrcImg = img;
+  }
+
   if (img && !img.isEmpty()) {
     currentIconImage = img;
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.setIcon(img);
     }
-    if (tray && !tray.isDestroyed()) {
-      const trayImg = img.resize({ width: 32, height: 32, quality: "best" });
-      tray.setImage(trayImg);
-    }
+  }
+  if (tray && !tray.isDestroyed() && traySrcImg && !traySrcImg.isEmpty()) {
+    const traySize = traySrcImg.getSize();
+    const trayImg = (traySize.width === 32 && traySize.height === 32)
+      ? traySrcImg
+      : traySrcImg.resize({ width: 32, height: 32, quality: "best" });
+    tray.setImage(trayImg);
   }
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.setTitle(currentTitle);
   }
   if (tray && !tray.isDestroyed()) {
-    tray.setToolTip(currentTitle);
+    tray.setToolTip(currentTooltip);
   }
   rebuildTrayMenu();
 }
 
 function createWindow() {
-  currentIconImage = loadDefaultIcon(false);
+  currentIconImage = loadDefaultIcon(!!prefs.evilMode);
 
   const initialBounds = prefs.miniMode
     ? clampBoundsToWorkArea(prefs.miniBounds || { width: MINI_WIDTH, height: MINI_HEIGHT })
@@ -489,6 +624,15 @@ function createWindow() {
     return { action: "deny" };
   });
 
+  mainWindow.webContents.on("did-create-window", (childWin) => {
+    childWin.removeMenu();
+    childWin.webContents.setWindowOpenHandler(({ url }) => {
+      if (isAllowedOAuthPopupUrl(url)) return { action: "allow" };
+      if (isSafeExternalUrl(url)) shell.openExternal(url).catch(() => {});
+      return { action: "deny" };
+    });
+  });
+
   mainWindow.webContents.on("did-finish-load", () => {
     broadcastState();
   });
@@ -534,10 +678,10 @@ function createWindow() {
 }
 
 function createTray() {
-  const baseIcon = currentIconImage && !currentIconImage.isEmpty() ? currentIconImage : loadDefaultIcon(false);
+  const baseIcon = currentIconImage && !currentIconImage.isEmpty() ? currentIconImage : loadDefaultIcon(!!prefs.evilMode);
   const trayIcon = baseIcon.isEmpty() ? baseIcon : baseIcon.resize({ width: 32, height: 32, quality: "best" });
   tray = new Tray(trayIcon);
-  tray.setToolTip(currentTitle);
+  tray.setToolTip(currentTooltip || currentTitle);
   tray.on("click", () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
     if (mainWindow.isVisible() && mainWindow.isFocused()) mainWindow.hide();

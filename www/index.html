@@ -139,8 +139,9 @@ body[data-view="notes"] .count { background: var(--paper); display: inline-block
   body[data-view="mine"] .mapcard { position: sticky; top: 16px; }
 }
 .mapcard { border: 3px solid var(--ink); background: var(--map-bg); position: relative; }
-.mapcard svg { display: block; width: 100%; height: auto; }
-.mapcard .hint { position: absolute; right: 8px; top: 6px; font-size: 11px; color: var(--ink-soft); letter-spacing: .06em; }
+.map-stage { position: relative; }
+.mapcard svg#map { display: block; width: 100%; height: auto; }
+.map-stage .hint { position: absolute; right: 8px; top: 6px; font-size: 11px; color: var(--ink-soft); letter-spacing: .06em; pointer-events: none; z-index: 3; }
 .filter { display: flex; align-items: center; gap: 8px; }
 .chip { border: 2px solid var(--red); background: transparent; color: var(--red); padding: 2px 10px; min-height: 32px; }
 
@@ -281,17 +282,224 @@ body[data-view="errands"] .t::after {
 body[data-view="errands"] .done .t { opacity: .8; }
 body[data-view="errands"] .del { color: #5b543f; }
 body[data-view="errands"] .empty { font-family: "Permanent Marker", var(--font-hand); font-size: 20px; }
-/* options menu and animation switches */
-.opts details { border-top: 1px solid var(--ink-soft); padding: 4px 0; }
-.opts summary { cursor: pointer; letter-spacing: .1em; text-transform: uppercase; font-size: 13px; min-height: 40px; display: flex; align-items: center; }
-.grp { display: grid; gap: 10px; padding: 4px 0 8px; }
-.grp input[type="text"], .grp input[type="url"], .grp input[type="password"], .grp select {
-  background: var(--paper); color: var(--ink); border: 2px solid var(--ink); padding: 7px 10px; min-height: 38px; border-radius: 0; max-width: 100%; box-sizing: border-box;
+/* options menu overhaul: slide-over shuffling polaroid deck + sketch-book tabs */
+#options.opts-overlay,
+.opts-overlay {
+  position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; z-index: 75;
+  display: flex; justify-content: flex-end; align-items: center;
+  padding: clamp(8px, 1.8vw, 20px);
+  background: rgba(0, 0, 0, .62);
+  backdrop-filter: blur(2px);
 }
-.suggest .seg button { color: var(--ink); }
-.suggest .seg button[aria-pressed="true"] { color: var(--paper); }
-body[data-view="errands"] .suggest .seg { border-color: #1c1a15; background: transparent; }
-body[data-view="errands"] .suggest .seg button[aria-pressed="true"] { background: #1c1a15; color: #d6cba3; }
+.opts-stage {
+  width: min(660px, 100%); height: min(860px, 100%); max-height: 100%;
+  display: flex; flex-direction: column; gap: 8px;
+  min-width: 0; position: relative;
+  animation: optsSlideIn .26s cubic-bezier(.22, 1, .36, 1) both;
+}
+@keyframes optsSlideIn { from { transform: translateX(28px); opacity: 0; } to { transform: none; opacity: 1; } }
+body.calm .opts-stage { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .opts-stage { animation: none !important; } }
+
+.opts-util {
+  flex: none; background: var(--paper); color: var(--ink);
+  border: 2px solid var(--ink); box-shadow: 4px 4px 0 rgba(0, 0, 0, .3);
+  padding: 9px 11px; display: grid; gap: 8px;
+}
+.opts-util-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: space-between; }
+.opts-util-title { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.opts-util-title h2 { margin: 0; font-size: 15px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; }
+.opts-total-cnt {
+  font-size: 11px; letter-spacing: .07em; text-transform: uppercase;
+  padding: 1px 6px; border: 1.5px solid var(--ink-soft); color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.opts-util-acts { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.opts-util-acts .btn { min-height: 38px; padding: 5px 11px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+.opts-reset-confirm {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 7px 9px; border: 2px dashed var(--red); background: var(--map-bg); color: var(--ink); font-size: 12.5px;
+}
+.opts-reset-confirm .row-actions { gap: 6px; }
+.opts-reset-confirm .btn { min-height: 36px; padding: 4px 10px; font-size: 12px; }
+.opts-search-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.opts-search-inp {
+  flex: 1 1 180px; min-width: 0; min-height: 40px; padding: 6px 10px;
+  background: var(--map-bg); color: var(--ink); border: 2px solid var(--ink); border-radius: 0; font-size: 13px;
+}
+.opts-search-inp::placeholder { color: var(--ink-soft); }
+.opts-search-clear { min-height: 40px; padding: 4px 10px; font-size: 12px; }
+.opts-search-meta { flex: 1 0 100%; font-size: 11.5px; color: var(--ink-soft); letter-spacing: .04em; }
+
+/* sketch-book index tabs: 3x2 grid on desktop/tablet, 2x3 on compact mobile */
+.opts-tabs {
+  flex: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px; padding: 2px 1px;
+}
+@media (max-width: 560px) {
+  .opts-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+}
+.opts-tab {
+  position: relative; min-width: 0; min-height: 44px; overflow: hidden;
+  display: inline-flex; align-items: center; justify-content: space-between; gap: 6px;
+  padding: 6px 11px 6px 9px;
+  background: var(--map-bg); color: var(--ink);
+  border: 2px solid var(--ink); border-bottom-width: 3px;
+  font-size: 11px; letter-spacing: .05em; text-transform: uppercase;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, .2);
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+  transition: transform .16s ease, background-color .16s ease, border-color .16s ease, opacity .16s ease;
+}
+.opts-tab::after {
+  content: ""; position: absolute; right: 0; top: 0; width: 8px; height: 8px;
+  background: linear-gradient(225deg, transparent 48%, var(--ink) 49%, var(--ink) 62%, var(--paper) 63%);
+  pointer-events: none;
+}
+.opts-tab:hover { border-color: var(--red); }
+.opts-tab[aria-selected="true"] {
+  background: var(--paper); color: var(--ink); font-weight: 700;
+  border-color: var(--red); border-bottom-color: var(--red);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, .28), inset 0 -3px 0 var(--red);
+  transform: translateY(-2px);
+}
+.opts-tab.dim-nomatch { opacity: .42; }
+.tab-lbl { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tab-cnt {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; padding: 1px 5px; border: 1.5px solid currentColor;
+  font-size: 10.5px; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums;
+}
+.tab-cnt.is-hits { color: var(--red); border-color: var(--red); background: var(--paper); }
+.opts-tab[aria-selected="true"] .tab-cnt { border-color: var(--red); color: var(--red); }
+
+/* shuffling polaroid deck */
+.pola-deck {
+  position: relative; flex: 1 1 auto; min-height: 260px;
+  padding: 8px 14px 16px 10px;
+}
+.pola-card {
+  position: absolute; inset: 8px 14px 16px 10px;
+  display: flex; flex-direction: column;
+  background: var(--paper); color: var(--ink);
+  border: 3px solid var(--ink); padding: 11px 11px 8px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .36), 5px 5px 0 rgba(0, 0, 0, .24);
+  transform-origin: 50% 62%;
+  transition: transform .36s cubic-bezier(.22, 1, .36, 1), opacity .28s ease;
+  will-change: transform, opacity;
+}
+.pola-card[data-deck-pos="0"] { z-index: 6; opacity: 1; transform: translate3d(0, 0, 0) rotate(0deg) scale(1); pointer-events: auto; }
+.pola-card[data-deck-pos="1"] { z-index: 5; opacity: .94; transform: translate3d(9px, 6px, 0) rotate(1.7deg) scale(.985); pointer-events: none; }
+.pola-card[data-deck-pos="2"] { z-index: 4; opacity: .82; transform: translate3d(-7px, 8px, 0) rotate(-1.9deg) scale(.97); pointer-events: none; }
+.pola-card[data-deck-pos="3"] { z-index: 3; opacity: .55; transform: translate3d(5px, 11px, 0) rotate(1.1deg) scale(.955); pointer-events: none; }
+.pola-card[data-deck-pos="4"] { z-index: 2; opacity: .28; transform: translate3d(-4px, 12px, 0) rotate(-1deg) scale(.945); pointer-events: none; }
+.pola-card[data-deck-pos="5"] { z-index: 1; opacity: 0; transform: translate3d(0, 14px, 0) rotate(0deg) scale(.935); pointer-events: none; }
+.pola-card:not([data-deck-pos="0"]) .pola-inner,
+.pola-card:not([data-deck-pos="0"]) .pola-caption { visibility: hidden; }
+.pola-card.shuf-next { animation: polaDealNext .36s cubic-bezier(.22, 1, .36, 1) both; }
+.pola-card.shuf-prev { animation: polaDealPrev .36s cubic-bezier(.22, 1, .36, 1) both; }
+@keyframes polaDealNext {
+  0% { transform: translate3d(34px, -6px, 0) rotate(4deg) scale(.96); opacity: .75; }
+  100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); opacity: 1; }
+}
+@keyframes polaDealPrev {
+  0% { transform: translate3d(-34px, -6px, 0) rotate(-4deg) scale(.96); opacity: .75; }
+  100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); opacity: 1; }
+}
+body.calm .pola-card, body.calm .opts-tab { transition: none !important; animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .pola-card, .opts-tab { transition: none !important; animation: none !important; } }
+
+.pola-inner {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  border: 2px solid var(--ink); background: var(--map-bg);
+  padding: 12px; display: grid; gap: 14px; align-content: start;
+}
+.pola-sec {
+  display: grid; gap: 9px; padding-bottom: 12px;
+  border-bottom: 1.5px dashed var(--ink-soft);
+}
+.pola-sec:last-of-type { border-bottom: 0; padding-bottom: 2px; }
+.pola-sh {
+  margin: 0; font-size: 12.5px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--red);
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.pola-caption {
+  flex: none; padding: 9px 4px 2px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.pola-cap-mid { flex: 1; min-width: 0; text-align: center; display: grid; gap: 1px; }
+.pola-cap-title {
+  font-family: var(--font-hand); font-size: clamp(20px, 2.5vw, 25px);
+  font-weight: 700; line-height: 1.05; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pola-cap-meta {
+  font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-soft); font-variant-numeric: tabular-nums;
+}
+.pola-nav { min-height: 40px; padding: 5px 11px; font-size: 12px; flex: none; text-transform: uppercase; letter-spacing: .06em; }
+
+.opts-overlay textarea {
+  width: 100%; min-height: 100px; resize: vertical;
+  background: var(--paper); color: var(--ink); border: 2px solid var(--ink);
+  border-radius: 0; padding: 8px; font-family: ui-monospace, Consolas, monospace; font-size: 12px;
+}
+.opts-overlay label.chk {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  font-size: 13px; min-height: 36px; cursor: pointer;
+}
+.opts-overlay .seg button { color: var(--ink); }
+.opts-overlay .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.opts-overlay .msg { font-size: 12.5px; color: var(--ink-soft); }
+.opts-empty {
+  padding: 20px 12px; text-align: center; border: 2px dashed var(--ink-soft);
+  background: var(--paper); display: grid; gap: 10px; justify-items: center;
+}
+
+.grp { display: grid; gap: 9px; padding: 2px 0; }
+.grp input[type="text"], .grp input[type="url"], .grp input[type="password"], .grp select,
+.pola-sec input[type="text"], .pola-sec input[type="url"], .pola-sec input[type="password"], .pola-sec select {
+  background: var(--paper); color: var(--ink); border: 2px solid var(--ink);
+  padding: 7px 10px; min-height: 40px; border-radius: 0; max-width: 100%; box-sizing: border-box;
+}
+
+/* theme sketch-book adaptations */
+body[data-view="errands"] .opts-overlay .opts-util,
+body[data-view="errands"] .opts-overlay .pola-card,
+body[data-view="errands"] .opts-overlay .opts-tab[aria-selected="true"] { background: #d6cba3; color: #1c1a15; border-color: #000; }
+body[data-view="errands"] .opts-overlay .opts-tab { background: #efe7c8; color: #1c1a15; border-color: #000; }
+body[data-view="errands"] .opts-overlay .pola-inner,
+body[data-view="errands"] .opts-overlay .opts-search-inp,
+body[data-view="errands"] .opts-overlay textarea { background: #efe7c8; color: #1c1a15; border-color: #000; }
+body[data-view="errands"] .opts-overlay .seg { border-color: #1c1a15; background: #efe7c8; }
+body[data-view="errands"] .opts-overlay .seg button[aria-pressed="true"] { background: #1c1a15; color: #d6cba3; }
+body[data-view="racer"] .opts-overlay .pola-card { border-color: #00e5ff; box-shadow: 6px 6px 0 #ff4f8b; }
+body[data-view="racer"] .opts-overlay .opts-tab { border-color: #00e5ff; font-family: "VT323", monospace; font-size: 15px; }
+body[data-view="racer"] .opts-overlay .opts-tab[aria-selected="true"] { border-color: #ff4f8b; color: #00e5ff; box-shadow: 3px 3px 0 #ff4f8b, inset 0 -3px 0 #ff4f8b; }
+body[data-view="zine"] .opts-overlay .pola-card { box-shadow: 6px 6px 0 #111; }
+body[data-view="zine"] .opts-overlay .opts-tab[aria-selected="true"] { box-shadow: 3px 3px 0 #111, inset 0 -3px 0 #d94a38; }
+body[data-view="wanted"] .opts-overlay .pola-card,
+body[data-view="wanted"] .opts-overlay .opts-util { border-color: #5a2a10; }
+body[data-view="wanted"] .opts-overlay .opts-tab { border-color: #5a2a10; background: #ccb37e; color: #3a2410; }
+body[data-view="wanted"] .opts-overlay .opts-tab[aria-selected="true"] { background: #dcc79b; border-color: #a3261a; }
+body[data-view="receipt"] .opts-overlay .pola-inner { border-style: dashed; }
+body[data-view="comic"] .opts-overlay .pola-card,
+body[data-view="comic"] .opts-overlay .opts-util { border-width: 3px; border-color: #111; box-shadow: 5px 5px 0 #111; }
+body[data-view="comic"] .opts-overlay .opts-tab { border-width: 2.5px; border-color: #111; background: #fff3b0; }
+body[data-view="comic"] .opts-overlay .opts-tab[aria-selected="true"] { background: #fff; border-color: #e3261b; }
+
+@media (max-width: 768px) {
+  .opts-overlay { padding: 6px; }
+  .pola-deck { padding: 4px 4px 8px; }
+  .pola-card { inset: 4px 4px 8px; padding: 8px 8px 6px; }
+  .pola-card[data-deck-pos="1"] { transform: translate3d(4px, 3px, 0) rotate(1deg) scale(.99); }
+  .pola-card[data-deck-pos="2"] { transform: translate3d(-4px, 5px, 0) rotate(-1deg) scale(.98); }
+  .pola-inner { padding: 10px; }
+}
+body.win-mini .opts-overlay { padding: 5px; }
+body.win-mini .pola-card[data-deck-pos]:not([data-deck-pos="0"]) { opacity: 0 !important; pointer-events: none; }
+body.win-mini .pola-card { inset: 2px; padding: 7px; }
+body.win-mini .pola-inner { padding: 8px; }
 .scr-host { position: relative; }
 .scr { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
 .scr path { fill: none; stroke: var(--red); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: scr .35s ease-out forwards, scrf .3s .5s forwards; }
@@ -314,7 +522,13 @@ body[data-view="errands"] .btn { --wob: #000; }
 
 [hidden] { display: none !important; }
 /* ===== v2: pin, meters, week, road, race, toast ===== */
-.wrap { position: relative; z-index: 1; }
+.wrap > header,
+.wrap > main,
+.wrap > section,
+.wrap > div.meters,
+.wrap > div.top-panels,
+.wrap > .foot { position: relative; z-index: 1; }
+.head.menu-open { z-index: 65; }
 .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .pinbtn { background: none; border: 0; padding: 0; width: 64px; height: 64px; flex: none; perspective: 500px; transform-origin: 50% 10%; animation: sway 5s ease-in-out infinite; cursor: pointer; }
 @media (max-width: 480px) {
@@ -335,10 +549,35 @@ body[data-view="errands"] .btn { --wob: #000; }
 .rankbox { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; border: 2px solid var(--ink); padding: 3px 8px; background: var(--paper); color: var(--ink); }
 .adbox { flex-basis: 100%; font-size: 12px; color: var(--ink-soft); letter-spacing: .05em; }
 
-.themegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
-.tbtn { border: 2px solid var(--ink); background: transparent; color: var(--ink); padding: 8px 6px; min-height: 44px; letter-spacing: .05em; }
-.tbtn[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
-.opts select { background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 0; padding: 8px; min-height: 40px; }
+.themegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; }
+.tbtn {
+  border: 2px solid var(--ink); background: var(--paper); color: var(--ink);
+  padding: 6px 7px; min-height: 54px; letter-spacing: .04em;
+  display: grid; gap: 5px; text-align: left; align-content: space-between;
+}
+.tbtn .tswatch {
+  display: grid; grid-template-columns: repeat(4, 1fr); height: 14px;
+  border: 1.5px solid var(--ink); overflow: hidden;
+}
+.tbtn .tswatch i { display: block; height: 100%; }
+.tbtn .tname { font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; line-height: 1.15; display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.tbtn[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--red); box-shadow: 2px 2px 0 var(--red); }
+.tbtn[aria-pressed="true"] .tswatch { border-color: var(--paper); }
+.tbtn[aria-pressed="true"] .tname::after { content: "ON"; font-size: 9px; padding: 0 3px; border: 1px solid currentColor; }
+.opts-overlay select { background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 0; padding: 7px 8px; min-height: 40px; }
+.font-tgt-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.font-swatches {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 7px;
+  max-height: 224px; overflow-y: auto; padding: 2px;
+}
+.font-card {
+  display: grid; gap: 2px; padding: 6px 8px; min-height: 52px; text-align: left;
+  background: var(--paper); color: var(--ink); border: 2px solid var(--ink-soft);
+}
+.font-card:hover { border-color: var(--ink); }
+.font-card[aria-pressed="true"] { border-color: var(--red); background: var(--ink); color: var(--paper); box-shadow: 2px 2px 0 var(--red); }
+.font-card-sample { font-size: 19px; line-height: 1.12; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.font-card-name { font-family: var(--font-type); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; opacity: .78; }
 .achs { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .achs li { display: flex; gap: 8px; align-items: baseline; font-size: 13px; }
 .achs li b { font-weight: 400; }
@@ -420,7 +659,7 @@ body[data-view="errands"] .btn { --wob: #000; }
   .pomo-hud { width: 100%; justify-content: center; padding: 10px 12px; }
   .pomo-ring-box { width: 124px; height: 124px; }
 }
-.toast { position: fixed; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); max-width: 420px; margin: 0 auto; padding: 10px 14px; background: var(--ink); color: var(--paper); border: 2px solid var(--red); z-index: 50; text-align: center; font-size: 14px; }
+.toast { position: fixed; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); max-width: 420px; margin: 0 auto; padding: 10px 14px; background: var(--ink); color: var(--paper); border: 2px solid var(--red); z-index: 88; text-align: center; font-size: 14px; }
 
 .xtra { display: block; color: var(--ink-soft); font-size: 12px; overflow-wrap: anywhere; }
 .xtra.hs { font-style: italic; }
@@ -449,7 +688,26 @@ body[data-view="errands"] .btn { --wob: #000; }
 .yh-txt { fill: var(--red); font-family: var(--font-type); font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-anchor: middle; dominant-baseline: central; }
 body.calm .place.in-geo .gf-ring, body.calm .yh-bob { animation: none; }
 @media (prefers-reduced-motion: reduce) { .place.in-geo .gf-ring, .yh-bob { animation: none; } }
-.mapbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px; border-top: 2px solid var(--ink); background: var(--paper); color: var(--ink); font-size: 12px; }
+.mapbar-wrap { display: flex; align-items: stretch; border-top: 2px solid var(--ink); background: var(--paper); color: var(--ink); font-size: 12px; }
+.mapbar-tog {
+  position: absolute; left: 8px; bottom: 8px; z-index: 4;
+  width: 34px; height: 34px; padding: 0;
+  border: 2px solid var(--ink); background: var(--paper); color: var(--ink);
+  display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, .2);
+}
+.mapbar-tog:hover { border-color: var(--red); color: var(--red); }
+.mapbar-arr { width: 20px; height: 20px; display: block; }
+.mapbar-arr .arr-up { display: none; }
+.mapcard.bar-collapsed .mapbar-arr .arr-down { display: none; }
+.mapcard.bar-collapsed .mapbar-arr .arr-up { display: block; }
+.mapbar-body { flex: 1 1 auto; min-width: 0; }
+.mapcard.bar-collapsed .mapbar-body { display: none; }
+.mapbar-minilbl {
+  flex: 1 1 auto; min-width: 0; padding: 8px 10px; font-size: 12px; letter-spacing: .04em;
+  color: var(--ink-soft); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mapbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px; border-top: 0; background: var(--paper); color: var(--ink); font-size: 12px; }
 .mapbar .btn, .mapvar-sel { min-height: 38px; padding: 6px 10px; font-size: 12px; letter-spacing: .04em; }
 .mapvar-sel { background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 0; }
 .geostatus { flex: 1 1 100%; color: var(--ink-soft); font-size: 12px; letter-spacing: .03em; }
@@ -589,6 +847,80 @@ body[data-view="comic"] .paper .item.done::after { content: "DONE!"; position: a
 body[data-view="comic"] .btn { background: #111; color: #ffe45e; border-color: #111; font-family: Bangers, Impact, sans-serif; font-size: 18px; letter-spacing: .06em; }
 body[data-view="comic"] .btn.ghost { background: #fff; color: #111; }
 
+/* amoled: pure true-black OLED palette */
+body[data-view="amoled"] {
+  --bg: #000000; --paper: #000000; --map-bg: #000000; --ink: #f2f4f7; --ink-soft: #96a0b0;
+  --red: #ff453a; --on-red: #ffffff; --water: #092134; --board: #000000; --board-dot: #1a1e26;
+  --prio-low: #4ade80; --prio-low-bg: rgba(74, 222, 128, .16);
+  --prio-med: #fbbf24; --prio-med-bg: rgba(251, 191, 36, .16);
+  --prio-high: #ff453a; --prio-high-bg: rgba(255, 69, 58, .18);
+  color: #f2f4f7; color-scheme: dark; background: #000000;
+}
+body[data-view="amoled"] .mapcard,
+body[data-view="amoled"] .paper,
+body[data-view="amoled"] .suggest,
+body[data-view="amoled"] .opts-util,
+body[data-view="amoled"] .pola-card,
+body[data-view="amoled"] .pola-inner,
+body[data-view="amoled"] .opts-reset-confirm,
+body[data-view="amoled"] .notebook,
+body[data-view="amoled"] .prod-dash,
+body[data-view="amoled"] .cal,
+body[data-view="amoled"] .evform,
+body[data-view="amoled"] .practice,
+body[data-view="amoled"] .add.sheet,
+body[data-view="amoled"] .head-submenu,
+body[data-view="amoled"] .gcal-modal,
+body[data-view="amoled"] .prod-score-box,
+body[data-view="amoled"] .nb-ico-box,
+body[data-view="amoled"] .calday-sum {
+  background: #000000; border-color: #2f3540; color: #f2f4f7;
+}
+body[data-view="amoled"] .paper .item { border-bottom-color: #262b34; }
+body[data-view="amoled"] .mapbar-wrap,
+body[data-view="amoled"] .mapbar,
+body[data-view="amoled"] .pinform,
+body[data-view="amoled"] .geoform,
+body[data-view="amoled"] .btn.ghost,
+body[data-view="amoled"] .edit-mode-btn,
+body[data-view="amoled"] .list-sort-sel,
+body[data-view="amoled"] .calbtn,
+body[data-view="amoled"] .calmodes,
+body[data-view="amoled"] .tbtn,
+body[data-view="amoled"] .font-card,
+body[data-view="amoled"] .opts-tab,
+body[data-view="amoled"] .opts-search-inp,
+body[data-view="amoled"] .opts-overlay textarea,
+body[data-view="amoled"] .opts-overlay select,
+body[data-view="amoled"] .seg,
+body[data-view="amoled"] .add input,
+body[data-view="amoled"] .add select,
+body[data-view="amoled"] .mapvar-sel,
+body[data-view="amoled"] .mapbar-tog,
+body[data-view="amoled"] .daybtn,
+body[data-view="amoled"] .thumb,
+body[data-view="amoled"] .rankbox,
+body[data-view="amoled"] .submenu-btn {
+  background: #000000; border-color: #343b47; color: #f2f4f7;
+}
+body[data-view="amoled"] .opts-tab[aria-selected="true"] { background: #000000; border-color: #ff453a; color: #f2f4f7; box-shadow: 3px 3px 0 rgba(255, 69, 58, .35), inset 0 -3px 0 #ff453a; }
+body[data-view="amoled"] .btn { background: #f2f4f7; color: #000000; border-color: #f2f4f7; }
+body[data-view="amoled"] .tbtn[aria-pressed="true"],
+body[data-view="amoled"] .font-card[aria-pressed="true"],
+body[data-view="amoled"] .seg button[aria-pressed="true"],
+body[data-view="amoled"] .calday[aria-pressed="true"],
+body[data-view="amoled"] .calwk-col[aria-pressed="true"],
+body[data-view="amoled"] .daybtn[aria-pressed="true"],
+body[data-view="amoled"] .calmodes button[aria-pressed="true"],
+body[data-view="amoled"] .submenu-btn[aria-pressed="true"] {
+  background: #f2f4f7; color: #000000; border-color: #f2f4f7;
+}
+body[data-view="amoled"] .fog ellipse { fill: #000000; fill-opacity: .96; }
+body[data-view="amoled"] .mapnote { background: #0a0a0d; color: #ffe45e; border-color: #ffe45e; }
+body[data-view="amoled"] .btn.fab { background: #000000; color: #ff453a; border-color: #ff453a; --wob: #ff453a; }
+body[data-view="amoled"] .toast { background: #000000; color: #f2f4f7; border-color: #ff453a; }
+body[data-view="amoled"] .t::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 10' preserveAspectRatio='none'%3E%3Cpath d='M0 6 C12 2 26 9 42 5 S72 2 100 4.5' fill='none' stroke='%23ff453a' stroke-width='2.6' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E"); }
+
 /* alt mode: the red pin is showing */
 body.evil { --red: #ff3b2a; }
 body.evil::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(ellipse at 50% 40%, transparent 45%, rgba(160, 0, 0, .3) 100%); }
@@ -602,11 +934,15 @@ body.calm .pinbtn { animation: none; }
 /* ===== v3: own pictures and sounds ===== */
 .thumb { flex: none; width: 44px; height: 44px; border: 2px solid var(--ink); background: #fff; overflow: hidden; }
 .thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.list-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 6px 0 4px; }
+.list-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0 4px; }
 .list-head h2 { margin: 0; flex: 1 1 auto; }
-.notes-bar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin: 0 0 10px; }
+.notes-bar { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; }
+.list-sort-sel {
+  min-height: 36px; padding: 4px 8px; border: 2px solid var(--ink); border-radius: 0;
+  background: var(--paper); color: var(--ink); font-size: 12px; letter-spacing: .04em;
+}
 .edit-mode-btn {
-  margin-left: auto; flex: none; min-height: 34px; padding: 4px 10px; border: 2px solid var(--ink);
+  margin-left: 0; flex: none; min-height: 34px; padding: 4px 10px; border: 2px solid var(--ink);
   background: var(--paper); color: var(--ink); font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
 }
 .edit-mode-btn:hover { border-color: var(--red); color: var(--red); }
@@ -621,6 +957,40 @@ body[data-view="notes"] .edit-mode-hint, body[data-view="wanted"] .edit-mode-hin
 #listSec.edit-mode .paper .item .row:hover .t,
 #listSec.edit-mode .note:hover .t { color: var(--red); }
 #listSec.edit-mode .note { outline: 2px dashed var(--red); outline-offset: 2px; }
+/* mission time limit + header views submenu */
+.add-limit-row { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.add-limit-row select { flex: 1 1 160px; }
+.add-limit-row input { flex: 0 1 120px; }
+.meta-badges { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; }
+.meta-badges .prio { margin-top: 0; }
+.limit-badge {
+  display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border: 1.5px solid var(--ink-soft);
+  font-size: 11px; line-height: 1.35; letter-spacing: .06em; text-transform: uppercase;
+  font-variant-numeric: tabular-nums; color: var(--ink-soft); background: transparent;
+}
+.limit-badge.soon { color: var(--prio-med); border-color: var(--prio-med); font-weight: 700; }
+.limit-badge.expired { color: var(--red); border-color: var(--red); background: var(--prio-high-bg); font-weight: 700; }
+.head-menu-wrap { position: relative; display: inline-flex; z-index: 65; }
+.head-act .head-menu-btn { min-width: 42px; padding: 6px 9px; gap: 6px; }
+.head-menu-btn[aria-expanded="true"] { background: var(--ink); color: var(--paper); }
+.menu-box-ico { width: 18px; height: 18px; display: block; flex: none; }
+.head-submenu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 70;
+  min-width: 215px; max-width: calc(100vw - 24px); padding: 7px;
+  background: var(--paper); background-color: var(--paper); opacity: 1; isolation: isolate;
+  color: var(--ink); border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, .34); display: grid; gap: 5px;
+}
+.submenu-btn {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;
+  min-height: 38px; padding: 6px 10px; border: 1.5px solid var(--ink-soft); background: var(--paper);
+  color: var(--ink); font-size: 12px; letter-spacing: .07em; text-transform: uppercase; text-align: left;
+}
+.submenu-btn:hover { border-color: var(--red); color: var(--red); }
+.submenu-btn[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.submenu-btn.hot { border-color: var(--red); color: var(--red); }
+.submenu-btn.hot[aria-pressed="true"] { background: var(--red); color: var(--on-red); }
+.submenu-badge { font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; opacity: .88; }
 .add .picpick { grid-column: auto; justify-self: start; }
 .add-pic-row { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .slots { display: grid; gap: 6px; }
@@ -692,7 +1062,7 @@ body.has-wall::after { content: ""; position: fixed; inset: 0; z-index: -1; back
 .calday-empty { border: 0; background: transparent; color: var(--ink-soft); text-align: left; font-size: 11px; opacity: 0; min-height: 30px; padding: 2px 6px; width: 100%; }
 .calday-slot:hover .calday-empty, .calday-empty:focus-visible { opacity: .85; }
 
-.wobAll { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; z-index: 30; }
+.wobAll { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; z-index: 10; }
 .wobAll path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
 body.wob-all [data-wa] { border-color: transparent !important; }
 .cal { color: var(--ink); }
@@ -729,10 +1099,10 @@ body.wob-all [data-wa] { border-color: transparent !important; }
 /* ===== v16: missions first, floating add button, bigger touch targets ===== */
 html { scroll-padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
 .wrap { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
-.fab { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 25; width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--ink); background: var(--red); color: var(--on-red); font-size: 34px; line-height: 1; padding: 0 0 4px; box-shadow: 3px 3px 0 rgba(0, 0, 0, .35); transition: transform .2s; }
+.fab { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 42; width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--ink); background: var(--red); color: var(--on-red); font-size: 34px; line-height: 1; padding: 0 0 4px; box-shadow: 3px 3px 0 rgba(0, 0, 0, .35); transition: transform .2s; }
 .fab.x { transform: rotate(45deg); }
-.scrim { position: fixed; inset: 0; z-index: 15; background: rgba(0, 0, 0, .35); }
-.add.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; max-width: 560px; margin: 0 auto; max-height: 85vh; overflow: auto; padding: 14px 16px calc(84px + env(safe-area-inset-bottom, 0px)); background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-bottom: 0; box-shadow: 0 -6px 0 rgba(0, 0, 0, .18); }
+.scrim { position: fixed; inset: 0; z-index: 35; background: rgba(0, 0, 0, .38); }
+.add.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; max-width: 560px; margin: 0 auto; max-height: 85vh; overflow: auto; padding: 14px 16px calc(84px + env(safe-area-inset-bottom, 0px)); background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-bottom: 0; box-shadow: 0 -6px 0 rgba(0, 0, 0, .18); }
 .sheethead { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; letter-spacing: .08em; text-transform: uppercase; font-size: 13px; }
 .sheethead b { font-weight: 400; }
 .toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); max-width: calc(100vw - 24px); }
@@ -762,6 +1132,9 @@ select, .opts select { min-height: 42px; }
 .sample button { min-height: 44px; padding: 0 8px; }
 #raceMin { min-width: 64px; }
 .days-mob-tog { display: none; }
+@media (min-width: 641px) {
+  .week .days.views { display: none; }
+}
 @media (max-width: 640px) {
   .days-mob-tog { display: inline-flex; }
   .week .days.views { order: -1; }
@@ -810,7 +1183,7 @@ body .btn.fab:active { transform: translateY(1px); }
 .sq5 { width: 120px; height: 24px; color: var(--ink); flex: none; }
 .sq5 svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .stress b { min-width: 0; letter-spacing: .06em; text-transform: none; font-size: 13px; color: var(--red); }
-body.sr:is([data-view="map"], [data-view="notes"], [data-view="zine"], [data-view="wanted"], [data-view="comic"]) .t::after {
+body.sr:is([data-view="map"], [data-view="amoled"], [data-view="notes"], [data-view="zine"], [data-view="wanted"], [data-view="comic"]) .t::after {
   background: var(--red); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 10' preserveAspectRatio='none'%3E%3Cpath d='M0 6 C12 2 26 9 42 5 S72 2 100 4.5' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") center / 100% 100% no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 10' preserveAspectRatio='none'%3E%3Cpath d='M0 6 C12 2 26 9 42 5 S72 2 100 4.5' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
 }
 
@@ -1533,14 +1906,18 @@ body.calm .tape-led-dot { animation: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .tape-tab-reels i, .tape-reel svg, .tape-led-dot { animation: none !important; }
 }
-/* ===== Windows Desktop & Always-on-Top Mini Mode ===== */
+/* ===== Windows Desktop, Shortcuts Cheat Sheet & Always-on-Top Mini Mode ===== */
 .win-kbd {
-  display: inline-block; padding: 1px 6px; border: 1px solid var(--ink-soft);
-  background: var(--map-bg); color: var(--ink);
+  display: inline-block; padding: 2px 7px; border: 1.5px solid var(--ink-soft);
+  background: var(--map-bg); color: var(--ink); flex: none;
   font-family: ui-monospace, Consolas, monospace; font-size: 11px; line-height: 1.4;
 }
-.win-shortcuts { display: grid; gap: 6px; font-size: 12.5px; color: var(--ink); }
-.win-shortcut-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.win-shortcuts { display: grid; gap: 7px; font-size: 12.5px; color: var(--ink); }
+.win-shortcut-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px dashed rgba(128, 128, 128, .28); padding-bottom: 5px; }
+.win-shortcut-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.sc-sub { font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-soft); margin-top: 4px; }
+body[data-view="amoled"] .win-kbd { background: #101318; border-color: #3a4250; color: #f2f4f7; }
+body[data-view="errands"] .win-kbd { background: #efe7c8; border-color: #1c1a15; color: #1c1a15; }
 body.win-mini {
   padding: 8px 10px calc(72px + env(safe-area-inset-bottom, 0px));
 }
@@ -1626,6 +2003,15 @@ body.win-mini .btn.fab {
     </div>
     <div class="head-act">
       <button class="btn ghost" id="winMiniHeadBtn" type="button" aria-pressed="false" hidden>Mini</button>
+      <div class="head-menu-wrap" id="toolsMenuWrap">
+        <button class="btn ghost head-menu-btn" id="toolsMenuBtn" type="button" aria-expanded="false" aria-controls="toolsMenu" aria-label="Views menu: Wrap-up, Calendar, Patterns" title="Views &amp; panels">
+          <svg class="menu-box-ico" viewBox="0 0 20 20" aria-hidden="true">
+            <rect x="2" y="2" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M5.5 6.5h9M5.5 10h9M5.5 13.5h9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square"/>
+          </svg>
+        </button>
+        <div class="head-submenu" id="toolsMenu" hidden role="menu" aria-label="Views submenu"></div>
+      </div>
       <button class="btn ghost" id="optBtn" type="button" aria-expanded="false" aria-controls="options">Options</button>
       <button class="btn ghost" id="aodBtn" type="button">Ambient</button>
     </div>
@@ -1636,289 +2022,6 @@ body.win-mini .btn.fab {
     <div class="rankbox" id="rankBox"></div>
     <div class="adbox" id="adBox" hidden></div>
   </div>
-
-  <section class="suggest opts" id="options" hidden aria-label="Options">
-    <h2>Options</h2>
-    <details open>
-      <summary>Theme</summary>
-      <div class="grp">
-        <div class="themegrid" id="themeGrid" role="group" aria-label="Look"></div>
-        <div class="seg" role="group" aria-label="Color mode">
-          <button id="cmAuto" type="button" aria-pressed="true">Auto</button>
-          <button id="cmLight" type="button" aria-pressed="false">Light</button>
-          <button id="cmDark" type="button" aria-pressed="false">Dark</button>
-        </div>
-        <div class="msg">Every theme except Map and Notes keeps its own colors, whatever the color mode.</div>
-        <div class="msg" style="margin-top:10px">Pin icon style</div>
-        <div class="seg" role="group" aria-label="Pin icon style">
-          <button id="pinStyleBase" type="button" aria-pressed="true">Base badge</button>
-          <button id="pinStyleAlt" type="button" aria-pressed="false">Alternate</button>
-        </div>
-        <div class="appicon-box">
-          <div class="appicon-top">
-            <img class="appicon-prev" id="appIconPreviewImg" src="pins/base-smile-256.png" alt="Current app menu icon">
-            <div class="appicon-info">
-              <div id="appIconModeLbl">Menu icon matches Do / Don't-do mode</div>
-              <small style="color:var(--ink-soft)">Switches automatically when you flip the badge, or import custom PNG/JPG icons.</small>
-            </div>
-          </div>
-          <div class="appicon-acts">
-            <label class="btn ghost filebtn">Import Do icon<input type="file" id="appIconSmileIn" accept="image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp"></label>
-            <label class="btn ghost filebtn">Import Don't-do icon<input type="file" id="appIconEvilIn" accept="image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp"></label>
-            <label class="btn ghost filebtn">Import both<input type="file" id="appIconBothIn" accept="image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp"></label>
-            <button class="btn ghost" id="appIconResetBtn" type="button">Reset icons</button>
-          </div>
-        </div>
-      </div>
-    </details>
-    <details>
-      <summary>Errand life</summary>
-      <div class="grp">
-        <label class="chk"><input type="checkbox" id="weekOn"> Week strip and Friday wrap-up</label>
-        <label class="chk"><input type="checkbox" id="hasOn"> Random hassles on new missions</label>
-        <label class="chk"><input type="checkbox" id="strsOn"> Stress meter</label>
-        <label class="chk"><input type="checkbox" id="srOn"> Stress darkens every red in the app</label>
-        <label class="chk"><input type="checkbox" id="ptOn"> Tailor the daily practice to the exercises I actually try</label>
-        <label class="chk"><input type="checkbox" id="prOn"> Daily practice card (one exercise a day; you can pick one and pin it by the map)</label>
-        <label class="chk"><input type="checkbox" id="brOn"> "Bring" field on missions</label>
-        <div class="msg">Achievements</div>
-        <ul class="achs" id="achList"></ul>
-      </div>
-    </details>
-    <details>
-      <summary>Racer</summary>
-      <div class="grp">
-        <label class="chk"><input type="checkbox" id="rankOn"> Rank and cash</label>
-        <label class="chk"><input type="checkbox" id="raceOn"> Race the clock panel</label>
-        <label class="chk"><input type="checkbox" id="roadOn"> Road progress strip (always on in the Racer theme)</label>
-        <label class="chk" for="station">Radio
-          <select id="station">
-            <option value="auto">Match the theme</option>
-            <option value="map">Dusty Map FM</option>
-            <option value="notes">Cork Board Radio</option>
-            <option value="errands">Night Shift 88</option>
-            <option value="highway">Neon Highway</option>
-            <option value="pit">Pit Stop FM</option>
-          </select>
-        </label>
-        <label class="chk"><input type="checkbox" id="adsOn"> Radio ads between songs</label>
-        <div class="msg">Rank goes up with cash from finished missions. Nothing is locked yet, so every theme and sound is already open.</div>
-      </div>
-    </details>
-    <details>
-      <summary>Map</summary>
-      <div class="grp">
-        <label class="chk" for="mapVariant">Map variant <select id="mapVariant"></select></label>
-        <label class="chk"><input type="checkbox" id="fogOn"> Fog of war</label>
-        <label class="chk"><input type="checkbox" id="stRoundOn"> Round number stamps (off: square)</label>
-        <div class="row-actions"><button class="btn ghost" id="refog" type="button">Bring the fog back</button></div>
-        <label class="chk"><input type="checkbox" id="movOn"> Moving details: traffic and time of day</label>
-        <label class="chk"><input type="checkbox" id="mapAllOn"> Show the map in every theme</label>
-        <label class="chk"><input type="checkbox" id="geoOn"> Geofencing (GPS alerts near map icons)</label>
-        <div class="msg" id="mapMsg">Use Drop a pin under the map to add your own places, and Fence icon to set GPS geofences.</div>
-      </div>
-    </details>
-    <details>
-      <summary>Fonts</summary>
-      <div class="grp">
-        <label class="chk" for="fontAll">All text <select id="fontAll"></select></label>
-        <label class="chk" for="fontMission">Mission titles only <select id="fontMission"></select></label>
-        <div class="msg">"Theme" keeps each theme's own fonts. Any letter a font lacks falls back to the theme font. Map numbers always use Smash.</div>
-      </div>
-    </details>
-    <details>
-      <summary>Ambient screen</summary>
-      <div class="grp">
-        <label class="chk" for="aodIdle">Start by itself after <select id="aodIdle"><option value="0">Never</option><option value="2">2 min idle</option><option value="5">5 min idle</option><option value="10">10 min idle</option><option value="30">30 min idle</option></select></label>
-        <label class="chk" for="aodLevel">Screen brightness (app only) <select id="aodLevel"><option value="3">Very dim</option><option value="10">Dim</option><option value="25">Medium</option></select></label>
-        <label class="chk"><input type="checkbox" id="aodHideBar"> Hide top status bar while on ambient display (Android app)</label>
-        <div class="msg">A black always-on screen with the clock, your next event, open missions and stress. The screen stays awake while it is on. Tap anywhere to leave. Black pixels are switched off on OLED phones, so it is easy on the battery. Brightness, hiding the top bar, and keeping the screen on work in the Android app; in a browser the page stays awake if the browser allows it.</div>
-      </div>
-    </details>
-    <details>
-      <summary>Music</summary>
-      <div class="grp">
-        <label class="chk"><input type="checkbox" id="musOn"> Background music</label>
-        <label class="chk" for="vol">Volume <input type="range" id="vol" min="0" max="100" step="1" style="flex:1"></label>
-        <label class="chk"><input type="checkbox" id="plOwn"> Play my tracks instead of the built-in music</label>
-        <label class="chk"><input type="checkbox" id="plShuf"> Shuffle my tracks</label>
-        <div class="row-actions">
-          <label class="btn ghost filebtn">Add tracks<input type="file" id="plIn" accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.aac" multiple></label>
-          <button class="btn ghost" id="plNext" type="button">Skip track</button>
-        </div>
-        <ol class="pllist" id="plList" aria-label="My tracks"></ol>
-        <div class="msg" id="sndMsg" role="status">The built-in music is an original loop. Pick a station under Racer.</div>
-      </div>
-    </details>
-    <details>
-      <summary>Voice cassette recorder</summary>
-      <div class="grp">
-        <label class="chk" for="tapeStyleOpt">Recorder look
-          <select id="tapeStyleOpt">
-            <option value="realistic">Realistic animated deck</option>
-            <option value="ui">Match rest of the UI</option>
-          </select>
-        </label>
-        <label class="chk"><input type="checkbox" id="tapeFilterOpt"> Hi-Fi analog tape filter (warmth, saturation &amp; flutter)</label>
-        <div class="msg">Hover (or tap on mobile) the cassette deck next to the Add button to record and label voice memos.</div>
-      </div>
-    </details>
-    <details id="mediaSec">
-      <summary>Pictures and sounds</summary>
-      <div class="grp">
-        <div class="msg">Choose buttons need a regular browser tab. The Claude preview blocks file pickers. Everything you add stays on this device only: it is not synced and not in the .json backup.</div>
-        <div class="mh">Pictures</div>
-        <div id="imgSlots" class="slots"></div>
-        <label class="chk"><input type="checkbox" id="mapSketch"> Draw the sketch roads on top of my map picture</label>
-        <div class="mh">Theme wallpapers</div>
-        <div id="wallSlots" class="slots"></div>
-        <div class="mh">Sound effects</div>
-        <div id="sfxSlots" class="slots"></div>
-        <div class="mh">Music per theme</div>
-        <div id="themeMusSlots" class="slots"></div>
-        <div class="msg" id="mediaMsg" role="status"></div>
-      </div>
-    </details>
-    <details>
-      <summary>Effects</summary>
-      <div class="grp">
-        <label class="chk"><input type="checkbox" id="sfxOn"> Sound effects</label>
-        <label class="chk"><input type="checkbox" id="scrOn"> Scribble on buttons</label>
-      </div>
-    </details>
-    <details>
-      <summary>Animations</summary>
-      <div class="grp">
-        <label class="chk"><input type="checkbox" id="prtOn"> Receipt print-out when adding a mission</label>
-        <label class="chk"><input type="checkbox" id="wobOn"> Wobbly, hand-drawn button borders</label>
-        <label class="chk"><input type="checkbox" id="wobAllOn"> Also on panels, inputs, notes, calendar and the map frame</label>
-        <label class="chk"><input type="checkbox" id="wobSlowOn"> Way slower scribbly animation</label>
-        <label class="chk"><input type="checkbox" id="strOn"> Cross-outs draw in</label>
-        <label class="chk"><input type="checkbox" id="tiltOn"> Tilted sticky notes</label>
-        <label class="chk"><input type="checkbox" id="calmOn"> Reduce all motion</label>
-      </div>
-    </details>
-    <details>
-      <summary>Preferences</summary>
-      <div class="grp">
-        <label class="chk"><input type="checkbox" id="botOn"> Move finished missions to the bottom</label>
-        <label class="chk"><input type="checkbox" id="tagOn"> Show place names under missions</label>
-      </div>
-    </details>
-    <details>
-      <summary>Events and reminders</summary>
-      <div class="grp">
-        <div class="msg">Open Month in the week strip, pick a day and use Add event. Events have times, colours, a place, details and an optional reminder. Colours match Google Calendar's event colours, ready for syncing later.</div>
-        <div class="row-actions"><button class="btn ghost" id="notifBtn" type="button">Allow notifications</button></div>
-        <div class="msg" id="notifMsg" role="status"></div>
-      </div>
-    </details>
-    <details id="phoneSec" hidden>
-      <summary>Phone</summary>
-      <div class="grp">
-        <label class="chk"><input type="checkbox" id="phRem"> Phone reminders for my events, even when the app is closed</label>
-        <div class="row-actions"><button class="btn ghost" id="phNotif" type="button" data-step="perm">Allow notifications</button></div>
-        <div class="msg" id="phNotifMsg" role="status"></div>
-        <div class="mh">Geofencing location</div>
-        <div class="row-actions">
-          <button class="btn ghost" id="phGeo" type="button">Allow location</button>
-          <button class="btn ghost" id="phBgGeo" type="button">Allow background location</button>
-          <button class="btn ghost" id="phSettings" type="button">App settings</button>
-        </div>
-        <div class="msg" id="phGeoMsg" role="status"></div>
-        <div class="mh">Phone calendar</div>
-        <div class="row-actions"><button class="btn" id="phConnect" type="button">Connect phone calendar</button><button class="btn ghost" id="phSync" type="button">Sync now</button></div>
-        <div id="phCalBox" hidden>
-          <div class="msg">Show events from these calendars:</div>
-          <div id="phCals" class="slots"></div>
-          <label class="chk" for="phWrite">Save my events into <select id="phWrite"></select></label>
-        </div>
-        <div class="msg" id="phMsg" role="status">Events from your phone calendars show up in the month view, in the nearest Google Calendar colour. Their own alerts stay with the calendar app.</div>
-      </div>
-    </details>
-    <details id="gcalSec">
-      <summary>Google Calendar</summary>
-      <div class="grp">
-        <div class="msg">Sync your events and dated missions with Google Calendar. Changes to Google Calendar always ask for your confirmation before saving.</div>
-        <div class="gcal-user" id="gcalUser" hidden></div>
-        <div class="row-actions">
-          <button class="gsi-material-button" id="gcalGoogleBtn" type="button" aria-label="Sign in with Google">
-            <div class="gsi-material-button-state"></div>
-            <div class="gsi-material-button-content-wrapper">
-              <div class="gsi-material-button-icon">
-                <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" style="display:block;">
-                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
-                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
-                  <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
-                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
-                  <path fill="none" d="M0 0h48v48H0z"></path>
-                </svg>
-              </div>
-              <span class="gsi-material-button-contents">Sign in with Google</span>
-            </div>
-          </button>
-          <button class="btn" id="gcalSyncBtn" type="button" hidden>Sync now</button>
-          <button class="btn ghost" id="gcalDisconnect" type="button" hidden>Sign out</button>
-        </div>
-        <div id="gcalCalBox" hidden>
-          <label class="chk" for="gcalSelect">Calendar: <select id="gcalSelect"></select></label>
-          <label class="chk"><input type="checkbox" id="gcalTwoWay" checked> Two-way sync (confirm before saving changes to Google Calendar)</label>
-          <label class="chk"><input type="checkbox" id="gcalSyncMissions" checked> Include open dated missions when syncing to Google Calendar</label>
-          <label class="chk"><input type="checkbox" id="gcalAuto" checked> Auto-refresh from Google Calendar on open and Month view</label>
-        </div>
-        <details id="gcalSettingsSec" style="margin-top:8px;">
-          <summary style="font-size:13px; cursor:pointer;">Read-only iCal (.ics) feed (optional)</summary>
-          <div class="grp" style="margin-top:6px; font-size:13px; display:grid; gap:8px;">
-            <div class="msg">Optional fallback: paste your Google Calendar secret iCal (.ics) URL for read-only import without signing in.</div>
-            <label style="display:grid; gap:2px;">
-              <span>Secret address in iCal format (.ics URL)</span>
-              <input type="url" id="gcalIcalUrl" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" style="width:100%; font-size:12px;">
-            </label>
-            <div class="row-actions">
-              <button class="btn ghost" id="gcalSaveCfg" type="button">Save &amp; import iCal</button>
-            </div>
-          </div>
-        </details>
-        <div class="msg" id="gcalStatus" role="status">Not connected.</div>
-      </div>
-    </details>
-    <details id="backup">
-      <summary>Backup</summary>
-      <div class="grp">
-        <div class="row-actions">
-          <button class="btn" id="saveJson" type="button">Save .json</button>
-          <button class="btn ghost" id="copyJson" type="button">Copy</button>
-          <label class="btn ghost filebtn">Import file<input type="file" id="fileIn" accept=".json,application/json,text/plain"></label>
-        </div>
-        <textarea id="jsonBox" spellcheck="false" aria-label="Missions as JSON. Paste JSON here to import."></textarea>
-        <label class="chk"><input type="checkbox" id="replace"> Replace my list instead of merging</label>
-        <div class="row-actions">
-          <button class="btn ghost" id="importPasted" type="button">Import pasted JSON</button>
-        </div>
-        <div class="msg" id="bkMsg" role="status"></div>
-      </div>
-    </details>
-    <details id="desktopSec" hidden>
-      <summary>Windows Desktop</summary>
-      <div class="grp">
-        <div class="row-actions">
-          <button class="btn ghost" id="winMiniBtn" type="button" aria-pressed="false">Enter mini mode</button>
-        </div>
-        <label class="chk"><input type="checkbox" id="winTopOn"> Keep window always on top</label>
-        <label class="chk"><input type="checkbox" id="winTrayOn" checked> Minimize to system tray when closing</label>
-        <div class="mh">Shortcuts</div>
-        <div class="win-shortcuts">
-          <div class="win-shortcut-row"><span>Quick add mission (global)</span><span class="win-kbd">Ctrl+Shift+A</span></div>
-          <div class="win-shortcut-row"><span>Always-on-top mini mode (global)</span><span class="win-kbd">Ctrl+Shift+M</span></div>
-          <div class="win-shortcut-row"><span>Start / pause Pomodoro (global)</span><span class="win-kbd">Ctrl+Shift+P</span></div>
-          <div class="win-shortcut-row"><span>Flip Do / Don't-do mode</span><span class="win-kbd">Ctrl+Shift+D</span></div>
-          <div class="win-shortcut-row"><span>Export town map as PNG</span><span class="win-kbd">Ctrl+E</span></div>
-        </div>
-        <div class="msg">Taskbar and tray icons update automatically when you switch Do / Don't-do modes or import a custom pin icon.</div>
-      </div>
-    </details>
-    <div class="row-actions"><button class="btn ghost" id="optClose" type="button">Close</button></div>
-  </section>
 
   <div class="scrim" id="scrim" hidden></div>
   <form class="add sheet" id="addForm" autocomplete="off" aria-label="Add a mission" hidden>
@@ -1931,6 +2034,19 @@ body.win-mini .btn.fab {
       <option value="high">High priority</option>
     </select>
     <input id="newDate" type="date" aria-label="Date">
+    <div class="add-limit-row">
+      <select id="newLimit" aria-label="Time limit">
+        <option value="0">No time limit</option>
+        <option value="15">Limit: 15 min</option>
+        <option value="30">Limit: 30 min</option>
+        <option value="45">Limit: 45 min</option>
+        <option value="60">Limit: 1 hour</option>
+        <option value="120">Limit: 2 hours</option>
+        <option value="240">Limit: 4 hours</option>
+        <option value="custom">Custom minutes...</option>
+      </select>
+      <input id="newLimitMins" type="number" min="1" max="1440" step="1" placeholder="Minutes" aria-label="Custom time limit in minutes" hidden>
+    </div>
     <button class="btn" type="submit" id="addBtn">Add</button>
     <input class="where" id="newWhere" maxlength="120" placeholder="Real place or address (optional, for Maps)" aria-label="Real place or address">
     <div class="add-pic-row">
@@ -2002,60 +2118,91 @@ body.win-mini .btn.fab {
 
   <main class="layout">
     <section class="mapcard" id="mapcard" aria-label="Town map">
-      <span class="hint" id="mapHint">tap a place to filter</span>
-      <svg id="map" viewBox="0 0 400 300" role="img" aria-label="Sketch map of the town"></svg>
-      <div class="mapnote" id="mapNote" hidden></div>
-      <div class="mapbar">
-        <button class="btn ghost" id="dropBtn" type="button">Drop a pin</button>
-        <button class="btn ghost" id="geoToggleBtn" type="button" aria-pressed="false">Geofence: Off</button>
-        <button class="btn ghost" id="geoEditBtn" type="button">Fence icon</button>
-        <select id="mapVariantBar" class="mapvar-sel" aria-label="Map variant"></select>
-        <button class="btn ghost" id="exportMapBtn" type="button">Export PNG</button>
-        <span id="pinCount"></span>
-        <span class="geostatus" id="geoStatus" hidden></span>
+      <div class="map-stage" id="mapStage">
+        <span class="hint" id="mapHint">tap a place to filter</span>
+        <svg id="map" viewBox="0 0 400 300" role="img" aria-label="Sketch map of the town"></svg>
+        <button class="mapbar-tog" id="mapBarTog" type="button" aria-expanded="true" aria-controls="mapBarBody" aria-label="Collapse map options" title="Collapse or expand map options">
+          <svg class="mapbar-arr" viewBox="0 0 24 24" aria-hidden="true">
+            <g class="arr-down" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11.6 3.6 L12.3 10.4 L11.8 16.4 L12.1 19.6" stroke-width="2.1"/>
+              <path d="M12.4 4.2 L11.8 11.6 L12.2 18.8" stroke-width="1.2" opacity=".72"/>
+              <path d="M6.2 13.8 L11.9 20.1 L18.0 13.5" stroke-width="2.1"/>
+              <path d="M7.0 14.3 L12.1 19.3 L17.2 14.1" stroke-width="1.2" opacity=".72"/>
+            </g>
+            <g class="arr-up" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12.1 20.4 L11.7 13.6 L12.3 7.4 L11.9 4.4" stroke-width="2.1"/>
+              <path d="M11.6 19.7 L12.2 12.2 L11.8 5.1" stroke-width="1.2" opacity=".72"/>
+              <path d="M6.2 10.2 L12.0 3.9 L18.0 10.5" stroke-width="2.1"/>
+              <path d="M6.9 9.7 L11.9 4.7 L17.3 9.9" stroke-width="1.2" opacity=".72"/>
+            </g>
+          </svg>
+        </button>
       </div>
-      <form class="pinform" id="pinForm" hidden autocomplete="off">
-        <input id="pinName" maxlength="24" placeholder="Name this pin" aria-label="Pin name">
-        <select id="pinGeoRad" aria-label="Optional geofence radius">
-          <option value="0">No geofence</option>
-          <option value="100">Fence: 100m</option>
-          <option value="200">Fence: 200m</option>
-          <option value="500">Fence: 500m</option>
-        </select>
-        <label class="chk" style="min-height:44px;font-size:12px;"><input type="checkbox" id="pinUseGps"> Use my GPS</label>
-        <button class="btn" type="submit">Save pin</button>
-        <button class="btn ghost" type="button" id="pinCancel">Cancel</button>
-      </form>
-      <form class="geoform" id="geoForm" hidden autocomplete="off" aria-label="Geofence settings">
-        <div class="georow">
-          <select id="geoTarget" aria-label="Map icon"></select>
-          <select id="geoRad" aria-label="Geofence radius">
-            <option value="50">50 m</option>
-            <option value="100">100 m</option>
-            <option value="150" selected>150 m</option>
-            <option value="300">300 m</option>
-            <option value="500">500 m</option>
-            <option value="1000">1000 m</option>
-          </select>
+      <div class="mapnote" id="mapNote" hidden></div>
+      <div class="mapbar-wrap" id="mapBarWrap">
+        <div class="mapbar-body" id="mapBarBody">
+          <div class="mapbar">
+            <button class="btn ghost" id="dropBtn" type="button">Drop a pin</button>
+            <button class="btn ghost" id="geoToggleBtn" type="button" aria-pressed="false">Geofence: Off</button>
+            <button class="btn ghost" id="geoEditBtn" type="button">Fence icon</button>
+            <select id="mapVariantBar" class="mapvar-sel" aria-label="Map variant"></select>
+            <button class="btn ghost" id="exportMapBtn" type="button">Export PNG</button>
+            <span id="pinCount"></span>
+            <span class="geostatus" id="geoStatus" hidden></span>
+          </div>
+          <form class="pinform" id="pinForm" hidden autocomplete="off">
+            <input id="pinName" maxlength="24" placeholder="Name this pin" aria-label="Pin name">
+            <select id="pinGeoRad" aria-label="Optional geofence radius">
+              <option value="0">No geofence</option>
+              <option value="100">Fence: 100m</option>
+              <option value="200">Fence: 200m</option>
+              <option value="500">Fence: 500m</option>
+            </select>
+            <label class="chk" style="min-height:44px;font-size:12px;"><input type="checkbox" id="pinUseGps"> Use my GPS</label>
+            <button class="btn" type="submit">Save pin</button>
+            <button class="btn ghost" type="button" id="pinCancel">Cancel</button>
+          </form>
+          <form class="geoform" id="geoForm" hidden autocomplete="off" aria-label="Geofence settings">
+            <div class="georow">
+              <select id="geoTarget" aria-label="Map icon"></select>
+              <select id="geoRad" aria-label="Geofence radius">
+                <option value="50">50 m</option>
+                <option value="100">100 m</option>
+                <option value="150" selected>150 m</option>
+                <option value="300">300 m</option>
+                <option value="500">500 m</option>
+                <option value="1000">1000 m</option>
+              </select>
+            </div>
+            <div class="georow">
+              <input id="geoLat" type="number" step="any" min="-90" max="90" placeholder="Latitude (e.g. 37.7749)" aria-label="Latitude">
+              <input id="geoLng" type="number" step="any" min="-180" max="180" placeholder="Longitude (e.g. -122.4194)" aria-label="Longitude">
+              <button class="btn ghost" type="button" id="geoUseGps">Use my GPS</button>
+            </div>
+            <div class="georow">
+              <button class="btn" type="submit">Save fence</button>
+              <button class="btn ghost" type="button" id="geoSimBtn">Step inside</button>
+              <button class="btn ghost" type="button" id="geoClearBtn">Clear fence</button>
+              <button class="btn ghost" type="button" id="geoCloseBtn">Close</button>
+            </div>
+          </form>
         </div>
-        <div class="georow">
-          <input id="geoLat" type="number" step="any" min="-90" max="90" placeholder="Latitude (e.g. 37.7749)" aria-label="Latitude">
-          <input id="geoLng" type="number" step="any" min="-180" max="180" placeholder="Longitude (e.g. -122.4194)" aria-label="Longitude">
-          <button class="btn ghost" type="button" id="geoUseGps">Use my GPS</button>
-        </div>
-        <div class="georow">
-          <button class="btn" type="submit">Save fence</button>
-          <button class="btn ghost" type="button" id="geoSimBtn">Step inside</button>
-          <button class="btn ghost" type="button" id="geoClearBtn">Clear fence</button>
-          <button class="btn ghost" type="button" id="geoCloseBtn">Close</button>
-        </div>
-      </form>
+        <span class="mapbar-minilbl" id="mapBarMiniLbl" hidden>Map options</span>
+      </div>
     </section>
     <section id="listSec">
       <div class="paper" id="paper">
         <div class="rc-head" aria-hidden="true"><div>Errand receipt</div><div id="rcDate"></div><div class="dash"></div></div>
         <div class="list-head" id="listHead">
           <h2 id="listTitle">Missions</h2>
+          <select id="listSort" class="list-sort-sel" aria-label="Sort missions">
+            <option value="custom">Sort: Default</option>
+            <option value="prio-desc">Priority: High–Low</option>
+            <option value="prio-asc">Priority: Low–High</option>
+            <option value="date-asc">Date: Soonest</option>
+            <option value="date-desc">Date: Latest</option>
+            <option value="limit-asc">Time limit</option>
+          </select>
           <span class="edit-mode-hint" id="editModeHint" hidden>Tap a mission to edit</span>
           <button class="edit-mode-btn" id="editModeBtn" type="button" aria-pressed="false" aria-label="Select a mission to edit">Edit</button>
         </div>
@@ -2252,6 +2399,411 @@ body.win-mini .btn.fab {
 </div>
 <button class="btn fab" id="fab" type="button" aria-expanded="false" aria-controls="addForm">Add</button>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<section class="opts-overlay" id="options" hidden role="dialog" aria-modal="true" aria-label="Options">
+  <div class="opts-stage">
+    <div class="opts-util">
+      <div class="opts-util-top">
+        <div class="opts-util-title">
+          <h2>Options</h2>
+          <span class="opts-total-cnt" id="optTotalCnt">0 active</span>
+        </div>
+        <div class="opts-util-acts">
+          <button class="btn ghost" id="optResetBtn" type="button">Reset defaults</button>
+          <button class="btn" id="optClose" type="button">Close</button>
+        </div>
+      </div>
+      <div class="opts-reset-confirm" id="optResetConfirm" hidden>
+        <span>Reset theme, fonts, sound &amp; switches to defaults? (Keeps missions, events &amp; uploads.)</span>
+        <div class="row-actions">
+          <button class="btn" id="optResetConfirmBtn" type="button">Confirm reset</button>
+          <button class="btn ghost" id="optResetCancelBtn" type="button">Cancel</button>
+        </div>
+      </div>
+      <div class="opts-search-row">
+        <input class="opts-search-inp" id="optSearch" type="search" placeholder="Search settings (theme, font, radio, calendar, shortcut...)" aria-label="Search settings">
+        <button class="btn ghost opts-search-clear" id="optSearchClear" type="button" hidden>Clear</button>
+        <div class="opts-search-meta" id="optSearchMeta" hidden></div>
+      </div>
+    </div>
+
+    <div class="opts-tabs" id="optTabs" role="tablist" aria-label="Option categories">
+      <button class="opts-tab" type="button" role="tab" data-cat="look" aria-selected="true"><span class="tab-lbl">Look &amp; Style</span><span class="tab-cnt" data-cnt="look">0</span></button>
+      <button class="opts-tab" type="button" role="tab" data-cat="map" aria-selected="false"><span class="tab-lbl">Map &amp; Places</span><span class="tab-cnt" data-cnt="map">0</span></button>
+      <button class="opts-tab" type="button" role="tab" data-cat="sound" aria-selected="false"><span class="tab-lbl">Sound &amp; Deck</span><span class="tab-cnt" data-cnt="sound">0</span></button>
+      <button class="opts-tab" type="button" role="tab" data-cat="focus" aria-selected="false"><span class="tab-lbl">Focus &amp; Daily</span><span class="tab-cnt" data-cnt="focus">0</span></button>
+      <button class="opts-tab" type="button" role="tab" data-cat="sync" aria-selected="false"><span class="tab-lbl">Calendar &amp; Sync</span><span class="tab-cnt" data-cnt="sync">0</span></button>
+      <button class="opts-tab" type="button" role="tab" data-cat="data" aria-selected="false"><span class="tab-lbl">Data &amp; Desktop</span><span class="tab-cnt" data-cnt="data">0</span></button>
+    </div>
+
+    <div class="pola-deck" id="polaDeck">
+      <!-- 01 Look & Style -->
+      <article class="pola-card" data-cat="look" data-deck-pos="0" role="tabpanel" aria-label="Look and Style">
+        <div class="pola-inner">
+          <div class="pola-sec" data-search="theme look color mode auto light dark amoled swatch palette pin badge app icon do don't do">
+            <h3 class="pola-sh">Theme &amp; Swatches</h3>
+            <div class="themegrid" id="themeGrid" role="group" aria-label="Look"></div>
+            <div class="seg" role="group" aria-label="Color mode">
+              <button id="cmAuto" type="button" aria-pressed="true">Auto</button>
+              <button id="cmLight" type="button" aria-pressed="false">Light</button>
+              <button id="cmDark" type="button" aria-pressed="false">Dark</button>
+            </div>
+            <div class="msg">Every theme except Map and Notes keeps its own colors, whatever the color mode.</div>
+            <div class="msg">Pin icon style</div>
+            <div class="seg" role="group" aria-label="Pin icon style">
+              <button id="pinStyleBase" type="button" aria-pressed="true">Base badge</button>
+              <button id="pinStyleAlt" type="button" aria-pressed="false">Alternate</button>
+            </div>
+            <div class="appicon-box">
+              <div class="appicon-top">
+                <img class="appicon-prev" id="appIconPreviewImg" src="pins/base-smile-256.png" alt="Current app menu icon">
+                <div class="appicon-info">
+                  <div id="appIconModeLbl">Menu icon matches Do / Don't-do mode</div>
+                  <small style="color:var(--ink-soft)">Switches automatically when you flip the badge, or import custom PNG/JPG icons.</small>
+                </div>
+              </div>
+              <div class="appicon-acts">
+                <label class="btn ghost filebtn">Import Do icon<input type="file" id="appIconSmileIn" accept="image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp"></label>
+                <label class="btn ghost filebtn">Import Don't-do icon<input type="file" id="appIconEvilIn" accept="image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp"></label>
+                <label class="btn ghost filebtn">Import both<input type="file" id="appIconBothIn" accept="image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp"></label>
+                <button class="btn ghost" id="appIconResetBtn" type="button">Reset icons</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="pola-sec" data-search="fonts typography typeface specimen swatch preview all text mission titles">
+            <h3 class="pola-sh">Fonts &amp; Specimens</h3>
+            <label class="chk" for="fontAll">All text <select id="fontAll"></select></label>
+            <label class="chk" for="fontMission">Mission titles only <select id="fontMission"></select></label>
+            <div class="font-tgt-row">
+              <span class="msg">Quick preview applies to:</span>
+              <div class="seg" role="group" aria-label="Font swatch target">
+                <button id="fontTgtAll" type="button" aria-pressed="true">All text</button>
+                <button id="fontTgtMission" type="button" aria-pressed="false">Mission titles</button>
+              </div>
+            </div>
+            <div class="font-swatches" id="fontSwatchGrid" role="group" aria-label="Font visual previews"></div>
+            <div class="msg">"Theme" keeps each theme's own fonts. Any letter a font lacks falls back to the theme font. Map numbers always use Smash.</div>
+          </div>
+
+          <div class="pola-sec" data-search="effects animations sound sfx scribble buttons receipt print wobbly borders slow cross out draw tilted sticky notes reduce motion calm">
+            <h3 class="pola-sh">Effects &amp; Motion</h3>
+            <label class="chk"><input type="checkbox" id="sfxOn"> Sound effects</label>
+            <label class="chk"><input type="checkbox" id="scrOn"> Scribble on buttons</label>
+            <label class="chk"><input type="checkbox" id="prtOn"> Receipt print-out when adding a mission</label>
+            <label class="chk"><input type="checkbox" id="wobOn"> Wobbly, hand-drawn button borders</label>
+            <label class="chk"><input type="checkbox" id="wobAllOn"> Also on panels, inputs, notes, calendar and the map frame</label>
+            <label class="chk"><input type="checkbox" id="wobSlowOn"> Way slower scribbly animation</label>
+            <label class="chk"><input type="checkbox" id="strOn"> Cross-outs draw in</label>
+            <label class="chk"><input type="checkbox" id="tiltOn"> Tilted sticky notes</label>
+            <label class="chk"><input type="checkbox" id="calmOn"> Reduce all motion</label>
+          </div>
+          <div class="opts-empty" hidden></div>
+        </div>
+        <div class="pola-caption">
+          <button class="btn ghost pola-nav" type="button" data-dir="-1">&lt; Prev</button>
+          <div class="pola-cap-mid">
+            <span class="pola-cap-title">Look &amp; Style</span>
+            <span class="pola-cap-meta" data-cap-meta="look">01 / 06 · 0 active</span>
+          </div>
+          <button class="btn ghost pola-nav" type="button" data-dir="1">Next &gt;</button>
+        </div>
+      </article>
+
+      <!-- 02 Map & Places -->
+      <article class="pola-card" data-cat="map" data-deck-pos="1" role="tabpanel" aria-label="Map and Places">
+        <div class="pola-inner">
+          <div class="pola-sec" data-search="map variant town harbor mountain metro blueprint fog of war refog stamps round square moving details traffic time of day show map geofencing gps alerts">
+            <h3 class="pola-sh">Town Map &amp; Places</h3>
+            <label class="chk" for="mapVariant">Map variant <select id="mapVariant"></select></label>
+            <label class="chk"><input type="checkbox" id="fogOn"> Fog of war</label>
+            <label class="chk"><input type="checkbox" id="stRoundOn"> Round number stamps (off: square)</label>
+            <div class="row-actions"><button class="btn ghost" id="refog" type="button">Bring the fog back</button></div>
+            <label class="chk"><input type="checkbox" id="movOn"> Moving details: traffic and time of day</label>
+            <label class="chk"><input type="checkbox" id="mapAllOn"> Show the map in every theme</label>
+            <label class="chk"><input type="checkbox" id="geoOn"> Geofencing (GPS alerts near map icons)</label>
+            <div class="msg" id="mapMsg">Use Drop a pin under the map to add your own places, and Fence icon to set GPS geofences.</div>
+          </div>
+          <div class="opts-empty" hidden></div>
+        </div>
+        <div class="pola-caption">
+          <button class="btn ghost pola-nav" type="button" data-dir="-1">&lt; Prev</button>
+          <div class="pola-cap-mid">
+            <span class="pola-cap-title">Map &amp; Places</span>
+            <span class="pola-cap-meta" data-cap-meta="map">02 / 06 · 0 active</span>
+          </div>
+          <button class="btn ghost pola-nav" type="button" data-dir="1">Next &gt;</button>
+        </div>
+      </article>
+
+      <!-- 03 Sound & Deck -->
+      <article class="pola-card" data-cat="sound" data-deck-pos="2" role="tabpanel" aria-label="Sound and Deck">
+        <div class="pola-inner">
+          <div class="pola-sec" data-search="music audio background volume slider radio station ads playlist own tracks shuffle add tracks skip">
+            <h3 class="pola-sh">Music &amp; Radio</h3>
+            <label class="chk"><input type="checkbox" id="musOn"> Background music</label>
+            <label class="chk" for="vol">Volume <input type="range" id="vol" min="0" max="100" step="1" style="flex:1"></label>
+            <label class="chk" for="station">Radio
+              <select id="station">
+                <option value="auto">Match the theme</option>
+                <option value="map">Dusty Map FM</option>
+                <option value="notes">Cork Board Radio</option>
+                <option value="errands">Night Shift 88</option>
+                <option value="highway">Neon Highway</option>
+                <option value="pit">Pit Stop FM</option>
+              </select>
+            </label>
+            <label class="chk"><input type="checkbox" id="adsOn"> Radio ads between songs</label>
+            <label class="chk"><input type="checkbox" id="plOwn"> Play my tracks instead of the built-in music</label>
+            <label class="chk"><input type="checkbox" id="plShuf"> Shuffle my tracks</label>
+            <div class="row-actions">
+              <label class="btn ghost filebtn">Add tracks<input type="file" id="plIn" accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.aac" multiple></label>
+              <button class="btn ghost" id="plNext" type="button">Skip track</button>
+            </div>
+            <ol class="pllist" id="plList" aria-label="My tracks"></ol>
+            <div class="msg" id="sndMsg" role="status">The built-in music is an original loop. Pick a station or upload your own tracks.</div>
+          </div>
+
+          <div class="pola-sec" data-search="voice cassette recorder tape style realistic deck ui hi-fi analog filter warmth flutter">
+            <h3 class="pola-sh">Voice Cassette Recorder</h3>
+            <label class="chk" for="tapeStyleOpt">Recorder look
+              <select id="tapeStyleOpt">
+                <option value="realistic">Realistic animated deck</option>
+                <option value="ui">Match rest of the UI</option>
+              </select>
+            </label>
+            <label class="chk"><input type="checkbox" id="tapeFilterOpt"> Hi-Fi analog tape filter (warmth, saturation &amp; flutter)</label>
+            <div class="msg">Hover (or tap on mobile) the cassette deck next to the Add button to record and label voice memos.</div>
+          </div>
+          <div class="opts-empty" hidden></div>
+        </div>
+        <div class="pola-caption">
+          <button class="btn ghost pola-nav" type="button" data-dir="-1">&lt; Prev</button>
+          <div class="pola-cap-mid">
+            <span class="pola-cap-title">Sound &amp; Deck</span>
+            <span class="pola-cap-meta" data-cap-meta="sound">03 / 06 · 0 active</span>
+          </div>
+          <button class="btn ghost pola-nav" type="button" data-dir="1">Next &gt;</button>
+        </div>
+      </article>
+
+      <!-- 04 Focus & Daily -->
+      <article class="pola-card" data-cat="focus" data-deck-pos="3" role="tabpanel" aria-label="Focus and Daily">
+        <div class="pola-inner">
+          <div class="pola-sec" data-search="preferences missions finished bottom show place names tags">
+            <h3 class="pola-sh">List Preferences</h3>
+            <label class="chk"><input type="checkbox" id="botOn"> Move finished missions to the bottom</label>
+            <label class="chk"><input type="checkbox" id="tagOn"> Show place names under missions</label>
+          </div>
+
+          <div class="pola-sec" data-search="errand life week strip friday wrap up random hassles stress meter red darkens daily practice tailor bring field achievements">
+            <h3 class="pola-sh">Errand Life &amp; Practice</h3>
+            <label class="chk"><input type="checkbox" id="weekOn"> Week strip and Friday wrap-up</label>
+            <label class="chk"><input type="checkbox" id="hasOn"> Random hassles on new missions</label>
+            <label class="chk"><input type="checkbox" id="strsOn"> Stress meter</label>
+            <label class="chk"><input type="checkbox" id="srOn"> Stress darkens every red in the app</label>
+            <label class="chk"><input type="checkbox" id="ptOn"> Tailor the daily practice to the exercises I actually try</label>
+            <label class="chk"><input type="checkbox" id="prOn"> Daily practice card (one exercise a day; you can pick one and pin it by the map)</label>
+            <label class="chk"><input type="checkbox" id="brOn"> "Bring" field on missions</label>
+            <div class="msg">Achievements</div>
+            <ul class="achs" id="achList"></ul>
+          </div>
+
+          <div class="pola-sec" data-search="racer rank cash race the clock pomodoro timer watch road progress strip">
+            <h3 class="pola-sh">Racer &amp; Pomodoro</h3>
+            <label class="chk"><input type="checkbox" id="rankOn"> Rank and cash</label>
+            <label class="chk"><input type="checkbox" id="raceOn"> Race the clock panel</label>
+            <label class="chk"><input type="checkbox" id="roadOn"> Road progress strip (always on in the Racer theme)</label>
+            <div class="msg">Rank goes up with cash from finished missions. Nothing is locked yet, so every theme and sound is already open.</div>
+          </div>
+
+          <div class="pola-sec" data-search="ambient screen always on idle timer brightness oled android hide status bar">
+            <h3 class="pola-sh">Ambient Screen</h3>
+            <label class="chk" for="aodIdle">Start by itself after <select id="aodIdle"><option value="0">Never</option><option value="2">2 min idle</option><option value="5">5 min idle</option><option value="10">10 min idle</option><option value="30">30 min idle</option></select></label>
+            <label class="chk" for="aodLevel">Screen brightness (app only) <select id="aodLevel"><option value="3">Very dim</option><option value="10">Dim</option><option value="25">Medium</option></select></label>
+            <label class="chk"><input type="checkbox" id="aodHideBar"> Hide top status bar while on ambient display (Android app)</label>
+            <div class="msg">A black always-on screen with the clock, your next event, open missions and stress. Tap anywhere to leave.</div>
+          </div>
+          <div class="opts-empty" hidden></div>
+        </div>
+        <div class="pola-caption">
+          <button class="btn ghost pola-nav" type="button" data-dir="-1">&lt; Prev</button>
+          <div class="pola-cap-mid">
+            <span class="pola-cap-title">Focus &amp; Daily</span>
+            <span class="pola-cap-meta" data-cap-meta="focus">04 / 06 · 0 active</span>
+          </div>
+          <button class="btn ghost pola-nav" type="button" data-dir="1">Next &gt;</button>
+        </div>
+      </article>
+
+      <!-- 05 Calendar & Sync -->
+      <article class="pola-card" data-cat="sync" data-deck-pos="4" role="tabpanel" aria-label="Calendar and Sync">
+        <div class="pola-inner">
+          <div class="pola-sec" data-search="events reminders browser notifications allow">
+            <h3 class="pola-sh">Events &amp; Reminders</h3>
+            <div class="msg">Open Month in the week strip, pick a day and use Add event. Events have times, colours, a place, details and an optional reminder.</div>
+            <div class="row-actions"><button class="btn ghost" id="notifBtn" type="button">Allow notifications</button></div>
+            <div class="msg" id="notifMsg" role="status"></div>
+          </div>
+
+          <div class="pola-sec" id="gcalSec" data-search="google calendar sign in sync two way dated missions auto refresh ical ics url">
+            <h3 class="pola-sh">Google Calendar</h3>
+            <div class="msg">Sync your events and dated missions with Google Calendar. Changes to Google Calendar always ask for your confirmation before saving.</div>
+            <div class="gcal-user" id="gcalUser" hidden></div>
+            <div class="row-actions">
+              <button class="gsi-material-button" id="gcalGoogleBtn" type="button" aria-label="Sign in with Google">
+                <div class="gsi-material-button-state"></div>
+                <div class="gsi-material-button-content-wrapper">
+                  <div class="gsi-material-button-icon">
+                    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" style="display:block;">
+                      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+                      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+                      <path fill="none" d="M0 0h48v48H0z"></path>
+                    </svg>
+                  </div>
+                  <span class="gsi-material-button-contents">Sign in with Google</span>
+                </div>
+              </button>
+              <button class="btn" id="gcalSyncBtn" type="button" hidden>Sync now</button>
+              <button class="btn ghost" id="gcalDisconnect" type="button" hidden>Sign out</button>
+            </div>
+            <div id="gcalCalBox" hidden>
+              <label class="chk" for="gcalSelect">Calendar: <select id="gcalSelect"></select></label>
+              <label class="chk"><input type="checkbox" id="gcalTwoWay" checked> Two-way sync (confirm before saving changes to Google Calendar)</label>
+              <label class="chk"><input type="checkbox" id="gcalSyncMissions" checked> Include open dated missions when syncing to Google Calendar</label>
+              <label class="chk"><input type="checkbox" id="gcalAuto" checked> Auto-refresh from Google Calendar on open and Month view</label>
+            </div>
+            <details id="gcalSettingsSec" style="margin-top:4px;">
+              <summary style="font-size:13px; cursor:pointer;">Read-only iCal (.ics) feed (optional)</summary>
+              <div class="grp" style="margin-top:6px; font-size:13px; display:grid; gap:8px;">
+                <div class="msg">Optional fallback: paste your Google Calendar secret iCal (.ics) URL for read-only import without signing in.</div>
+                <label style="display:grid; gap:2px;">
+                  <span>Secret address in iCal format (.ics URL)</span>
+                  <input type="url" id="gcalIcalUrl" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" style="width:100%; font-size:12px;">
+                </label>
+                <div class="row-actions">
+                  <button class="btn ghost" id="gcalSaveCfg" type="button">Save &amp; import iCal</button>
+                </div>
+              </div>
+            </details>
+            <div class="msg" id="gcalStatus" role="status">Not connected.</div>
+          </div>
+
+          <div class="pola-sec" id="phoneSec" hidden data-search="phone android reminders notifications geofencing location background app settings calendar sync">
+            <h3 class="pola-sh">Phone (Android)</h3>
+            <label class="chk"><input type="checkbox" id="phRem"> Phone reminders for my events, even when the app is closed</label>
+            <div class="row-actions"><button class="btn ghost" id="phNotif" type="button" data-step="perm">Allow notifications</button></div>
+            <div class="msg" id="phNotifMsg" role="status"></div>
+            <div class="mh">Geofencing location</div>
+            <div class="row-actions">
+              <button class="btn ghost" id="phGeo" type="button">Allow location</button>
+              <button class="btn ghost" id="phBgGeo" type="button">Allow background location</button>
+              <button class="btn ghost" id="phSettings" type="button">App settings</button>
+            </div>
+            <div class="msg" id="phGeoMsg" role="status"></div>
+            <div class="mh">Phone calendar</div>
+            <div class="row-actions"><button class="btn" id="phConnect" type="button">Connect phone calendar</button><button class="btn ghost" id="phSync" type="button">Sync now</button></div>
+            <div id="phCalBox" hidden>
+              <div class="msg">Show events from these calendars:</div>
+              <div id="phCals" class="slots"></div>
+              <label class="chk" for="phWrite">Save my events into <select id="phWrite"></select></label>
+            </div>
+            <div class="msg" id="phMsg" role="status">Events from your phone calendars show up in the month view, in the nearest Google Calendar colour.</div>
+          </div>
+          <div class="opts-empty" hidden></div>
+        </div>
+        <div class="pola-caption">
+          <button class="btn ghost pola-nav" type="button" data-dir="-1">&lt; Prev</button>
+          <div class="pola-cap-mid">
+            <span class="pola-cap-title">Calendar &amp; Sync</span>
+            <span class="pola-cap-meta" data-cap-meta="sync">05 / 06 · 0 active</span>
+          </div>
+          <button class="btn ghost pola-nav" type="button" data-dir="1">Next &gt;</button>
+        </div>
+      </article>
+
+      <!-- 06 Data & Desktop -->
+      <article class="pola-card" data-cat="data" data-deck-pos="5" role="tabpanel" aria-label="Data and Desktop">
+        <div class="pola-inner">
+          <div class="pola-sec" id="backup" data-search="backup export save copy json import paste replace merge">
+            <h3 class="pola-sh">Backup &amp; JSON</h3>
+            <div class="row-actions">
+              <button class="btn" id="saveJson" type="button">Save .json</button>
+              <button class="btn ghost" id="copyJson" type="button">Copy</button>
+              <label class="btn ghost filebtn">Import file<input type="file" id="fileIn" accept=".json,application/json,text/plain"></label>
+            </div>
+            <textarea id="jsonBox" spellcheck="false" aria-label="Missions as JSON. Paste JSON here to import."></textarea>
+            <label class="chk"><input type="checkbox" id="replace"> Replace my list instead of merging</label>
+            <div class="row-actions">
+              <button class="btn ghost" id="importPasted" type="button">Import pasted JSON</button>
+            </div>
+            <div class="msg" id="bkMsg" role="status"></div>
+          </div>
+
+          <div class="pola-sec" id="mediaSec" data-search="pictures sounds custom wallpaper map image sketch roads theme sfx music per theme">
+            <h3 class="pola-sh">Pictures &amp; Sounds</h3>
+            <div class="msg">Everything you add here stays on this device only: it is not synced and not included in the .json backup.</div>
+            <div class="mh">Pictures</div>
+            <div id="imgSlots" class="slots"></div>
+            <label class="chk"><input type="checkbox" id="mapSketch"> Draw the sketch roads on top of my map picture</label>
+            <div class="mh">Theme wallpapers</div>
+            <div id="wallSlots" class="slots"></div>
+            <div class="mh">Sound effects</div>
+            <div id="sfxSlots" class="slots"></div>
+            <div class="mh">Music per theme</div>
+            <div id="themeMusSlots" class="slots"></div>
+            <div class="msg" id="mediaMsg" role="status"></div>
+          </div>
+
+          <div class="pola-sec" id="shortcutsSec" data-search="keyboard shortcuts windows desktop hotkeys ctrl shift a m p d e modal">
+            <h3 class="pola-sh">Keyboard Shortcuts (Windows Desktop)</h3>
+            <div class="win-shortcuts">
+              <div class="win-shortcut-row"><span>Quick add mission (global on Windows)</span><kbd class="win-kbd">Ctrl+Shift+A</kbd></div>
+              <div class="win-shortcut-row"><span>Always-on-top mini mode (global on Windows)</span><kbd class="win-kbd">Ctrl+Shift+M</kbd></div>
+              <div class="win-shortcut-row"><span>Start / pause Pomodoro watch (global on Windows)</span><kbd class="win-kbd">Ctrl+Shift+P</kbd></div>
+              <div class="win-shortcut-row"><span>Flip Do / Don't-do mode</span><kbd class="win-kbd">Ctrl+Shift+D</kbd></div>
+              <div class="win-shortcut-row"><span>Export town map as PNG</span><kbd class="win-kbd">Ctrl+E</kbd></div>
+              <div class="win-shortcut-row"><span>New mission / Toggle Options / Shortcuts modal</span><kbd class="win-kbd">Ctrl+N / Ctrl+, / ?</kbd></div>
+            </div>
+            <div class="row-actions">
+              <button class="btn ghost" id="openShortcutsBtn" type="button">Open shortcuts modal</button>
+            </div>
+            <div class="msg">The system tray and taskbar icons update dynamically to match Do / Don't-do mode, open mission count badge, Pomodoro state, and custom pin icons.</div>
+          </div>
+
+          <div class="pola-sec" id="desktopSec" hidden data-search="windows desktop mini mode always on top minimize to tray">
+            <h3 class="pola-sh">Windows Desktop</h3>
+            <div class="row-actions">
+              <button class="btn ghost" id="winMiniBtn" type="button" aria-pressed="false">Enter mini mode</button>
+              <button class="btn ghost" id="winShortcutsBtn" type="button">Shortcuts cheat sheet</button>
+            </div>
+            <label class="chk"><input type="checkbox" id="winTopOn"> Keep window always on top</label>
+            <label class="chk"><input type="checkbox" id="winTrayOn" checked> Minimize to system tray when closing</label>
+            <div class="msg">Taskbar and system tray icons dynamically show Do / Don't-do mode, open mission count badge, Pomodoro focus/break indicator, and custom pin icons.</div>
+          </div>
+
+          <div class="pola-sec" data-search="reset defaults factory preferences theme switches">
+            <h3 class="pola-sh">Reset Options</h3>
+            <div class="msg">Restore theme, fonts, audio settings, and visual toggles to their defaults without removing your missions, notes, events, or uploads.</div>
+            <div class="row-actions">
+              <button class="btn ghost" id="optResetInlineBtn" type="button">Reset all options to defaults</button>
+            </div>
+          </div>
+          <div class="opts-empty" hidden></div>
+        </div>
+        <div class="pola-caption">
+          <button class="btn ghost pola-nav" type="button" data-dir="-1">&lt; Prev</button>
+          <div class="pola-cap-mid">
+            <span class="pola-cap-title">Data &amp; Desktop</span>
+            <span class="pola-cap-meta" data-cap-meta="data">06 / 06 · 0 active</span>
+          </div>
+          <button class="btn ghost pola-nav" type="button" data-dir="1">Next &gt;</button>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
 <div class="gcal-modal-backdrop" id="gcalConfirmModal" hidden role="dialog" aria-modal="true" aria-labelledby="gcalConfirmTitle">
   <div class="gcal-modal">
     <h3 id="gcalConfirmTitle">Confirm Google Calendar changes</h3>
@@ -2263,10 +2815,33 @@ body.win-mini .btn.fab {
     </div>
   </div>
 </div>
+<div class="gcal-modal-backdrop" id="shortcutsModal" hidden role="dialog" aria-modal="true" aria-labelledby="shortcutsTitle">
+  <div class="gcal-modal">
+    <h3 id="shortcutsTitle">Windows Desktop Keyboard Shortcuts</h3>
+    <div class="sc-sub">Global Windows Shortcuts (work even when minimized)</div>
+    <div class="win-shortcuts">
+      <div class="win-shortcut-row"><span>Quick add mission</span><kbd class="win-kbd">Ctrl+Shift+A</kbd></div>
+      <div class="win-shortcut-row"><span>Toggle always-on-top mini mode</span><kbd class="win-kbd">Ctrl+Shift+M</kbd></div>
+      <div class="win-shortcut-row"><span>Start / pause Pomodoro watch</span><kbd class="win-kbd">Ctrl+Shift+P</kbd></div>
+    </div>
+    <div class="sc-sub">In-App Shortcuts</div>
+    <div class="win-shortcuts">
+      <div class="win-shortcut-row"><span>Flip Do / Don't-do mode</span><kbd class="win-kbd">Ctrl+Shift+D</kbd></div>
+      <div class="win-shortcut-row"><span>Export town map as PNG</span><kbd class="win-kbd">Ctrl+E</kbd></div>
+      <div class="win-shortcut-row"><span>New mission / Mini mode</span><kbd class="win-kbd">Ctrl+N / Ctrl+M</kbd></div>
+      <div class="win-shortcut-row"><span>Toggle Options / Open Shortcuts</span><kbd class="win-kbd">Ctrl+, / ?</kbd></div>
+      <div class="win-shortcut-row"><span>Close menu, dialog, or exit Edit mode</span><kbd class="win-kbd">Esc</kbd></div>
+    </div>
+    <div class="msg">System tray and taskbar icons update dynamically for Do / Don't-do mode, open count badge, Pomodoro state, and custom pin icons.</div>
+    <div class="row-actions">
+      <button class="btn" id="shortcutsClose" type="button">Done</button>
+    </div>
+  </div>
+</div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, browserPopupRedirectResolver } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyABFJpsNx0-H7-fXipb7L3hrGNY3RA6cOw",
@@ -2277,22 +2852,189 @@ const firebaseConfig = {
   appId: "1:169879764211:web:0d135566e1e1937ccc0b86"
 };
 
+const GCAL_CLIENT_ID = "169879764211-fj2ja6lbjj984llol1mn199d0rs94mvb.apps.googleusercontent.com";
+const GCAL_SCOPES = [
+  "https://www.googleapis.com/auth/calendar.events",
+  "https://www.googleapis.com/auth/calendar.calendarlist.readonly"
+];
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
-provider.addScope("https://www.googleapis.com/auth/calendar.events");
-provider.addScope("https://www.googleapis.com/auth/calendar.calendarlist.readonly");
+GCAL_SCOPES.forEach((s) => provider.addScope(s));
 provider.setCustomParameters({ prompt: "select_account" });
 
 // Strictly in-memory OAuth access token cache (never persisted to localStorage/sessionStorage)
 let cachedAccessToken = null;
 let currentUser = null;
+let gisLoadPromise = null;
+let inFlightSignIn = null;
 const listeners = [];
 
-onAuthStateChanged(auth, (user) => {
-  currentUser = user ? { uid: user.uid, email: user.email || "", displayName: user.displayName || "" } : null;
-  if (!user) cachedAccessToken = null;
+function notifyListeners() {
   listeners.forEach((fn) => { try { fn(currentUser); } catch (e) {} });
+}
+
+function loadGis() {
+  if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+    return Promise.resolve(window.google.accounts.oauth2);
+  }
+  if (gisLoadPromise) return gisLoadPromise;
+  gisLoadPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-gis-client="1"]');
+    if (existing && existing.dataset.gisFailed === "1") {
+      existing.remove();
+    }
+    const target = document.querySelector('script[data-gis-client="1"]');
+    let done = false;
+    const finishOk = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(tid);
+      if (window.google && window.google.accounts && window.google.accounts.oauth2) resolve(window.google.accounts.oauth2);
+      else {
+        gisLoadPromise = null;
+        reject(new Error("gis-unavailable"));
+      }
+    };
+    const finishErr = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(tid);
+      gisLoadPromise = null;
+      reject(new Error("gis-unavailable"));
+    };
+    const tid = setTimeout(finishErr, 6000);
+    if (target) {
+      target.addEventListener("load", finishOk, { once: true });
+      target.addEventListener("error", () => { target.dataset.gisFailed = "1"; finishErr(); }, { once: true });
+      return;
+    }
+    const sc = document.createElement("script");
+    sc.src = "https://accounts.google.com/gsi/client";
+    sc.async = true;
+    sc.defer = true;
+    sc.setAttribute("data-gis-client", "1");
+    sc.onload = finishOk;
+    sc.onerror = () => { sc.dataset.gisFailed = "1"; finishErr(); };
+    document.head.appendChild(sc);
+  });
+  return gisLoadPromise;
+}
+
+// Preload GIS script silently so clicking Sign in can open the OAuth popup synchronously within the user gesture
+loadGis().catch(() => {});
+
+async function resolveCalendarEmail(token) {
+  try {
+    const res = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=20", {
+      headers: { Authorization: "Bearer " + token }
+    });
+    if (!res.ok) return "";
+    const data = await res.json();
+    const list = Array.isArray(data && data.items) ? data.items : [];
+    const primary = list.find((c) => c && c.primary) || list[0];
+    return primary && primary.id ? String(primary.id) : "";
+  } catch (e) {
+    return "";
+  }
+}
+
+function runGisTokenRequest(oauth2) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    try {
+      const client = oauth2.initTokenClient({
+        client_id: GCAL_CLIENT_ID,
+        scope: GCAL_SCOPES.join(" "),
+        callback: (resp) => {
+          if (settled) return;
+          settled = true;
+          if (!resp || resp.error || !resp.access_token) {
+            const msg = resp && resp.error === "access_denied"
+              ? "Google Calendar permission was not granted."
+              : "Google did not return a calendar access token. Please allow Calendar access when signing in.";
+            reject(new Error(msg));
+            return;
+          }
+          resolve(resp.access_token);
+        },
+        error_callback: (err) => {
+          if (settled) return;
+          settled = true;
+          const typ = err && err.type ? String(err.type) : "";
+          if (typ === "popup_closed") reject(new Error("Sign-in window was closed before finishing."));
+          else if (typ === "popup_failed_to_open") reject(new Error("Sign-in popup was blocked by the browser. Allow popups for this site and try again."));
+          else reject(new Error((err && err.message) || "Google sign-in could not complete in this window."));
+        }
+      });
+      client.requestAccessToken({ prompt: "consent" });
+    } catch (err) {
+      if (!settled) {
+        settled = true;
+        reject(new Error("gis-unavailable"));
+      }
+    }
+  });
+}
+
+function gisSignIn() {
+  if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+    return runGisTokenRequest(window.google.accounts.oauth2);
+  }
+  return loadGis().then((oauth2) => runGisTokenRequest(oauth2));
+}
+
+async function safeFirebasePopupSignIn() {
+  let opDone = false;
+  let opRejected = false;
+  let lastAuthWin = null;
+  const base = browserPopupRedirectResolver;
+  const safeResolver = {
+    _redirectPersistence: base._redirectPersistence,
+    _completeRedirectFn: base._completeRedirectFn,
+    _overrideRedirectResult: base._overrideRedirectResult,
+    get _shouldInitProactively() { return base._shouldInitProactively; },
+    _initialize(a) { return base._initialize(a); },
+    async _openPopup(a, p, t, ev) {
+      const w = await base._openPopup(a, p, t, ev);
+      lastAuthWin = w;
+      return w;
+    },
+    _openRedirect(a, p, t, ev) { return base._openRedirect(a, p, t, ev); },
+    _originValidation(a) {
+      return Promise.resolve(base._originValidation(a)).catch((err) => {
+        if (opDone || opRejected || !lastAuthWin || !lastAuthWin.window || lastAuthWin.window.closed) return;
+        opRejected = true;
+        throw err;
+      });
+    },
+    _isIframeWebStorageSupported(a, cb) {
+      try {
+        return base._isIframeWebStorageSupported(a, (ok) => {
+          if (opDone || (!ok && opRejected)) return;
+          if (!ok) opRejected = true;
+          cb(ok);
+        });
+      } catch (_err) {
+        // Guard against Firebase 11.6.1 throwing internal-error after webStorageSupport callback
+      }
+    }
+  };
+  try {
+    return await signInWithPopup(auth, provider, safeResolver);
+  } finally {
+    opDone = true;
+  }
+}
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    currentUser = { uid: user.uid, email: user.email || "", displayName: user.displayName || "" };
+  } else if (!cachedAccessToken) {
+    currentUser = null;
+  }
+  notifyListeners();
 });
 
 window.__gcalAuth = {
@@ -2305,28 +3047,79 @@ window.__gcalAuth = {
   getUser() { return currentUser; },
   getToken() { return cachedAccessToken; },
   clearToken() { cachedAccessToken = null; },
-  async signIn() {
-    try {
-      const result = await signInWithPopup(auth, provider);
+  signIn() {
+    if (inFlightSignIn) return inFlightSignIn;
+    const isDesktopOrLocalhost = !!(window.missionDesktop || location.hostname === "localhost");
+    const formatFbErr = (err) => {
+      const code = err && err.code ? String(err.code) : "";
+      if (code === "auth/popup-blocked") return new Error("Sign-in popup was blocked by the browser. Allow popups for this site and try again.");
+      if (code === "auth/popup-closed-by-user") return new Error("Sign-in window was closed before finishing.");
+      if (code === "auth/cancelled-popup-request") return new Error("Previous sign-in was cancelled. Please try again.");
+      if (code === "auth/web-storage-unsupported") return new Error("Browser storage is blocked in this embedded frame. Open in a normal browser tab or paste your Google Calendar Secret iCal address below.");
+      if (code === "auth/unauthorized-domain") {
+        if (location.hostname === "127.0.0.1") {
+          const localhostUrl = location.protocol + "//localhost" + (location.port ? ":" + location.port : "");
+          return new Error("Google Sign-In requires localhost instead of 127.0.0.1. Open " + localhostUrl + " (or update the Windows app build) or paste your Secret iCal URL below.");
+        }
+        return new Error("This domain (" + location.host + ") is not authorized for OAuth sign-in. Open in a normal browser tab or paste your Google Calendar Secret iCal address below.");
+      }
+      return err;
+    };
+    const finishFirebaseResult = (result) => {
       const credential = GoogleAuthProvider.credentialFromResult(result);
       cachedAccessToken = credential && credential.accessToken ? credential.accessToken : null;
       if (!cachedAccessToken) throw new Error("Google did not return a calendar access token. Please allow Calendar access when signing in.");
       currentUser = result.user ? { uid: result.user.uid, email: result.user.email || "", displayName: result.user.displayName || "" } : currentUser;
-      listeners.forEach((fn) => { try { fn(currentUser); } catch (e) {} });
+      notifyListeners();
       return { token: cachedAccessToken, user: currentUser };
-    } catch (err) {
-      const code = err && err.code ? String(err.code) : "";
-      if (code === "auth/popup-blocked") throw new Error("Sign-in popup was blocked by the browser. Allow popups for this site and try again.");
-      if (code === "auth/popup-closed-by-user") throw new Error("Sign-in window was closed before finishing.");
-      if (code === "auth/unauthorized-domain") throw new Error("This domain (" + location.hostname + ") is not listed under Firebase Authorized Domains.");
-      throw err;
-    }
+    };
+    const finishGisToken = async (token) => {
+      cachedAccessToken = token;
+      const email = await resolveCalendarEmail(token);
+      currentUser = { uid: "", email: email || (currentUser && currentUser.email) || "", displayName: "" };
+      notifyListeners();
+      return { token: cachedAccessToken, user: currentUser };
+    };
+    inFlightSignIn = (async () => {
+      if (isDesktopOrLocalhost) {
+        try {
+          const result = await safeFirebasePopupSignIn();
+          return finishFirebaseResult(result);
+        } catch (err) {
+          throw formatFbErr(err);
+        }
+      }
+      try {
+        const token = await gisSignIn();
+        return await finishGisToken(token);
+      } catch (gisErr) {
+        const msg = gisErr && gisErr.message ? String(gisErr.message) : "";
+        if (msg !== "gis-unavailable") {
+          throw gisErr;
+        }
+        try {
+          const result = await safeFirebasePopupSignIn();
+          return finishFirebaseResult(result);
+        } catch (err) {
+          throw formatFbErr(err);
+        }
+      }
+    })().finally(() => {
+      inFlightSignIn = null;
+    });
+    return inFlightSignIn;
   },
   async signOut() {
+    const prevTok = cachedAccessToken;
     cachedAccessToken = null;
     currentUser = null;
+    try {
+      if (prevTok && window.google && window.google.accounts && window.google.accounts.oauth2 && typeof window.google.accounts.oauth2.revoke === "function") {
+        window.google.accounts.oauth2.revoke(prevTok, () => {});
+      }
+    } catch (e) {}
     try { await signOut(auth); } catch (e) {}
-    listeners.forEach((fn) => { try { fn(null); } catch (e) {} });
+    notifyListeners();
   }
 };
 </script>
@@ -2482,15 +3275,22 @@ window.__gcalAuth = {
   var ADS = ["Pit Stop Pies: hot, fast, mostly legal.", "Tuesday Tires: round things for round people.",
     "Neon Noodles, open until the sun says otherwise.", "Ask your mechanic about gravity.",
     "Left Lane Lemonade. Sip responsibly.", "The Night Shift hour is brought to you by thermos coffee."];
-  var THEMES = [["map", "Map"], ["notes", "Notes"], ["errands", "Errands"], ["racer", "Racer"], ["zine", "Zine"], ["wanted", "Wanted"], ["receipt", "Receipt"], ["comic", "Comic"]];
+  var THEMES = [["map", "Map"], ["notes", "Notes"], ["errands", "Errands"], ["racer", "Racer"], ["zine", "Zine"], ["wanted", "Wanted"], ["receipt", "Receipt"], ["comic", "Comic"], ["amoled", "AMOLED"]];
   if (document.getElementById("mytheme")) THEMES.push(["mine", "Custom"]);
   var GRID = { notes: 1, wanted: 1 };
   var RANKS = [[0, "Rookie"], [50, "Courier"], [150, "Roadie"], [300, "Street racer"], [600, "Road king"]];
   var DAYN = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   var KEY = "mission-map-v1", XKEY = "mission-map-extra", VKEY = "mission-map-view", EKEY = "mission-map-evil";
+  var SKEY = "mission-map-sort", MBKEY = "mission-map-bar-collapsed";
   var items = [], pins = [], notes = [], visited = {}, geofences = {}, stats = { cash: 0, races: 0, best: {}, unlocked: {} };
   var events = [], view = "map", evil = false, filter = null, dayFilter = null, wrapOpen = false, patOpen = false, prodOpen = false, daysMobOpen = false;
+  var sortMode = "custom", toolsMenuOpen = false, mapBarCollapsed = false;
+  try {
+    var sm0 = localStorage.getItem(SKEY);
+    if (["custom", "prio-desc", "prio-asc", "date-asc", "date-desc", "limit-asc"].indexOf(sm0) >= 0) sortMode = sm0;
+  } catch (e) {}
+  try { mapBarCollapsed = localStorage.getItem(MBKEY) === "1"; } catch (e) {}
   var lastToggled = null, lastAdded = null, ref = null, queue = Promise.resolve();
   var dropping = false, tempPin = null, hoverPin = null, race = null, raceTimer = null, nbEditId = null, editingId = null, editMode = false;
   var geoPos = null, geoWatchId = null, geoInside = {}, geoNearest = null, geoErr = "";
@@ -2592,7 +3392,76 @@ window.__gcalAuth = {
   }
   var PRIO_LBL = { low: "Low", medium: "Medium", high: "High" };
   var PRIO_CLS = { low: "prio-low", medium: "prio-med", high: "prio-high" };
+  var PRIO_RANK = { high: 3, medium: 2, low: 1 };
   function cleanPriority(p) { return (p === "low" || p === "medium" || p === "high") ? p : "medium"; }
+  function fmtLimitMin(m) {
+    m = Math.max(0, Math.round(Number(m) || 0));
+    if (!m) return "";
+    if (m >= 60 && m % 60 === 0) return (m / 60) + "h";
+    if (m > 60) return Math.floor(m / 60) + "h " + (m % 60) + "m";
+    return m + "m";
+  }
+  function fmtLimitLeft(ms) {
+    var diff = ms - Date.now();
+    if (diff <= 0) {
+      var overMin = Math.max(1, Math.floor(-diff / 60000));
+      return { text: "Overdue " + (overMin >= 60 ? fmtLimitMin(overMin) : overMin + "m"), cls: "expired" };
+    }
+    var mins = Math.ceil(diff / 60000);
+    return {
+      text: "Left " + (mins >= 60 ? fmtLimitMin(mins) : mins + "m"),
+      cls: diff <= 5 * 60000 ? "soon" : ""
+    };
+  }
+  function selectedLimitMins() {
+    var sel = $("newLimit"), inp = $("newLimitMins");
+    if (!sel) return 0;
+    if (sel.value === "custom") {
+      var v = parseInt(inp ? inp.value : "", 10);
+      return isFinite(v) && v > 0 ? Math.min(1440, v) : 0;
+    }
+    var n = parseInt(sel.value, 10);
+    return isFinite(n) && n > 0 ? Math.min(1440, n) : 0;
+  }
+  function syncLimitInput(mins) {
+    var sel = $("newLimit"), inp = $("newLimitMins");
+    if (!sel || !inp) return;
+    var m = isFinite(mins) && mins > 0 ? Math.min(1440, Math.round(mins)) : 0;
+    var presets = ["0", "15", "30", "45", "60", "120", "240"];
+    if (presets.indexOf(String(m)) >= 0) {
+      sel.value = String(m);
+      inp.hidden = true;
+      inp.value = m ? String(m) : "";
+    } else {
+      sel.value = "custom";
+      inp.hidden = false;
+      inp.value = String(m);
+    }
+  }
+  function sortShownItems(arr) {
+    if (sortMode === "custom") return arr;
+    var copy = arr.slice(), idx = {};
+    copy.forEach(function (it, i) { idx[it.id] = i; });
+    copy.sort(function (a, b) {
+      var cmp = 0;
+      if (sortMode === "prio-desc" || sortMode === "prio-asc") {
+        var pa = PRIO_RANK[cleanPriority(a.priority)] || 2;
+        var pb = PRIO_RANK[cleanPriority(b.priority)] || 2;
+        cmp = sortMode === "prio-desc" ? (pb - pa) : (pa - pb);
+        if (!cmp) cmp = (a.date || "").localeCompare(b.date || "");
+      } else if (sortMode === "date-asc" || sortMode === "date-desc") {
+        cmp = sortMode === "date-asc" ? (a.date || "").localeCompare(b.date || "") : (b.date || "").localeCompare(a.date || "");
+        if (!cmp) cmp = (PRIO_RANK[cleanPriority(b.priority)] || 2) - (PRIO_RANK[cleanPriority(a.priority)] || 2);
+      } else if (sortMode === "limit-asc") {
+        var la = (a.limitMin > 0 && a.limitAt > 0) ? a.limitAt : (a.limitMin > 0 ? Date.now() + a.limitMin * 60000 : Number.MAX_SAFE_INTEGER);
+        var lb = (b.limitMin > 0 && b.limitAt > 0) ? b.limitAt : (b.limitMin > 0 ? Date.now() + b.limitMin * 60000 : Number.MAX_SAFE_INTEGER);
+        cmp = la - lb;
+        if (!cmp) cmp = (PRIO_RANK[cleanPriority(b.priority)] || 2) - (PRIO_RANK[cleanPriority(a.priority)] || 2);
+      }
+      return cmp || ((idx[a.id] || 0) - (idx[b.id] || 0));
+    });
+    return copy;
+  }
   function cleanNotes(a) {
     var out = [];
     if (!Array.isArray(a)) return out;
@@ -2610,6 +3479,8 @@ window.__gcalAuth = {
   function cleanItem(r, keepSample) {
     if (!r || typeof r.text !== "string" || !r.text.trim()) return null;
     var pl = (typeof r.place === "string" && (PLACES[r.place] || isPinKey(r.place))) ? r.place : "home";
+    var lm = isFinite(r.limitMin) ? Math.max(0, Math.min(1440, Math.round(Number(r.limitMin)))) : 0;
+    var la = (lm > 0 && isFinite(r.limitAt) && Number(r.limitAt) > 0) ? Number(r.limitAt) : 0;
     return {
       id: typeof r.id === "string" && r.id ? r.id.slice(0, 40) : uid(),
       text: r.text.trim().slice(0, 80), place: pl, priority: cleanPriority(r.priority),
@@ -2617,6 +3488,7 @@ window.__gcalAuth = {
       done: !!r.done, evil: !!r.evil, paid: !!r.paid, sample: keepSample ? !!r.sample : false,
       date: (typeof r.date === "string" && /^\d{4}-\d\d-\d\d$/.test(r.date)) ? r.date : todayKey(),
       doneAt: isFinite(r.doneAt) ? Number(r.doneAt) : 0,
+      limitMin: lm, limitAt: la, limitAlerted: !!r.limitAlerted,
       gcalId: str(r.gcalId, 128), gcalCal: str(r.gcalCal, 128), gcalSig: str(r.gcalSig, 64)
     };
   }
@@ -2906,7 +3778,23 @@ window.__gcalAuth = {
     prioEl.setAttribute("aria-label", "Priority: " + PRIO_LBL[prio]);
     prioEl.appendChild(el("i", "prio-dot")); prioEl.lastChild.setAttribute("aria-hidden", "true");
     prioEl.appendChild(document.createTextNode(PRIO_LBL[prio]));
-    wrap.appendChild(t); wrap.appendChild(tag); wrap.appendChild(prioEl);
+    var badges = el("span", "meta-badges");
+    badges.appendChild(prioEl);
+    if (it.limitMin > 0) {
+      var lb;
+      if (it.done) {
+        lb = el("span", "limit-badge", "Limit: " + fmtLimitMin(it.limitMin));
+      } else if (it.limitAt > 0) {
+        var liInfo = fmtLimitLeft(it.limitAt);
+        lb = el("span", "limit-badge" + (liInfo.cls ? " " + liInfo.cls : ""), liInfo.text);
+        lb.setAttribute("data-limit-at", String(it.limitAt));
+        lb.setAttribute("data-limit-min", String(it.limitMin));
+      } else {
+        lb = el("span", "limit-badge", "Limit: " + fmtLimitMin(it.limitMin));
+      }
+      badges.appendChild(lb);
+    }
+    wrap.appendChild(t); wrap.appendChild(tag); wrap.appendChild(badges);
     if (it.where) wrap.appendChild(el("span", "wh xtra", it.where));
     if (it.hassle) wrap.appendChild(el("span", "xtra hs", "Hassle: " + it.hassle));
     if (it.bring) wrap.appendChild(el("span", "xtra br", "Bring: " + it.bring));
@@ -3192,9 +4080,56 @@ window.__gcalAuth = {
       $("rankBox").textContent = rk.n + " · $" + stats.cash + (rk.next ? " · next at $" + rk.next[0] : "");
     }
   }
-  function renderWeek(mine, pd) {
+  function setToolsMenu(open) {
+    toolsMenuOpen = !!open;
+    var btn = $("toolsMenuBtn"), menu = $("toolsMenu"), head = document.querySelector(".head");
+    if (btn) btn.setAttribute("aria-expanded", String(toolsMenuOpen));
+    if (menu) menu.hidden = !toolsMenuOpen;
+    if (head) head.classList.toggle("menu-open", toolsMenuOpen);
+  }
+  function renderSubmenu(pd) {
+    var menu = $("toolsMenu"); if (!menu) return;
+    menu.innerHTML = "";
+    var stProd = pd || collectPatternStats();
+    var fri = new Date().getDay() === 5;
+    var nowH0 = new Date().getHours();
+    var peakNow0 = !!(stProd.doneN >= 3 && stProd.bestDoneWin && (nowH0 === stProd.bestDoneWin.from || nowH0 === (stProd.bestDoneWin.from + 1) % 24));
+    var defs = [
+      { label: "Wrap-up", pressed: wrapOpen, hot: fri, badge: "", onClick: function () { wrapOpen = !wrapOpen; } },
+      { label: "Calendar", pressed: calOpen, hot: false, badge: "", onClick: function () {
+        calOpen = !calOpen;
+        try { localStorage.setItem("mission-map-cal", calOpen ? "1" : "0"); } catch (e) {}
+        if (calOpen && typeof gcalAutoSync === "function") gcalAutoSync();
+      } },
+      { label: "Patterns", pressed: patOpen, hot: false, badge: "", onClick: function () { patOpen = !patOpen; } },
+      { label: "Productivity", pressed: prodOpen, hot: peakNow0, badge: stProd.score !== null ? String(stProd.score) : "--", onClick: function () { prodOpen = !prodOpen; } },
+      { label: "Notes", pressed: nbOpen, hot: false, badge: notes.length ? String(notes.length) : "", onClick: function () {
+        nbOpen = !nbOpen;
+        try { localStorage.setItem("mission-map-nb-open", nbOpen ? "1" : "0"); } catch (e) {}
+      } },
+      { label: "Shortcuts", pressed: !!($("shortcutsModal") && !$("shortcutsModal").hidden), hot: false, badge: "?", onClick: function () {
+        if (typeof openShortcutsModal === "function") openShortcutsModal(true);
+      } }
+    ];
+    defs.forEach(function (d) {
+      var b = el("button", "submenu-btn" + (d.hot ? " hot" : ""));
+      b.type = "button";
+      b.setAttribute("role", "menuitem");
+      b.setAttribute("aria-pressed", d.pressed ? "true" : "false");
+      b.appendChild(el("span", null, d.label));
+      if (d.badge) b.appendChild(el("span", "submenu-badge", d.badge));
+      b.addEventListener("click", function () {
+        setToolsMenu(false);
+        d.onClick();
+        render();
+        fx("click");
+      });
+      menu.appendChild(b);
+    });
+  }
+  function renderWeek(mine) {
     var box = $("week"); box.hidden = !opts.week;
-    if (!opts.week) { $("wrap").hidden = true; if ($("patterns")) $("patterns").hidden = true; if ($("prodWidget")) $("prodWidget").hidden = true; if ($("cal")) $("cal").hidden = true; if (typeof syncTopPanels === "function") syncTopPanels(); return; }
+    if (!opts.week) return;
     var days = weekDays(), t = todayKey(), el0 = $("days"), vw = $("views"); el0.innerHTML = ""; vw.innerHTML = "";
     el0.classList.toggle("mob-collapsed", !daysMobOpen);
     var totalWeekOpen = mine.filter(function (x) { return !x.done && days.indexOf(x.date) >= 0; }).length;
@@ -3219,43 +4154,6 @@ window.__gcalAuth = {
     dm.setAttribute("aria-controls", "days");
     dm.addEventListener("click", function () { daysMobOpen = !daysMobOpen; render(); fx("click"); });
     vw.appendChild(dm);
-    var fri = new Date().getDay() === 5;
-    var w = el("button", "daybtn wrapbtn" + (fri ? " hot" : ""), "Wrap-up"); w.type = "button";
-    w.setAttribute("aria-pressed", wrapOpen ? "true" : "false");
-    w.addEventListener("click", function () { wrapOpen = !wrapOpen; render(); fx("click"); });
-    vw.appendChild(w);
-    var cb = el("button", "daybtn wrapbtn", "Calendar"); cb.type = "button";
-    cb.setAttribute("aria-pressed", calOpen ? "true" : "false"); cb.setAttribute("aria-expanded", calOpen ? "true" : "false");
-    cb.addEventListener("click", function () { calOpen = !calOpen; try { localStorage.setItem("mission-map-cal", calOpen ? "1" : "0"); } catch (e) {} render(); fx("click"); if (calOpen && typeof gcalAutoSync === "function") gcalAutoSync(); });
-    vw.appendChild(cb);
-    var pb = el("button", "daybtn wrapbtn", "Patterns"); pb.type = "button";
-    pb.setAttribute("aria-pressed", patOpen ? "true" : "false");
-    pb.addEventListener("click", function () { patOpen = !patOpen; render(); fx("click"); });
-    vw.appendChild(pb);
-    var stProd = pd || collectPatternStats();
-    var nowH0 = new Date().getHours();
-    var peakNow0 = !!(stProd.doneN >= 3 && stProd.bestDoneWin && (nowH0 === stProd.bestDoneWin.from || nowH0 === (stProd.bestDoneWin.from + 1) % 24));
-    var psb = el("button", "daybtn wrapbtn prod-nav" + (peakNow0 ? " hot" : "")); psb.type = "button";
-    psb.setAttribute("aria-pressed", prodOpen ? "true" : "false");
-    psb.setAttribute("aria-expanded", prodOpen ? "true" : "false");
-    psb.setAttribute("aria-controls", "prodWidget");
-    psb.setAttribute("aria-label", "Productivity score" + (stProd.score !== null ? ": " + stProd.score : ""));
-    psb.appendChild(document.createTextNode("Productivity"));
-    psb.appendChild(el("b", null, stProd.score !== null ? String(stProd.score) : "--"));
-    psb.addEventListener("click", function () { prodOpen = !prodOpen; render(); fx("click"); });
-    vw.appendChild(psb);
-    var nb = el("button", "daybtn wrapbtn nb-nav"); nb.type = "button";
-    nb.setAttribute("aria-pressed", nbOpen ? "true" : "false");
-    nb.setAttribute("aria-expanded", nbOpen ? "true" : "false");
-    nb.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="15" height="18" rx="1.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M3 7H7M3 12H7M3 17H7M10 9H17M10 13H17M10 17H14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-    nb.appendChild(document.createTextNode("Notes" + (notes.length ? " (" + notes.length + ")" : "")));
-    nb.addEventListener("click", function () {
-      nbOpen = !nbOpen;
-      try { localStorage.setItem("mission-map-nb-open", nbOpen ? "1" : "0"); } catch (e) {}
-      render(); fx("click");
-    });
-    vw.appendChild(nb);
-    renderWrap(days); renderCal(mine); renderPatterns(stProd); renderProductivityWidget(stProd);
   }
   var MONTHN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   var calOpen = false, calM = null, calMode = "month", calFocus = todayKey();
@@ -3280,7 +4178,7 @@ window.__gcalAuth = {
     return dateLabel(calFocus) + " " + dd.getFullYear();
   }
   function renderCal(mine) {
-    var box = $("cal"); box.hidden = !(opts.week && calOpen); if (box.hidden) { $("evForm").hidden = true; return; }
+    var box = $("cal"); box.hidden = !calOpen; if (box.hidden) { $("evForm").hidden = true; return; }
     if (dayFilter && dayFilter !== calFocus && calMode === "day") calFocus = dayFilter;
     if (!calFocus || !DRE.test(calFocus)) calFocus = todayKey();
     if (!calM) { var n = parseKey(calFocus); calM = { y: n.getFullYear(), m: n.getMonth() }; }
@@ -3350,11 +4248,8 @@ window.__gcalAuth = {
       } else if (gcal && gcal.icalUrl) {
         gcalSyncNow(false);
       } else {
-        $("options").hidden = false;
-        $("optBtn").setAttribute("aria-expanded", "true");
-        if ($("gcalSec")) $("gcalSec").open = true;
-        try { $("gcalSec").scrollIntoView({ block: "nearest" }); } catch (e) {}
-        toast("Sign in with Google under Options > Google Calendar.");
+        openOptions(true, "sync");
+        toast("Sign in with Google under Options > Calendar & Sync.");
       }
     });
     actG.appendChild(gcb);
@@ -3473,7 +4368,7 @@ window.__gcalAuth = {
     }
   }
   function renderWrap(days) {
-    var box = $("wrap"); box.hidden = !(opts.week && wrapOpen); if (box.hidden) return;
+    var box = $("wrap"); box.hidden = !wrapOpen; if (box.hidden) return;
     var counts = days.map(function () { return 0; }), total = 0, openLeft = 0;
     norm().forEach(function (i) {
       if (i.done && i.doneAt) { var idx = days.indexOf(dkey(new Date(i.doneAt))); if (idx >= 0) { counts[idx]++; total++; } }
@@ -3593,7 +4488,7 @@ window.__gcalAuth = {
   }
   function renderProductivityWidget(pd) {
     var box = $("prodWidget"); if (!box) return;
-    box.hidden = !(opts.week && prodOpen);
+    box.hidden = !prodOpen;
     syncTopPanels();
     if (box.hidden) return;
     var st = pd || collectPatternStats();
@@ -3644,12 +4539,10 @@ window.__gcalAuth = {
     box.appendChild(body);
 
     var act = el("div", "prod-actions");
-    if (opts.week) {
-      var btn = el("button", "btn ghost", patOpen ? "Hide patterns" : "Details");
-      btn.type = "button";
-      btn.addEventListener("click", function () { patOpen = !patOpen; render(); fx("click"); });
-      act.appendChild(btn);
-    }
+    var btn = el("button", "btn ghost", patOpen ? "Hide patterns" : "Details");
+    btn.type = "button";
+    btn.addEventListener("click", function () { patOpen = !patOpen; render(); fx("click"); });
+    act.appendChild(btn);
     var cl = el("button", "btn ghost", "Close");
     cl.type = "button";
     cl.addEventListener("click", function () { prodOpen = false; render(); fx("click"); });
@@ -3657,7 +4550,7 @@ window.__gcalAuth = {
     box.appendChild(act);
   }
   function renderPatterns(pd) {
-    var box = $("patterns"); if (!box) return; box.hidden = !(opts.week && patOpen); syncTopPanels(); if (box.hidden) return;
+    var box = $("patterns"); if (!box) return; box.hidden = !patOpen; syncTopPanels(); if (box.hidden) return;
     var st = pd || collectPatternStats();
     var hrs = st.hrs, dh = st.dh, wd = st.wd, dw = st.dw, lh = st.lh, edH = st.edH, hmH = st.hmH;
     var total = st.total, doneN = st.doneN, errandDoneN = st.errandDoneN, homeDoneN = st.homeDoneN;
@@ -3879,9 +4772,11 @@ window.__gcalAuth = {
 
     var list = $("list"), notes = $("notesList");
     list.innerHTML = ""; notes.innerHTML = "";
+    if ($("listSort")) $("listSort").value = sortMode;
     var shown = mine;
     if (filter && showMap) shown = shown.filter(function (i) { return i.place === filter; });
     if (opts.week && dayFilter) shown = shown.filter(function (i) { return i.date === dayFilter; });
+    shown = sortShownItems(shown);
     if (opts.doneBottom) shown = shown.filter(function (i) { return !i.done; }).concat(shown.filter(function (i) { return i.done; }));
     if (!shown.length) {
       var e = el("li", "empty", mine.length ? "Nothing here. Pick another place or day." : (evil ? "Nothing to resist. Write down a temptation." : "Nothing to do. Add a mission or tap Suggest."));
@@ -3906,9 +4801,8 @@ window.__gcalAuth = {
     } else { rb.hidden = true; rb.removeAttribute("href"); }
     $("sample").hidden = !(!grid && items.some(function (i) { return i.sample; }));
 
-    var patData = collectPatternStats();
-    renderMeters(); renderWeek(mine, patData); renderRoad(); renderNext(); renderNotebook(); renderPractice();
-    if ($("week") && !opts.week) { renderPatterns(patData); renderProductivityWidget(patData); }
+    var patData = collectPatternStats(), days = weekDays();
+    renderMeters(); renderWeek(mine); renderWrap(days); renderCal(mine); renderPatterns(patData); renderProductivityWidget(patData); renderSubmenu(patData); syncMapBarUi(); renderRoad(); renderNext(); renderNotebook(); renderPractice();
     if ($("options") && !$("options").hidden) renderAch();
 
     if (lastToggled) {
@@ -3934,6 +4828,8 @@ window.__gcalAuth = {
         la.addEventListener("animationend", function ae(ev) { if (ev.target === la) { la.classList.remove("printing"); la.removeEventListener("animationend", ae); } });
       }
     }
+    if (typeof syncAppIcon === "function") syncAppIcon();
+    if (opts.wobble && typeof wobTick === "function") wobTick();
   }
   var dayName = "Today";
   try { dayName = new Date().toLocaleDateString("en-US", { weekday: "long" }); } catch (e) {}
@@ -3970,10 +4866,12 @@ window.__gcalAuth = {
     });
     items = items.filter(function (i) { return i.id !== id; }); dropPic(id); render(); persist(); fx("del");
   }
-  function add(text, place, where, bring, priority, dateStr) {
+  function add(text, place, where, bring, priority, dateStr, limitMin) {
     text = (text || "").trim(); if (!text) return null;
     var chosenDate = /^\d{4}-\d{2}-\d{2}$/.test(dateStr || "") ? dateStr : ((opts.week && dayFilter) || todayKey());
-    var it = cleanItem({ id: uid(), text: text, place: place, priority: priority, where: where, bring: bring, evil: evil, date: chosenDate }, false);
+    var lm = isFinite(limitMin) && limitMin > 0 ? Math.min(1440, Math.round(limitMin)) : 0;
+    var la = lm > 0 ? (Date.now() + lm * 60000) : 0;
+    var it = cleanItem({ id: uid(), text: text, place: place, priority: priority, where: where, bring: bring, evil: evil, date: chosenDate, limitMin: lm, limitAt: la, limitAlerted: false }, false);
     if (!it) return null;
     if (!evil && opts.hassles && Math.random() < 0.35) it.hassle = HASSLES[Math.floor(Math.random() * HASSLES.length)];
     items.unshift(it); lastAdded = it.id; logEv("a", it.evil ? "!" : it.place);
@@ -3982,13 +4880,15 @@ window.__gcalAuth = {
     return it.id;
   }
   function syncEditModeHost(grid) {
-    var btn = $("editModeBtn"), hint = $("editModeHint"), head = $("listHead"), nbar = $("notesBar");
+    var btn = $("editModeBtn"), hint = $("editModeHint"), sortSel = $("listSort"), head = $("listHead"), nbar = $("notesBar");
     if (!btn || !head || !nbar) return;
     nbar.hidden = !grid;
     if (grid) {
+      if (sortSel && sortSel.parentNode !== nbar) nbar.appendChild(sortSel);
       if (hint && hint.parentNode !== nbar) nbar.appendChild(hint);
       if (btn.parentNode !== nbar) nbar.appendChild(btn);
     } else {
+      if (sortSel && sortSel.parentNode !== head) head.appendChild(sortSel);
       if (hint && hint.parentNode !== head) head.appendChild(hint);
       if (btn.parentNode !== head) head.appendChild(btn);
     }
@@ -4001,6 +4901,7 @@ window.__gcalAuth = {
       btn.textContent = editMode ? "Cancel" : "Edit";
     }
     if (hint) hint.hidden = !editMode;
+    if (opts.wobble && typeof wobTick === "function") wobTick();
   }
   function openEditMission(id) {
     var it = findItem(id); if (!it) return;
@@ -4009,6 +4910,7 @@ window.__gcalAuth = {
     $("newPlace").value = it.place || "home";
     $("newPriority").value = cleanPriority(it.priority);
     $("newDate").value = it.date || todayKey();
+    syncLimitInput(it.limitMin || 0);
     $("newWhere").value = it.where || "";
     $("newBring").value = it.bring || "";
     if ($("addTitle")) $("addTitle").textContent = it.evil ? "Edit shouldn't-do" : "Edit mission";
@@ -4145,6 +5047,7 @@ window.__gcalAuth = {
     $("raceSkip").hidden = false;
     $("raceStop").hidden = false;
     $("raceMin").disabled = true; $("raceBreak").disabled = true; $("raceCycles").disabled = true;
+    if (typeof syncAppIcon === "function") syncAppIcon();
   }
   function beginPomoPhase(phase) {
     var focusMins = parseInt($("raceMin").value, 10) || 25;
@@ -4249,9 +5152,60 @@ window.__gcalAuth = {
   syncPomoHud();
 
   /* ---------- wiring: add & edit mission form, map, pin ---------- */
+  if ($("newLimit")) $("newLimit").addEventListener("change", function () {
+    var custom = this.value === "custom";
+    if ($("newLimitMins")) {
+      $("newLimitMins").hidden = !custom;
+      if (custom) {
+        if (!$("newLimitMins").value) $("newLimitMins").value = "30";
+        try { $("newLimitMins").focus(); } catch (e) {}
+      }
+    }
+    if (opts.wobble && typeof wobTick === "function") wobTick();
+  });
+  if ($("listSort")) $("listSort").addEventListener("change", function () {
+    sortMode = this.value;
+    try { localStorage.setItem(SKEY, sortMode); } catch (e) {}
+    render(); fx("click");
+  });
+  function syncMapBarUi() {
+    var mc = $("mapcard"), body = $("mapBarBody"), tog = $("mapBarTog"), mini = $("mapBarMiniLbl");
+    if (!mc || !body || !tog) return;
+    mc.classList.toggle("bar-collapsed", !!mapBarCollapsed);
+    body.hidden = !!mapBarCollapsed;
+    tog.setAttribute("aria-expanded", mapBarCollapsed ? "false" : "true");
+    tog.setAttribute("aria-label", mapBarCollapsed ? "Expand map options" : "Collapse map options");
+    if (mini) {
+      mini.hidden = !mapBarCollapsed;
+      if (mapBarCollapsed) {
+        var pinTxt = pins.length ? (pins.length + (pins.length === 1 ? " pin" : " pins")) : "No pins";
+        mini.textContent = "Map options · " + pinTxt + (opts.geo ? " · GPS" : "");
+      }
+    }
+  }
+  function setMapBarCollapsed(collapsed, save) {
+    mapBarCollapsed = !!collapsed;
+    if (save) { try { localStorage.setItem(MBKEY, mapBarCollapsed ? "1" : "0"); } catch (e) {} }
+    syncMapBarUi();
+  }
+  if ($("mapBarTog")) $("mapBarTog").addEventListener("click", function () {
+    setMapBarCollapsed(!mapBarCollapsed, true); fx("click");
+  });
+  if ($("mapBarMiniLbl")) $("mapBarMiniLbl").addEventListener("click", function () {
+    setMapBarCollapsed(false, true); fx("click");
+  });
+  if ($("toolsMenuBtn")) $("toolsMenuBtn").addEventListener("click", function () {
+    setToolsMenu(!toolsMenuOpen); fx("click");
+  });
+  document.addEventListener("pointerdown", function (e) {
+    if (!toolsMenuOpen) return;
+    var wrap = $("toolsMenuWrap");
+    if (wrap && !wrap.contains(e.target)) setToolsMenu(false);
+  });
   $("addForm").addEventListener("submit", function (e) {
     e.preventDefault();
     var txt = $("newText").value.trim(); if (!txt) return;
+    var lm = selectedLimitMins();
     if (editingId) {
       var it = findItem(editingId);
       if (it) {
@@ -4261,6 +5215,11 @@ window.__gcalAuth = {
         if (/^\d{4}-\d{2}-\d{2}$/.test($("newDate").value)) it.date = $("newDate").value;
         it.where = str($("newWhere").value, 120);
         it.bring = str($("newBring").value, 80);
+        if (lm === 0) {
+          it.limitMin = 0; it.limitAt = 0; it.limitAlerted = false;
+        } else if (lm !== (it.limitMin || 0) || !(it.limitAt > 0)) {
+          it.limitMin = lm; it.limitAt = Date.now() + lm * 60000; it.limitAlerted = false;
+        }
         var saveId = it.id;
         var picToPut = pendingPic;
         var doClear = clearEditPic;
@@ -4273,7 +5232,7 @@ window.__gcalAuth = {
       addSheet(false);
       return;
     }
-    var addedId = add(txt, $("newPlace").value, $("newWhere").value, $("newBring").value, $("newPriority").value, $("newDate").value);
+    var addedId = add(txt, $("newPlace").value, $("newWhere").value, $("newBring").value, $("newPriority").value, $("newDate").value, lm);
     if (addedId && pendingPic) {
       var b = pendingPic; pendingPic = null;
       putImg("m:" + addedId, b).then(function () { render(); });
@@ -4287,6 +5246,7 @@ window.__gcalAuth = {
       if (!editingId) {
         $("newText").value = ""; $("newWhere").value = ""; $("newBring").value = ""; $("newPriority").value = "medium";
         $("newDate").value = (opts.week && dayFilter) || todayKey();
+        syncLimitInput(0);
         if ($("addTitle")) $("addTitle").textContent = evil ? "New shouldn't-do" : "New mission";
         $("addBtn").textContent = evil ? "Jot down" : "Add";
         $("newPicLbl").firstChild.nodeValue = "Add a photo";
@@ -4297,10 +5257,12 @@ window.__gcalAuth = {
     } else {
       editingId = null; pendingPic = null; clearEditPic = false;
       $("newText").value = ""; $("newWhere").value = ""; $("newBring").value = ""; $("newPriority").value = "medium";
+      syncLimitInput(0);
       $("newPicLbl").firstChild.nodeValue = "Add a photo";
       $("newPicClear").hidden = true;
       try { $("fab").focus({ preventScroll: true }); } catch (e) {}
     }
+    if (opts.wobble && typeof wobTick === "function") wobTick();
   }
   $("fab").addEventListener("click", function () { editMode = false; syncEditModeUi(); editingId = null; addSheet($("addForm").hidden); fx("click"); });
   if ($("editModeBtn")) $("editModeBtn").addEventListener("click", function () {
@@ -4314,7 +5276,10 @@ window.__gcalAuth = {
   $("scrim").addEventListener("click", function () { addSheet(false); });
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
-    if (!$("addForm").hidden) addSheet(false);
+    if ($("shortcutsModal") && !$("shortcutsModal").hidden) { if (typeof openShortcutsModal === "function") openShortcutsModal(false); }
+    else if ($("options") && !$("options").hidden) { if (typeof openOptions === "function") openOptions(false); }
+    else if (toolsMenuOpen) { setToolsMenu(false); if ($("toolsMenuBtn")) $("toolsMenuBtn").focus(); }
+    else if (!$("addForm").hidden) addSheet(false);
     else if (editMode) { editMode = false; syncEditModeUi(); }
   });
   $("pinBtn").addEventListener("click", flipEvil);
@@ -4592,6 +5557,7 @@ window.__gcalAuth = {
             var prTag = "[" + cleanPriority(it.priority).toUpperCase() + "]";
             var lines = wrapCanvasText(measureC, it.text + "  " + prTag, TEXT_MAX_W);
             var sub = [];
+            if (it.limitMin > 0) sub.push("Limit: " + fmtLimitMin(it.limitMin));
             if (it.bring) sub.push("Bring: " + it.bring);
             if (it.where) sub.push(it.where);
             var subText = sub.join(" · ");
@@ -4847,6 +5813,7 @@ window.__gcalAuth = {
     $("geoRad").value = gf ? String(gf.radius) : "150";
   }
   function openGeoForm(k) {
+    if (mapBarCollapsed) setMapBarCollapsed(false, true);
     fillGeoTargets(k || filter || (pins.length ? "p:" + pins[0].id : "home"));
     syncGeoFormFields();
     $("geoForm").hidden = false;
@@ -5048,15 +6015,9 @@ window.__gcalAuth = {
   function renderNotebook() {
     var sec = $("notebook"), body = $("nbBody"), tog = $("nbToggle"), cnt = $("nbCount"), ul = $("nbList");
     if (!sec || !body || !ul) return;
-    if (opts.week) {
-      sec.hidden = !nbOpen;
-      body.hidden = false;
-      if (tog) { tog.setAttribute("aria-expanded", String(nbOpen)); tog.textContent = "Hide"; }
-    } else {
-      sec.hidden = false;
-      body.hidden = !nbOpen;
-      if (tog) { tog.setAttribute("aria-expanded", String(nbOpen)); tog.textContent = nbOpen ? "Hide" : "Open"; }
-    }
+    sec.hidden = !nbOpen;
+    body.hidden = false;
+    if (tog) { tog.setAttribute("aria-expanded", String(nbOpen)); tog.textContent = "Hide"; }
     syncTopPanels();
     if (cnt) cnt.textContent = notes.length ? "(" + notes.length + ")" : "";
     $("nbSave").textContent = nbEditId ? "Update note" : "Save note";
@@ -5117,7 +6078,7 @@ window.__gcalAuth = {
   function exportJson() {
     return JSON.stringify({
       app: "mission-map", version: 3, exported: new Date().toISOString(),
-      items: items.map(function (i) { return { id: i.id, text: i.text, place: i.place, priority: cleanPriority(i.priority), where: i.where, bring: i.bring, hassle: i.hassle, done: i.done, evil: i.evil, paid: i.paid, date: i.date, doneAt: i.doneAt }; }),
+      items: items.map(function (i) { return { id: i.id, text: i.text, place: i.place, priority: cleanPriority(i.priority), where: i.where, bring: i.bring, hassle: i.hassle, done: i.done, evil: i.evil, paid: i.paid, date: i.date, doneAt: i.doneAt, limitMin: i.limitMin || 0, limitAt: i.limitAt || 0, limitAlerted: !!i.limitAlerted }; }),
       pins: pins, notes: notes, visited: visited, geofences: geofences, stats: stats,
       events: events.filter(function (x) { return x.src !== "device" && x.src !== "gcal"; }).map(function (x) { var c = {}; Object.keys(x).forEach(function (k) { if (k !== "ext" && k !== "src") c[k] = x[k]; }); return c; })
     }, null, 2);
@@ -5271,7 +6232,7 @@ window.__gcalAuth = {
     pit:     { root: 48, tempo: 104, pent: [0, 2, 4, 7, 9],  prog: [[0, [0, 4, 7]], [5, [0, 4, 7]], [7, [0, 4, 7]], [5, [0, 4, 7]]], drive: true }
   };
   var STATION_NAMES = { map: "Dusty Map FM", notes: "Cork Board Radio", errands: "Night Shift 88", highway: "Neon Highway", pit: "Pit Stop FM" };
-  var STATION_AUTO = { map: "map", notes: "notes", errands: "errands", racer: "highway", zine: "notes", wanted: "errands", receipt: "notes", comic: "pit" };
+  var STATION_AUTO = { map: "map", notes: "notes", errands: "errands", racer: "highway", zine: "notes", wanted: "errands", receipt: "notes", comic: "pit", amoled: "errands" };
   function stationKey() {
     var k = opts.station === "auto" ? (evil ? "errands" : (STATION_AUTO[view] || "map")) : opts.station;
     return MUS[k] ? k : "map";
@@ -5357,11 +6318,12 @@ window.__gcalAuth = {
   }
   setInterval(function () { updateAd(true); }, 22000);
 
-  /* ---------- options menu ---------- */
-  var opts = { scribble: false, wobble: true, strike: true, tilt: true, reduce: false, doneBottom: false, tags: true, mode: "auto",
+  /* ---------- options menu (Polaroid deck + sketch-book tabs) ---------- */
+  var OPT_DEFAULTS = { scribble: false, wobble: true, strike: true, tilt: true, reduce: false, doneBottom: false, tags: true, mode: "auto",
     print: true, week: true, hassles: true, stress: true, bring: false, rank: true, race: true, road: false, station: "auto", ads: true,
     fog: true, moving: false, mapAll: false, geo: false, wobAll: true, wobSlow: false, stressRed: true, stampRound: true, practiceOn: true, practiceTailor: true,
     aodIdle: "0", aodLevel: "10", aodHideBar: true, mapVariant: "town", tapeStyle: "realistic", tapeFilter: true, tapeRate: 1, fontAll: "", fontMission: "", pinAlt: false };
+  var opts = JSON.parse(JSON.stringify(OPT_DEFAULTS));
   var modeTouched = false;
   try {
     var ov = JSON.parse(localStorage.getItem("mission-map-opts") || "null");
@@ -5375,18 +6337,78 @@ window.__gcalAuth = {
     ["marker", "Permanent Marker", '"Permanent Marker"'], ["anton", "Anton", '"Anton"'], ["bangers", "Bangers", '"Bangers"'], ["comic", "Comic Neue", '"Comic Neue"'],
     ["playfair", "Playfair Display", '"Playfair Display"'], ["rye", "Rye", '"Rye"'], ["techmono", "Share Tech Mono", '"Share Tech Mono"'], ["vt", "VT323", '"VT323"'],
     ["pixel", "Press Start 2P", '"Press Start 2P"'], ["sans", "Plain sans-serif", 'system-ui, "Segoe UI", Roboto, sans-serif']];
+  var THEME_SWATCHES = {
+    map: ["#d6d7c0", "#e9e9da", "#2a2c25", "#c4382b"],
+    notes: ["#b48a5c", "#f6e27a", "#2a2a22", "#c4382b"],
+    errands: ["#15110d", "#d6cba3", "#1c1a15", "#cf2b1e"],
+    racer: ["#120826", "#1c0f3d", "#00e5ff", "#ff4f8b"],
+    zine: ["#e7e4db", "#f6f3ea", "#111111", "#d94a38"],
+    wanted: ["#3b2a1d", "#dcc79b", "#3a2410", "#a3261a"],
+    receipt: ["#2a2d33", "#f6f3ea", "#1d1d1b", "#6e6e68"],
+    comic: ["#ffe45e", "#ffffff", "#111111", "#e3261b"],
+    amoled: ["#000000", "#11141a", "#f2f4f7", "#ff453a"],
+    mine: ["#d6d7c0", "#e9e9da", "#2a2c25", "#c4382b"]
+  };
+  var OPT_CATS = ["look", "map", "sound", "focus", "sync", "data"];
+  var OPT_CAT_META = {
+    look: { n: "01", label: "Look & Style" },
+    map: { n: "02", label: "Map & Places" },
+    sound: { n: "03", label: "Sound & Deck" },
+    focus: { n: "04", label: "Focus & Daily" },
+    sync: { n: "05", label: "Calendar & Sync" },
+    data: { n: "06", label: "Data & Desktop" }
+  };
+  var activeOptCat = "look", fontPreviewTgt = "all", optSearchQuery = "";
+
   function fontCss(id) { for (var i = 0; i < FONTS.length; i++) if (FONTS[i][0] === id && FONTS[i][2]) return FONTS[i][2] + ", var(--font-type), sans-serif"; return ""; }
+  function syncFontSwatches() {
+    var cur = fontPreviewTgt === "mission" ? opts.fontMission : opts.fontAll;
+    var cards = document.querySelectorAll("#fontSwatchGrid .font-card");
+    for (var i = 0; i < cards.length; i++) {
+      cards[i].setAttribute("aria-pressed", cards[i].getAttribute("data-f") === cur ? "true" : "false");
+    }
+    if ($("fontTgtAll")) $("fontTgtAll").setAttribute("aria-pressed", fontPreviewTgt === "all" ? "true" : "false");
+    if ($("fontTgtMission")) $("fontTgtMission").setAttribute("aria-pressed", fontPreviewTgt === "mission" ? "true" : "false");
+  }
+  function buildFontSwatches() {
+    var g = $("fontSwatchGrid"); if (!g) return;
+    g.textContent = "";
+    FONTS.forEach(function (f) {
+      var b = el("button", "font-card"); b.type = "button"; b.setAttribute("data-f", f[0]); b.setAttribute("aria-pressed", "false");
+      var smp = el("span", "font-card-sample", "Aa Pick parcel");
+      if (f[2]) smp.style.fontFamily = f[2] + ", sans-serif";
+      var nm = el("span", "font-card-name", f[1]);
+      b.appendChild(smp); b.appendChild(nm);
+      b.addEventListener("click", function () {
+        var val = this.getAttribute("data-f") || "";
+        if (fontPreviewTgt === "mission") {
+          opts.fontMission = val;
+          if ($("fontMission")) $("fontMission").value = val;
+        } else {
+          opts.fontAll = val;
+          if ($("fontAll")) $("fontAll").value = val;
+        }
+        saveOpts(); applyFonts(); syncFontSwatches(); updateOptBadges(); fx("click");
+      });
+      g.appendChild(b);
+    });
+    syncFontSwatches();
+  }
   function applyFonts() {
     var b = document.body, a = fontCss(opts.fontAll), m = fontCss(opts.fontMission);
     if (a) b.style.setProperty("--fo-all", a); else b.style.removeProperty("--fo-all");
     if (m) b.style.setProperty("--fo-m", m); else b.style.removeProperty("--fo-m");
     b.classList.toggle("fo-all", !!a); b.classList.toggle("fo-m", !!m);
+    syncFontSwatches();
   }
   (function fillFonts() {
     ["fontAll", "fontMission"].forEach(function (id) {
       var s = $(id); FONTS.forEach(function (f) { var o = document.createElement("option"); o.value = f[0]; o.textContent = f[1]; s.appendChild(o); });
-      s.addEventListener("change", function () { opts[id] = this.value; saveOpts(); applyFonts(); });
+      s.addEventListener("change", function () { opts[id] = this.value; saveOpts(); applyFonts(); updateOptBadges(); });
     });
+    if ($("fontTgtAll")) $("fontTgtAll").addEventListener("click", function () { fontPreviewTgt = "all"; syncFontSwatches(); fx("click"); });
+    if ($("fontTgtMission")) $("fontTgtMission").addEventListener("click", function () { fontPreviewTgt = "mission"; syncFontSwatches(); fx("click"); });
+    buildFontSwatches();
   })();
   function setMapVariant(id, silent) {
     if (!MAP_VARIANTS[id]) id = "town";
@@ -5398,6 +6420,7 @@ window.__gcalAuth = {
     buildTraffic();
     updateSky();
     render();
+    updateOptBadges();
     if (!silent) { fx("click"); toast("Map: " + MAP_VARIANTS[id].name); }
   }
   (function fillMapVariants() {
@@ -5414,6 +6437,198 @@ window.__gcalAuth = {
   var BOXES = [["scrOn", "scribble"], ["wobOn", "wobble"], ["strOn", "strike"], ["tiltOn", "tilt"], ["calmOn", "reduce"], ["botOn", "doneBottom"], ["tagOn", "tags"],
     ["prtOn", "print"], ["weekOn", "week"], ["hasOn", "hassles"], ["strsOn", "stress"], ["brOn", "bring"], ["rankOn", "rank"], ["raceOn", "race"],
     ["roadOn", "road"], ["adsOn", "ads"], ["fogOn", "fog"], ["movOn", "moving"], ["mapAllOn", "mapAll"], ["geoOn", "geo"], ["wobAllOn", "wobAll"], ["wobSlowOn", "wobSlow"], ["srOn", "stressRed"], ["stRoundOn", "stampRound"], ["prOn", "practiceOn"], ["ptOn", "practiceTailor"], ["aodHideBar", "aodHideBar"], ["tapeFilterOpt", "tapeFilter"]];
+
+  function countCatActive(cat) {
+    var n = 0;
+    if (cat === "look") {
+      if (view !== "map") n++;
+      if (opts.mode !== "auto") n++;
+      if (opts.pinAlt) n++;
+      if (opts.fontAll) n++;
+      if (opts.fontMission) n++;
+      ["wobble", "wobAll", "scribble", "print", "strike", "tilt", "reduce", "wobSlow"].forEach(function (k) { if (opts[k]) n++; });
+      if (snd.sfx) n++;
+    } else if (cat === "map") {
+      if (opts.mapVariant !== "town") n++;
+      ["fog", "stampRound", "moving", "mapAll", "geo"].forEach(function (k) { if (opts[k]) n++; });
+      if (pins.length) n++;
+    } else if (cat === "sound") {
+      if (snd.music) n++;
+      if (opts.ads) n++;
+      if (opts.station !== "auto") n++;
+      if (opts.tapeFilter) n++;
+      if (opts.tapeStyle === "ui") n++;
+      if (typeof mmeta !== "undefined") {
+        if (mmeta.useOwn) n++;
+        if (mmeta.shuffle) n++;
+        if (Array.isArray(mmeta.playlist) && mmeta.playlist.length) n++;
+      }
+    } else if (cat === "focus") {
+      ["doneBottom", "tags", "week", "hassles", "stress", "stressRed", "practiceOn", "practiceTailor", "bring", "rank", "race", "road", "aodHideBar"].forEach(function (k) { if (opts[k]) n++; });
+      if (opts.aodIdle !== "0") n++;
+    } else if (cat === "sync") {
+      if (typeof gcalHasAuth === "function" && gcalHasAuth()) n++;
+      if (typeof gcal !== "undefined" && gcal && gcal.icalUrl) n++;
+      if ($("phRem") && $("phRem").checked) n++;
+      if (typeof phState !== "undefined" && phState && phState.connected) n++;
+    } else if (cat === "data") {
+      if (typeof urls !== "undefined") Object.keys(urls).forEach(function (k) { if (urls[k]) n++; });
+      if (typeof sfxHas !== "undefined") Object.keys(sfxHas).forEach(function (k) { if (sfxHas[k]) n++; });
+      if (typeof mmeta !== "undefined" && mmeta.themeMus) Object.keys(mmeta.themeMus).forEach(function (k) { if (mmeta.themeMus[k]) n++; });
+      if ($("winTopOn") && $("winTopOn").checked) n++;
+      if ($("desktopSec") && !$("desktopSec").hidden && $("winTrayOn") && $("winTrayOn").checked) n++;
+    }
+    return n;
+  }
+
+  var lastSearchHits = null;
+  function updateOptBadges(searchHits) {
+    if (searchHits === undefined) searchHits = optSearchQuery ? lastSearchHits : null;
+    else lastSearchHits = searchHits;
+    var total = 0;
+    OPT_CATS.forEach(function (cat) {
+      var cnt = countCatActive(cat);
+      total += cnt;
+      var badge = document.querySelector('.tab-cnt[data-cnt="' + cat + '"]');
+      var tab = document.querySelector('.opts-tab[data-cat="' + cat + '"]');
+      if (badge) {
+        if (searchHits) {
+          var h = searchHits[cat] || 0;
+          badge.textContent = String(h);
+          badge.classList.toggle("is-hits", h > 0);
+          if (tab) tab.classList.toggle("dim-nomatch", h === 0);
+        } else {
+          badge.textContent = String(cnt);
+          badge.classList.remove("is-hits");
+          if (tab) tab.classList.remove("dim-nomatch");
+        }
+      }
+      var capMeta = document.querySelector('[data-cap-meta="' + cat + '"]');
+      if (capMeta && OPT_CAT_META[cat]) {
+        capMeta.textContent = OPT_CAT_META[cat].n + " / 06 · " + cnt + " active";
+      }
+    });
+    if ($("optTotalCnt")) $("optTotalCnt").textContent = total + " active";
+  }
+
+  function selectOptCat(cat, dir) {
+    var idx = OPT_CATS.indexOf(cat);
+    if (idx < 0) idx = 0;
+    cat = OPT_CATS[idx];
+    var prevIdx = OPT_CATS.indexOf(activeOptCat);
+    activeOptCat = cat;
+    var cards = document.querySelectorAll("#polaDeck .pola-card");
+    for (var i = 0; i < cards.length; i++) {
+      var c = cards[i], cCat = c.getAttribute("data-cat"), cIdx = OPT_CATS.indexOf(cCat);
+      var pos = (cIdx - idx + OPT_CATS.length) % OPT_CATS.length;
+      c.setAttribute("data-deck-pos", String(pos));
+      c.classList.remove("shuf-next", "shuf-prev");
+      if (pos === 0 && dir && prevIdx !== idx) {
+        void c.offsetWidth;
+        c.classList.add(dir < 0 ? "shuf-prev" : "shuf-next");
+      }
+    }
+    var tabs = document.querySelectorAll("#optTabs .opts-tab");
+    for (var j = 0; j < tabs.length; j++) {
+      var sel = tabs[j].getAttribute("data-cat") === cat;
+      tabs[j].setAttribute("aria-selected", sel ? "true" : "false");
+    }
+    if (opts.wobble && typeof wobTick === "function") setTimeout(wobTick, 40);
+  }
+
+  function filterOptions(q) {
+    optSearchQuery = str(q, 60).toLowerCase();
+    var clr = $("optSearchClear"), meta = $("optSearchMeta");
+    if (clr) clr.hidden = !optSearchQuery;
+    var hits = optSearchQuery ? {} : null;
+    var totalHits = 0, firstMatchCat = null;
+    OPT_CATS.forEach(function (cat) {
+      var card = document.querySelector('.pola-card[data-cat="' + cat + '"]');
+      if (!card) return;
+      var secs = card.querySelectorAll(".pola-sec"), cardHits = 0;
+      for (var i = 0; i < secs.length; i++) {
+        var s = secs[i];
+        var kw = (s.getAttribute("data-search") || "") + " " + (s.textContent || "");
+        var isHiddenCond = (s.id === "phoneSec" && !NATIVE) || (s.id === "desktopSec" && !DESKTOP);
+        if (!optSearchQuery) {
+          s.hidden = isHiddenCond;
+        } else if (isHiddenCond) {
+          s.hidden = true;
+        } else {
+          var match = kw.toLowerCase().indexOf(optSearchQuery) >= 0;
+          s.hidden = !match;
+          if (match) cardHits++;
+        }
+      }
+      var emptyBox = card.querySelector(".opts-empty");
+      if (emptyBox) {
+        if (optSearchQuery && cardHits === 0) {
+          emptyBox.hidden = false;
+          emptyBox.textContent = "";
+          emptyBox.appendChild(el("span", "", 'No settings match "' + optSearchQuery + '" in ' + OPT_CAT_META[cat].label + "."));
+          var cb = el("button", "btn ghost", "Clear search"); cb.type = "button";
+          cb.addEventListener("click", function () { if ($("optSearch")) { $("optSearch").value = ""; filterOptions(""); $("optSearch").focus(); } });
+          emptyBox.appendChild(cb);
+        } else {
+          emptyBox.hidden = true;
+          emptyBox.textContent = "";
+        }
+      }
+      if (hits) {
+        hits[cat] = cardHits;
+        totalHits += cardHits;
+        if (cardHits > 0 && !firstMatchCat) firstMatchCat = cat;
+      }
+    });
+    if (meta) {
+      if (optSearchQuery) {
+        meta.hidden = false;
+        meta.textContent = totalHits ? (totalHits + " matching section" + (totalHits === 1 ? "" : "s") + " across categories") : "No matching settings found.";
+      } else {
+        meta.hidden = true;
+        meta.textContent = "";
+      }
+    }
+    updateOptBadges(hits);
+    if (optSearchQuery && hits && !hits[activeOptCat] && firstMatchCat) {
+      selectOptCat(firstMatchCat, 1);
+    }
+    if (opts.wobble && typeof wobTick === "function") setTimeout(wobTick, 30);
+  }
+
+  function openOptions(show, targetCat) {
+    var o = $("options"); if (!o) return;
+    var next = typeof show === "boolean" ? show : o.hidden;
+    o.hidden = !next;
+    if ($("optBtn")) $("optBtn").setAttribute("aria-expanded", String(next));
+    if ($("optResetConfirm")) $("optResetConfirm").hidden = true;
+    if (next) {
+      if (targetCat && OPT_CATS.indexOf(targetCat) >= 0) activeOptCat = targetCat;
+      syncOpts();
+      selectOptCat(activeOptCat, 0);
+      if (optSearchQuery) filterOptions(optSearchQuery); else updateOptBadges();
+      if (opts.wobble && typeof wobTick === "function") setTimeout(wobTick, 40);
+      try { if ($("optSearch")) $("optSearch").focus({ preventScroll: true }); } catch (e) {}
+    } else {
+      try { if ($("optBtn")) $("optBtn").focus({ preventScroll: true }); } catch (e) {}
+    }
+  }
+
+  function resetOptsToDefaults() {
+    Object.keys(OPT_DEFAULTS).forEach(function (k) { opts[k] = OPT_DEFAULTS[k]; });
+    modeTouched = false;
+    document.documentElement.removeAttribute("data-theme");
+    snd.sfx = true; snd.music = false; snd.vol = 0.5;
+    saveSnd(); stopMusic();
+    saveOpts();
+    setView("map");
+    buildMap(); buildTraffic(); updateSky();
+    applyOpts(); syncOpts(); render(); updateAd(); updateOptBadges();
+    if ($("optResetConfirm")) $("optResetConfirm").hidden = true;
+    fx("click");
+    toast("Options reset to defaults.");
+  }
+
   function applyOpts() {
     var c = document.body.classList;
     c.toggle("wob-slow", !!opts.wobSlow);
@@ -5431,6 +6646,7 @@ window.__gcalAuth = {
     if (opts.geo) geoStartWatch(); else geoStopWatch();
     applyFonts(); buildTraffic(); updateSky();
     if (typeof syncAppIcon === "function") syncAppIcon();
+    updateOptBadges(optSearchQuery ? undefined : null);
   }
   function syncOpts() {
     $("sfxOn").checked = snd.sfx; $("musOn").checked = snd.music; $("vol").value = Math.round(snd.vol * 100);
@@ -5441,8 +6657,10 @@ window.__gcalAuth = {
     if ($("mapVariantBar")) $("mapVariantBar").value = opts.mapVariant;
     if ($("tapeStyleOpt")) $("tapeStyleOpt").value = opts.tapeStyle;
     $("station").value = opts.station; $("aodIdle").value = opts.aodIdle; $("aodLevel").value = opts.aodLevel; $("fontAll").value = opts.fontAll; $("fontMission").value = opts.fontMission;
+    syncFontSwatches();
     if (typeof syncAppIcon === "function") syncAppIcon();
     renderAch();
+    updateOptBadges();
   }
   BOXES.forEach(function (b) {
     $(b[0]).addEventListener("change", function () {
@@ -5450,36 +6668,75 @@ window.__gcalAuth = {
       if (b[1] === "geo" && this.checked) ensureAndroidGeoPerm(false);
       if (b[1] === "aodHideBar" && typeof aodSystemBar === "function" && aodOn) aodSystemBar(true);
       if (b[1] === "tapeFilter" && typeof syncTapeFilterRoute === "function") syncTapeFilterRoute();
-      saveOpts(); applyOpts(); render(); updateAd();
+      saveOpts(); applyOpts(); render(); updateAd(); updateOptBadges();
     });
   });
   if ($("tapeStyleOpt")) $("tapeStyleOpt").addEventListener("change", function () {
     opts.tapeStyle = this.value === "ui" ? "ui" : "realistic";
-    saveOpts(); applyOpts(); fx("click");
+    saveOpts(); applyOpts(); updateOptBadges(); fx("click");
   });
-  $("station").addEventListener("change", function () { opts.station = this.value; saveOpts(); musicRefresh(); });
+  $("station").addEventListener("change", function () { opts.station = this.value; saveOpts(); musicRefresh(); updateOptBadges(); });
   [["cmAuto", "auto"], ["cmLight", "light"], ["cmDark", "dark"]].forEach(function (p) {
-    $(p[0]).addEventListener("click", function () { modeTouched = true; opts.mode = p[1]; saveOpts(); applyOpts(); });
+    $(p[0]).addEventListener("click", function () { modeTouched = true; opts.mode = p[1]; saveOpts(); applyOpts(); updateOptBadges(); });
   });
   if ($("pinStyleBase")) $("pinStyleBase").addEventListener("click", function () {
-    opts.pinAlt = false; saveOpts(); applyOpts(); applyMedia(); render(); syncAppIcon();
+    opts.pinAlt = false; saveOpts(); applyOpts(); applyMedia(); render(); syncAppIcon(); updateOptBadges();
   });
   if ($("pinStyleAlt")) $("pinStyleAlt").addEventListener("click", function () {
-    opts.pinAlt = true; saveOpts(); applyOpts(); applyMedia(); render(); syncAppIcon();
+    opts.pinAlt = true; saveOpts(); applyOpts(); applyMedia(); render(); syncAppIcon(); updateOptBadges();
   });
   (function buildThemeGrid() {
     var tg = $("themeGrid");
     THEMES.forEach(function (t) {
-      var b = el("button", "tbtn", t[1]); b.type = "button"; b.setAttribute("data-v", t[0]); b.setAttribute("aria-pressed", "false");
-      b.addEventListener("click", function () { setView(t[0]); });
+      var b = el("button", "tbtn"); b.type = "button"; b.setAttribute("data-v", t[0]); b.setAttribute("aria-pressed", "false");
+      var sw = el("span", "tswatch"); sw.setAttribute("aria-hidden", "true");
+      var pal = THEME_SWATCHES[t[0]] || THEME_SWATCHES.map;
+      pal.forEach(function (hex) { var bar = document.createElement("i"); bar.style.backgroundColor = hex; sw.appendChild(bar); });
+      var nm = el("span", "tname", t[1]);
+      b.appendChild(sw); b.appendChild(nm);
+      b.addEventListener("click", function () { setView(t[0]); updateOptBadges(); });
       tg.appendChild(b);
     });
   })();
-  $("optBtn").addEventListener("click", function () {
-    var o = $("options"); o.hidden = !o.hidden;
-    this.setAttribute("aria-expanded", String(!o.hidden)); if (!o.hidden) syncOpts();
+  $("optBtn").addEventListener("click", function () { openOptions(); });
+  $("optClose").addEventListener("click", function () { openOptions(false); });
+  $("options").addEventListener("click", function (e) { if (e.target === this) openOptions(false); });
+  if ($("optTabs")) $("optTabs").addEventListener("click", function (e) {
+    var btn = e.target.closest ? e.target.closest(".opts-tab") : null;
+    if (!btn) return;
+    var cat = btn.getAttribute("data-cat");
+    var dir = OPT_CATS.indexOf(cat) >= OPT_CATS.indexOf(activeOptCat) ? 1 : -1;
+    selectOptCat(cat, dir); fx("click");
   });
-  $("optClose").addEventListener("click", function () { $("options").hidden = true; $("optBtn").setAttribute("aria-expanded", "false"); });
+  if ($("optTabs")) $("optTabs").addEventListener("keydown", function (e) {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    e.preventDefault();
+    var dir = e.key === "ArrowRight" ? 1 : -1;
+    var next = OPT_CATS[(OPT_CATS.indexOf(activeOptCat) + dir + OPT_CATS.length) % OPT_CATS.length];
+    selectOptCat(next, dir);
+    var nb = document.querySelector('#optTabs .opts-tab[data-cat="' + next + '"]');
+    if (nb) nb.focus();
+  });
+  document.addEventListener("click", function (e) {
+    var nav = e.target.closest ? e.target.closest(".pola-nav") : null;
+    if (!nav) return;
+    var dir = Number(nav.getAttribute("data-dir")) || 1;
+    var next = OPT_CATS[(OPT_CATS.indexOf(activeOptCat) + dir + OPT_CATS.length) % OPT_CATS.length];
+    selectOptCat(next, dir); fx("click");
+  });
+  if ($("optSearch")) $("optSearch").addEventListener("input", function () { filterOptions(this.value); });
+  if ($("optSearchClear")) $("optSearchClear").addEventListener("click", function () {
+    if ($("optSearch")) { $("optSearch").value = ""; $("optSearch").focus(); }
+    filterOptions(""); fx("click");
+  });
+  function showResetConfirm(show) {
+    if ($("optResetConfirm")) $("optResetConfirm").hidden = !show;
+    if (opts.wobble && typeof wobTick === "function") setTimeout(wobTick, 30);
+  }
+  if ($("optResetBtn")) $("optResetBtn").addEventListener("click", function () { showResetConfirm($("optResetConfirm") ? $("optResetConfirm").hidden : true); fx("click"); });
+  if ($("optResetInlineBtn")) $("optResetInlineBtn").addEventListener("click", function () { showResetConfirm(true); fx("click"); });
+  if ($("optResetCancelBtn")) $("optResetCancelBtn").addEventListener("click", function () { showResetConfirm(false); fx("click"); });
+  if ($("optResetConfirmBtn")) $("optResetConfirmBtn").addEventListener("click", function () { resetOptsToDefaults(); });
 
   /* wobbly hand-drawn borders: each button gets a rough rectangle that is redrawn a few times a second */
   var wobTimer = null, wobDelay = 0;
@@ -5493,9 +6750,15 @@ window.__gcalAuth = {
     ];
     return "M" + p.map(function (q) { return q[0].toFixed(1) + " " + q[1].toFixed(1); }).join(" L");
   }
-  var WA_SEL = "#prodWidget,.prod-score-box,#patterns,.practice,.practice select,.practice .btn,.notebook,.notebook textarea,.nb-ico-box,.seg,.sug,.suggest,.mapcard,.mapvar-sel,.paper,.note,.box,.tbtn,.rankbox,.stress .meter,.daybtn,.lane,.toast,.mapbar,.pinform,.pinform input,.pinform select,.geoform,.geoform input,.geoform select,.dash,.thumb,.edit-mode-btn,.cal,.calbtn,.calmodes,.calday,.calwk-col,.opts details,.opts select,.add input,.add select,.suggest textarea,.stamp,.go,.pinbtn,.evform,.evform input,.evform select,.evform textarea";
+  var WA_SEL = "#prodWidget,.prod-score-box,#patterns,.practice,.practice select,.practice .btn,.notebook,.notebook textarea,.nb-ico-box,.seg,.sug,.suggest,.mapcard,.mapvar-sel,.paper,.note,.box,.tbtn,.rankbox,.stress .meter,.daybtn,.lane,.mapbar,.pinform,.pinform input,.pinform select,.geoform,.geoform input,.geoform select,.dash,.thumb,.edit-mode-btn,.list-sort-sel,.cal,.calbtn,.calmodes,.calday,.calwk-col,.suggest textarea,.stamp,.go,.pinbtn,.evform,.evform input,.evform select,.evform textarea";
   var waSvg = null, waTick = 0;
   function waOn() { return opts.wobble && opts.wobAll; }
+  function isFixedEl(el0) {
+    for (var p = el0; p && p !== document.body; p = p.parentElement) {
+      if (getComputedStyle(p).position === "fixed") return true;
+    }
+    return false;
+  }
   function inClosedDetails(e) {
     for (var d = e.parentElement; d; d = d.parentElement) {
       if (d.tagName === "DETAILS" && !d.open) { var s = d.firstElementChild; if (!(s && s.tagName === "SUMMARY" && s.contains(e))) return true; }
@@ -5511,9 +6774,9 @@ window.__gcalAuth = {
     waSvg.style.width = Math.max(de.scrollWidth, window.innerWidth) + "px"; waSvg.style.height = Math.max(de.scrollHeight, window.innerHeight) + "px";
     /* read the real border colours with the hiding switched off, then switch it back on before anything paints */
     b.classList.remove("wob-all");
-    var sheet = $("addForm"), sheetOn = sheet && !sheet.hidden, els = document.querySelectorAll(WA_SEL), sx = window.pageXOffset, sy = window.pageYOffset, info = [], i;
+    var els = document.querySelectorAll(WA_SEL), sx = window.pageXOffset, sy = window.pageYOffset, info = [], i;
     for (i = 0; i < els.length; i++) {
-      var e0 = els[i], w = e0.offsetWidth, h = e0.offsetHeight; if (!w || !h || inClosedDetails(e0) || (sheetOn && !sheet.contains(e0))) { e0.removeAttribute("data-wa"); continue; }
+      var e0 = els[i], w = e0.offsetWidth, h = e0.offsetHeight; if (!w || !h || inClosedDetails(e0) || isFixedEl(e0)) { e0.removeAttribute("data-wa"); continue; }
       var cs = getComputedStyle(e0), bw = [cs.borderTopWidth, cs.borderRightWidth, cs.borderBottomWidth, cs.borderLeftWidth].map(parseFloat);
       var col = cs.borderTopColor;
       if (!(bw[0] >= 1 && bw[1] >= 1 && bw[2] >= 1 && bw[3] >= 1) || cs.borderTopStyle === "none" || /rgba\(.*,\s*0\)$/.test(col) || col === "transparent" || cs.visibility === "hidden") { e0.removeAttribute("data-wa"); continue; }
@@ -5546,7 +6809,8 @@ window.__gcalAuth = {
     if (!isReduced()) { if (!$("stressBox").hidden) drawStress(); drawBoxes(); scribbleYouHere(); }
     var still = isReduced(), els = document.querySelectorAll(".btn, .chip, .tape-dock[data-style=\"ui\"] .tape-tab, .tape-dock[data-style=\"ui\"] .tape-deck");
     for (var i = 0; i < els.length; i++) {
-      var e0 = els[i], w = e0.offsetWidth, h = e0.offsetHeight; if (!w || !h) continue;
+      var e0 = els[i], w = e0.offsetWidth, h = e0.offsetHeight;
+      if (!w || !h || (e0.closest && e0.closest('.pola-card:not([data-deck-pos="0"])'))) continue;
       var s = e0.querySelector("svg.wobs");
       if (!s) {
         s = svgEl("svg", { "class": "wobs", "aria-hidden": "true" }); s.appendChild(svgEl("path", {})); e0.appendChild(s);
@@ -5589,8 +6853,8 @@ window.__gcalAuth = {
     if (!b || b.closest(".row") || b.classList.contains("pinbtn")) return;
     scribbleOn(b); fx("scratch");
   }, true);
-  $("sfxOn").addEventListener("change", function () { snd.sfx = this.checked; saveSnd(); fx("click"); });
-  $("musOn").addEventListener("change", function () { snd.music = this.checked; saveSnd(); if (snd.music) startMusic(); else { stopMusic(); updateAd(); } });
+  $("sfxOn").addEventListener("change", function () { snd.sfx = this.checked; saveSnd(); fx("click"); if (typeof updateOptBadges === "function") updateOptBadges(); });
+  $("musOn").addEventListener("change", function () { snd.music = this.checked; saveSnd(); if (snd.music) startMusic(); else { stopMusic(); updateAd(); } if (typeof updateOptBadges === "function") updateOptBadges(); });
   $("vol").addEventListener("input", function () { snd.vol = this.value / 100; setMusVol(); });
   $("vol").addEventListener("change", saveSnd);
   document.addEventListener("pointerdown", function first() {
@@ -5718,6 +6982,34 @@ window.__gcalAuth = {
   /* reminders: fire while the page is open (the Android app will do this in the background) */
   var FIRED = {};
   try { FIRED = JSON.parse(localStorage.getItem("mission-map-fired") || "{}") || {}; } catch (e) { FIRED = {}; }
+  function checkMissionLimits() {
+    var now = Date.now(), dirty = false;
+    items.forEach(function (it) {
+      if (it.done || !(it.limitMin > 0) || !(it.limitAt > 0)) return;
+      if (now >= it.limitAt && !it.limitAlerted) {
+        it.limitAlerted = true; dirty = true;
+        toast("Time limit reached: " + it.text);
+        fx("chime");
+        fireDesktopNotif("Mission time limit", it.text + " (" + placeInfo(it.place).n + ")", "");
+      }
+    });
+    if (dirty) {
+      persist();
+      if (typeof syncAppIcon === "function") syncAppIcon();
+    }
+  }
+  function limitTick() {
+    checkMissionLimits();
+    var badges = document.querySelectorAll(".limit-badge[data-limit-at]");
+    for (var i = 0; i < badges.length; i++) {
+      var b = badges[i], at = parseFloat(b.getAttribute("data-limit-at"));
+      if (!isFinite(at)) continue;
+      var info = fmtLimitLeft(at);
+      b.textContent = info.text;
+      b.classList.toggle("soon", info.cls === "soon");
+      b.classList.toggle("expired", info.cls === "expired");
+    }
+  }
   function remCheck() {
     var now = Date.now(), changed = false;
     events.forEach(function (e) {
@@ -5732,9 +7024,11 @@ window.__gcalAuth = {
     });
     Object.keys(FIRED).forEach(function (k) { if (now - FIRED[k] > 3 * 86400000) { delete FIRED[k]; changed = true; } });
     if (changed) { try { localStorage.setItem("mission-map-fired", JSON.stringify(FIRED)); } catch (x) {} }
+    limitTick();
     renderNext();
   }
   setInterval(remCheck, 30000);
+  setInterval(limitTick, 15000);
   function notifState() {
     var m = $("notifMsg"), b = $("notifBtn");
     if (!window.Notification) { m.textContent = "This browser has no notifications. Reminders show inside the page."; b.hidden = true; return; }
@@ -6257,6 +7551,15 @@ window.__gcalAuth = {
     return fetch(url).then(function (r) {
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.text();
+    }).catch(function () {
+      return fetch("/api/ical-proxy?url=" + encodeURIComponent(url)).then(function (r) {
+        if (!r.ok) {
+          return r.json().catch(function () { return null; }).then(function (d) {
+            throw new Error((d && d.error) || ("HTTP " + r.status));
+          });
+        }
+        return r.text();
+      });
     });
   }
 
@@ -6572,12 +7875,16 @@ window.__gcalAuth = {
       gcalMsg("Not connected.");
     }
     $("gcalGoogleBtn").addEventListener("click", function () {
+      var btn = this;
+      if (btn.disabled) return;
       if (!window.__gcalAuth || typeof window.__gcalAuth.signIn !== "function") {
         gcalMsg("Google sign-in is loading. Try again in a moment.");
         return;
       }
+      btn.disabled = true;
       gcalMsg("Opening Google sign-in...");
       window.__gcalAuth.signIn().then(function () {
+        btn.disabled = false;
         gcal.enabled = true;
         saveGcal();
         gcalInitUI();
@@ -6585,6 +7892,7 @@ window.__gcalAuth = {
       }).then(function () {
         return gcalSyncNow(true);
       }).catch(function (e) {
+        btn.disabled = false;
         gcalMsg("Sign in failed: " + (e && e.message ? e.message : String(e)));
         gcalInitUI();
       });
@@ -6837,29 +8145,108 @@ window.__gcalAuth = {
       f.appendChild(im);
     }
   }
-  /* app & menu icon sync (web favicon + apple icon + Options preview + Android Recents/Task icon) */
+  /* app & menu icon sync (web favicon + apple icon + Options preview + Android + Windows dynamic taskbar/tray icon) */
   var appIconCache = {}, lastAppIconSig = "";
+  function loadBaseIconImage(srcUrl) {
+    return new Promise(function (res) {
+      if (!srcUrl) { res(null); return; }
+      var im = new Image();
+      im.onload = function () { res(im); };
+      im.onerror = function () { res(null); };
+      im.src = srcUrl;
+    });
+  }
   function urlToPngDataUrl(srcUrl) {
     if (!srcUrl) return Promise.resolve("");
     if (appIconCache[srcUrl]) return Promise.resolve(appIconCache[srcUrl]);
-    return new Promise(function (res) {
-      var im = new Image();
-      im.onload = function () {
-        try {
-          var c = document.createElement("canvas"); c.width = 128; c.height = 128;
-          var ctx = c.getContext("2d");
-          var sc = Math.min(120 / (im.naturalWidth || 120), 120 / (im.naturalHeight || 120));
-          var w = Math.max(1, Math.round((im.naturalWidth || 120) * sc));
-          var h = Math.max(1, Math.round((im.naturalHeight || 120) * sc));
-          ctx.drawImage(im, Math.round((128 - w) / 2), Math.round((128 - h) / 2), w, h);
-          var out = c.toDataURL("image/png");
-          appIconCache[srcUrl] = out;
-          res(out);
-        } catch (e) { res(""); }
-      };
-      im.onerror = function () { res(""); };
-      im.src = srcUrl;
+    return loadBaseIconImage(srcUrl).then(function (im) {
+      if (!im) return "";
+      try {
+        var c = document.createElement("canvas"); c.width = 128; c.height = 128;
+        var ctx = c.getContext("2d");
+        var sc = Math.min(120 / (im.naturalWidth || 120), 120 / (im.naturalHeight || 120));
+        var w = Math.max(1, Math.round((im.naturalWidth || 120) * sc));
+        var h = Math.max(1, Math.round((im.naturalHeight || 120) * sc));
+        ctx.drawImage(im, Math.round((128 - w) / 2), Math.round((128 - h) / 2), w, h);
+        var out = c.toDataURL("image/png");
+        appIconCache[srcUrl] = out;
+        return out;
+      } catch (e) { return ""; }
     });
+  }
+  function getDesktopIconStatus() {
+    var mine = typeof cur === "function" ? cur() : [];
+    var now = Date.now(), openCount = 0, doneCount = 0, expiredCount = 0;
+    for (var i = 0; i < mine.length; i++) {
+      var it = mine[i];
+      if (it.done) doneCount++;
+      else {
+        openCount++;
+        if (it.limitMin > 0 && it.limitAt > 0 && now >= it.limitAt) expiredCount++;
+      }
+    }
+    var pomoState = race ? (race.paused ? "paused" : race.phase) : "";
+    return {
+      evil: !!evil,
+      openCount: openCount,
+      doneCount: doneCount,
+      totalCount: mine.length,
+      expiredCount: expiredCount,
+      pomoState: pomoState
+    };
+  }
+  function drawDynamicTrayCanvas(im, size, st) {
+    var c = document.createElement("canvas"); c.width = size; c.height = size;
+    var ctx = c.getContext("2d");
+    var padPx = Math.max(1, Math.round(size * 0.04));
+    if (im) {
+      var avail = size - padPx * 2;
+      var sc = Math.min(avail / (im.naturalWidth || avail), avail / (im.naturalHeight || avail));
+      var w = Math.max(1, Math.round((im.naturalWidth || avail) * sc));
+      var h = Math.max(1, Math.round((im.naturalHeight || avail) * sc));
+      ctx.drawImage(im, Math.round((size - w) / 2), Math.round((size - h) / 2), w, h);
+    }
+    // Top-left dot for Pomodoro active state
+    if (st.pomoState) {
+      var pr = Math.max(3, Math.round(size * 0.16));
+      var px = pr + 1, py = pr + 1;
+      ctx.beginPath();
+      ctx.arc(px, py, pr, 0, Math.PI * 2);
+      ctx.fillStyle = st.pomoState === "break" ? "#3296d8" : (st.pomoState === "paused" ? "#f5b942" : "#289a47");
+      ctx.fill();
+      ctx.lineWidth = Math.max(1.2, size * 0.06);
+      ctx.strokeStyle = "#ffffff";
+      ctx.stroke();
+    }
+    // Bottom-right count or completion badge
+    if (st.openCount > 0) {
+      var txt = st.openCount > 9 ? "9+" : String(st.openCount);
+      var br = Math.max(5, Math.round(size * (txt.length > 1 ? 0.25 : 0.22)));
+      var bx = size - br - 1, by = size - br - 1;
+      ctx.beginPath();
+      ctx.arc(bx, by, br, 0, Math.PI * 2);
+      ctx.fillStyle = (st.expiredCount > 0 || st.evil) ? "#e03124" : "#c4382b";
+      ctx.fill();
+      ctx.lineWidth = Math.max(1.2, size * 0.06);
+      ctx.strokeStyle = "#ffffff";
+      ctx.stroke();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "700 " + Math.max(7, Math.round(br * (txt.length > 1 ? 1.08 : 1.28))) + "px system-ui, Segoe UI, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(txt, bx, by + (size <= 32 ? 0.5 : 1));
+    } else if (st.totalCount > 0 && st.openCount === 0) {
+      var cr = Math.max(4, Math.round(size * 0.17));
+      var cx = size - cr - 1, cy = size - cr - 1;
+      ctx.beginPath();
+      ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+      ctx.fillStyle = "#289a47";
+      ctx.fill();
+      ctx.lineWidth = Math.max(1.2, size * 0.06);
+      ctx.strokeStyle = "#ffffff";
+      ctx.stroke();
+    }
+    return c.toDataURL("image/png");
   }
   function activeAppIconUrl(isEvil) {
     var defIcon = isEvil ? (opts.pinAlt ? "pins/alt-evil.webp" : "pins/base-evil-256.png") : (opts.pinAlt ? "pins/alt-smile.webp" : "pins/base-smile-256.png");
@@ -6868,7 +8255,16 @@ window.__gcalAuth = {
   function syncAppIcon() {
     var iconUrl = activeAppIconUrl(evil);
     var favFallback = evil ? "pins/base-evil-256.png" : "pins/base-smile-256.png";
-    var sig = (evil ? "1" : "0") + "|" + (opts.pinAlt ? "1" : "0") + "|" + iconUrl;
+    var st = getDesktopIconStatus();
+    var sig = [
+      st.evil ? "1" : "0",
+      opts.pinAlt ? "1" : "0",
+      iconUrl,
+      st.openCount,
+      st.doneCount,
+      st.expiredCount,
+      st.pomoState
+    ].join("|");
     var pv = $("appIconPreviewImg"), lb = $("appIconModeLbl");
     if (pv) pv.src = iconUrl;
     if (lb) {
@@ -6889,11 +8285,26 @@ window.__gcalAuth = {
         }).catch(function () {});
       }
       if (DESKTOP && typeof DESKTOP.setAppIcon === "function") {
-        DESKTOP.setAppIcon({
-          label: evil ? "Mission Map (Don't-do)" : "Mission Map",
-          evil: !!evil,
-          dataUrl: finalUrl
-        }).catch(function () {});
+        loadBaseIconImage(finalUrl).then(function (im) {
+          var trayPng = "";
+          try { if (im) trayPng = drawDynamicTrayCanvas(im, 32, st); } catch (e) {}
+          var modeLabel = st.evil ? "Don't-do List" : "Do List";
+          var countTxt = st.totalCount ? (st.openCount > 0 ? (st.openCount + " open") : "All done") : "Empty";
+          var tipParts = ["Mission Map", modeLabel, countTxt];
+          if (st.pomoState) tipParts.push("Pomodoro: " + st.pomoState);
+          DESKTOP.setAppIcon({
+            label: st.evil ? "Mission Map (Don't-do)" : "Mission Map",
+            tooltip: tipParts.join(" · "),
+            evil: st.evil,
+            openCount: st.openCount,
+            doneCount: st.doneCount,
+            totalCount: st.totalCount,
+            expiredCount: st.expiredCount,
+            pomoState: st.pomoState,
+            dataUrl: finalUrl,
+            trayDataUrl: trayPng || finalUrl
+          }).catch(function () {});
+        });
       }
     });
   }
@@ -7056,8 +8467,8 @@ window.__gcalAuth = {
     if (!snd.music || mus.cur !== "pl") { sndMsg("Skip works while your playlist is playing."); return; }
     var t = ++mus.tok; dropEl(); mus.pos++; playPl(false);
   });
-  $("plOwn").addEventListener("change", function () { mmeta.useOwn = this.checked; saveMeta(); musicRefresh(); });
-  $("plShuf").addEventListener("change", function () { mmeta.shuffle = this.checked; saveMeta(); if (mus.cur === "pl") musicRefresh(true); });
+  $("plOwn").addEventListener("change", function () { mmeta.useOwn = this.checked; saveMeta(); musicRefresh(); if (typeof updateOptBadges === "function") updateOptBadges(); });
+  $("plShuf").addEventListener("change", function () { mmeta.shuffle = this.checked; saveMeta(); if (mus.cur === "pl") musicRefresh(true); if (typeof updateOptBadges === "function") updateOptBadges(); });
   $("mapSketch").addEventListener("change", function () { mmeta.sketch = this.checked; saveMeta(); applyMedia(); });
 
   /* options: slot rows */
@@ -7946,6 +9357,21 @@ window.__gcalAuth = {
     syncListenUi();
   })();
 
+  function openShortcutsModal(show) {
+    var m = $("shortcutsModal");
+    if (!m) return;
+    m.hidden = !show;
+    if (show) {
+      if ($("shortcutsClose")) try { $("shortcutsClose").focus(); } catch (e) {}
+    }
+  }
+  if ($("openShortcutsBtn")) $("openShortcutsBtn").addEventListener("click", function () { openShortcutsModal(true); fx("click"); });
+  if ($("winShortcutsBtn")) $("winShortcutsBtn").addEventListener("click", function () { openShortcutsModal(true); fx("click"); });
+  if ($("shortcutsClose")) $("shortcutsClose").addEventListener("click", function () { openShortcutsModal(false); fx("click"); });
+  if ($("shortcutsModal")) $("shortcutsModal").addEventListener("click", function (e) {
+    if (e.target === this) openShortcutsModal(false);
+  });
+
   function desktopInit() {
     var sec = $("desktopSec"), headBtn = $("winMiniHeadBtn"), optBtn = $("winMiniBtn"), topChk = $("winTopOn"), trayChk = $("winTrayOn");
     function applyDesktopState(st) {
@@ -7962,6 +9388,7 @@ window.__gcalAuth = {
       }
       if (topChk) topChk.checked = !!st.alwaysOnTop;
       if (trayChk) trayChk.checked = st.minimizeToTray !== false;
+      if (typeof updateOptBadges === "function") updateOptBadges();
     }
     if (DESKTOP) {
       if (sec) sec.hidden = false;
@@ -7999,20 +9426,24 @@ window.__gcalAuth = {
             else if ($("raceGo")) $("raceGo").click();
           } else if (cmd === "export-png") {
             exportMapPng();
+          } else if (cmd === "show-shortcuts") {
+            openShortcutsModal(true);
           } else if (cmd === "open-options") {
-            if ($("options")) {
-              $("options").hidden = !$("options").hidden;
-              if ($("optBtn")) $("optBtn").setAttribute("aria-expanded", String(!$("options").hidden));
-            }
+            if (typeof openOptions === "function") openOptions($("options") ? $("options").hidden : true);
           }
         });
       }
     }
     document.addEventListener("keydown", function (e) {
-      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
-      var k = String(e.key || "").toLowerCase();
       var tag = e.target && e.target.tagName ? e.target.tagName.toLowerCase() : "";
       var editing = tag === "input" || tag === "textarea" || tag === "select" || (e.target && e.target.isContentEditable);
+      if (!editing && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === "?" || e.key === "F1")) {
+        e.preventDefault();
+        openShortcutsModal($("shortcutsModal") ? $("shortcutsModal").hidden : true);
+        return;
+      }
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      var k = String(e.key || "").toLowerCase();
       if (e.shiftKey && k === "d") {
         e.preventDefault(); flipEvil(); return;
       }
@@ -8040,10 +9471,7 @@ window.__gcalAuth = {
         e.preventDefault(); exportMapPng();
       } else if (!e.shiftKey && k === ",") {
         e.preventDefault();
-        if ($("options")) {
-          $("options").hidden = !$("options").hidden;
-          if ($("optBtn")) $("optBtn").setAttribute("aria-expanded", String(!$("options").hidden));
-        }
+        if (typeof openOptions === "function") openOptions($("options") ? $("options").hidden : true);
       }
     });
   }

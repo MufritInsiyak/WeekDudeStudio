@@ -59,7 +59,8 @@ html, body { max-width: 100%; overflow-x: clip; }
 body {
   background: var(--bg); color: var(--ink);
   font-family: var(--font-type); font-size: clamp(14px, 1.1vw, 16px); line-height: 1.4;
-  padding-block: clamp(12px, 2vw, 24px) calc(108px + env(safe-area-inset-bottom, 0px));
+  padding-top: calc(clamp(12px, 2vw, 24px) + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(108px + env(safe-area-inset-bottom, 0px));
   padding-left: max(clamp(12px, 3vw, 32px), env(safe-area-inset-left, 0px));
   padding-right: max(clamp(12px, 3vw, 32px), env(safe-area-inset-right, 0px));
   min-height: 100%;
@@ -241,7 +242,7 @@ a.btn, label.btn { display: inline-flex; align-items: center; text-decoration: n
 .suggest textarea { width: 100%; min-height: 110px; resize: vertical; background: var(--map-bg); color: var(--ink); border: 2px solid var(--ink); border-radius: 0; padding: 8px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
 .suggest label.chk { display: flex; gap: 8px; align-items: center; font-size: 13px; }
 .msg { font-size: 13px; color: var(--ink-soft); min-height: 1.2em; }
-body[data-view="errands"] .suggest textarea, body[data-view="errands"] .notebook textarea { background: #efe7c8; border-color: #000; }
+body[data-view="errands"] .suggest textarea, body[data-view="errands"] .notebook textarea, body[data-view="errands"] .practice textarea { background: #efe7c8; border-color: #000; }
 .foot { font-size: 12px; color: var(--ink-soft); }
 body[data-view="notes"] .foot { color: #fff8ea; }
 [data-theme="light"] body[data-view="notes"] .foot { color: #fff8ea; }
@@ -287,7 +288,7 @@ body[data-view="errands"] .empty { font-family: "Permanent Marker", var(--font-h
 .opts-overlay {
   position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; z-index: 75;
   display: flex; justify-content: flex-end; align-items: center;
-  padding: clamp(8px, 1.8vw, 20px);
+  padding: calc(clamp(8px, 1.8vw, 20px) + env(safe-area-inset-top, 0px)) max(clamp(8px, 1.8vw, 20px), env(safe-area-inset-right, 0px)) calc(clamp(8px, 1.8vw, 20px) + env(safe-area-inset-bottom, 0px)) max(clamp(8px, 1.8vw, 20px), env(safe-area-inset-left, 0px));
   background: rgba(0, 0, 0, .62);
   backdrop-filter: blur(2px);
 }
@@ -530,16 +531,18 @@ body[data-view="errands"] .btn { --wob: #000; }
 .wrap > .foot { position: relative; z-index: 1; }
 .head.menu-open { z-index: 65; }
 .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.pinbtn { background: none; border: 0; padding: 0; width: 64px; height: 64px; flex: none; perspective: 500px; transform-origin: 50% 10%; animation: sway 5s ease-in-out infinite; cursor: pointer; }
+.pinbtn { background: none; border: 0; padding: 0; width: 64px; height: 64px; flex: none; transform-origin: 50% 10%; animation: sway 5s ease-in-out infinite; cursor: pointer; }
 @media (max-width: 480px) {
   .pinbtn { width: 56px; height: 56px; }
 }
 @keyframes sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
-.pin3d { display: block; position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .6s cubic-bezier(.3, 1.35, .5, 1); }
-.pinbtn[aria-pressed="true"] .pin3d { transform: rotateY(180deg); }
-.pin3d .face { position: absolute; inset: 0; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
-.pin3d .back { transform: rotateY(180deg); }
+.pin3d { display: block; position: relative; width: 100%; height: 100%; transform-origin: center center; will-change: transform, filter; }
+.pin3d .face { position: absolute; inset: 0; transform-origin: center center; pointer-events: none; }
+.pin3d .face.back { visibility: hidden; }
+.pin3d[data-face="back"] .face.front { visibility: hidden; }
+.pin3d[data-face="back"] .face.back { visibility: visible; }
 .pin3d svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .28)); }
+.place.pin .pin-sprite-spin { transform-box: fill-box; transform-origin: center center; will-change: transform, filter; }
 
 .meters { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
 .stress { display: flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
@@ -871,6 +874,7 @@ body[data-view="amoled"] .practice,
 body[data-view="amoled"] .add.sheet,
 body[data-view="amoled"] .head-submenu,
 body[data-view="amoled"] .gcal-modal,
+body[data-view="amoled"] .pin-ctx,
 body[data-view="amoled"] .prod-score-box,
 body[data-view="amoled"] .nb-ico-box,
 body[data-view="amoled"] .calday-sum {
@@ -881,6 +885,9 @@ body[data-view="amoled"] .mapbar-wrap,
 body[data-view="amoled"] .mapbar,
 body[data-view="amoled"] .pinform,
 body[data-view="amoled"] .geoform,
+body[data-view="amoled"] .pinset-row,
+body[data-view="amoled"] .pinset-sel,
+body[data-view="amoled"] .pin-mode-btn,
 body[data-view="amoled"] .btn.ghost,
 body[data-view="amoled"] .edit-mode-btn,
 body[data-view="amoled"] .list-sort-sel,
@@ -891,6 +898,9 @@ body[data-view="amoled"] .font-card,
 body[data-view="amoled"] .opts-tab,
 body[data-view="amoled"] .opts-search-inp,
 body[data-view="amoled"] .opts-overlay textarea,
+body[data-view="amoled"] .practice textarea,
+body[data-view="amoled"] .pr-star,
+body[data-view="amoled"] .pr-best-item,
 body[data-view="amoled"] .opts-overlay select,
 body[data-view="amoled"] .seg,
 body[data-view="amoled"] .add input,
@@ -928,7 +938,7 @@ body.evil .stamp::after { content: " / NO"; }
 body[data-view="racer"].evil .stamp::after { content: ""; display: block; height: 8px; margin-top: 6px; background: conic-gradient(#f3eaff 25%, #120826 0 50%, #f3eaff 0 75%, #120826 0) 0 0 / 8px 8px; }
 body.evil .count { color: var(--red); }
 body.evil .item.evil .t { text-decoration: none; }
-@media (prefers-reduced-motion: reduce) { .pinbtn { animation: none; } .pin3d { transition: none; } .item.printing, .item.printing .row { animation: none; } .place .fog { transition: none; } .bike { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .pinbtn { animation: none; } .pin3d, .place.pin .pin-sprite-spin { transform: none !important; filter: none !important; } .item.printing, .item.printing .row { animation: none; } .place .fog { transition: none; } .bike { transition: none; } }
 body.calm .pinbtn { animation: none; }
 
 /* ===== v3: own pictures and sounds ===== */
@@ -1102,7 +1112,7 @@ html { scroll-padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
 .fab { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 42; width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--ink); background: var(--red); color: var(--on-red); font-size: 34px; line-height: 1; padding: 0 0 4px; box-shadow: 3px 3px 0 rgba(0, 0, 0, .35); transition: transform .2s; }
 .fab.x { transform: rotate(45deg); }
 .scrim { position: fixed; inset: 0; z-index: 35; background: rgba(0, 0, 0, .38); }
-.add.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; max-width: 560px; margin: 0 auto; max-height: 85vh; overflow: auto; padding: 14px 16px calc(84px + env(safe-area-inset-bottom, 0px)); background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-bottom: 0; box-shadow: 0 -6px 0 rgba(0, 0, 0, .18); }
+.add.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; max-width: 560px; margin: 0 auto; max-height: calc(100dvh - 16px - env(safe-area-inset-top, 0px)); overflow: auto; padding: 14px 16px calc(84px + env(safe-area-inset-bottom, 0px)); background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-bottom: 0; box-shadow: 0 -6px 0 rgba(0, 0, 0, .18); }
 .sheethead { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; letter-spacing: .08em; text-transform: uppercase; font-size: 13px; }
 .sheethead b { font-weight: 400; }
 .toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); max-width: calc(100vw - 24px); }
@@ -1217,6 +1227,59 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
 .pr-pick label { flex: 1 1 100%; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
 .pr-pick select { flex: 1 1 160px; min-width: 0; background: var(--paper); color: var(--ink); border: 2px solid var(--ink); font: inherit; font-size: 14px; padding: 0 8px; }
 .practice.pinned { border-style: solid; }
+.pr-rate-box {
+  margin-top: 10px; padding-top: 9px; border-top: 1px dashed var(--ink-soft);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+}
+.pr-rate-lbl {
+  font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft);
+}
+.pr-stars { display: inline-flex; align-items: center; gap: 4px; }
+.pr-star {
+  min-width: 34px; min-height: 34px; padding: 2px 6px;
+  border: 1.5px solid var(--ink); background: var(--map-bg); color: var(--ink-soft);
+  font-size: 16px; line-height: 1; display: inline-flex; align-items: center; justify-content: center;
+  transition: transform .1s, background-color .12s, color .12s, border-color .12s;
+}
+.pr-star:hover { transform: translateY(-1px); color: var(--ink); }
+.pr-star.on { background: var(--red); border-color: var(--ink); color: var(--on-red); }
+.pr-rate-txt { font-size: 12px; color: var(--ink-soft); margin-left: auto; }
+.pr-rate-txt strong { color: var(--red); font-weight: 700; }
+.pr-self-box {
+  margin-top: 10px; padding-top: 9px; border-top: 1px dashed var(--ink-soft);
+  display: grid; gap: 6px;
+}
+.pr-self-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.pr-self-head label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+.pr-self-status { font-size: 11px; color: var(--ink-soft); }
+.pr-self-box textarea {
+  width: 100%; resize: vertical; min-height: 54px;
+  background: var(--map-bg); color: var(--ink); border: 2px solid var(--ink); border-radius: 0;
+  padding: 7px 9px; font: inherit; font-size: 14px; line-height: 1.35;
+}
+.pr-self-box textarea::placeholder { color: var(--ink-soft); }
+.pr-self-act { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pr-self-act .btn { min-height: 36px; padding: 4px 12px; font-size: 12px; }
+.pr-best-box {
+  margin-top: 10px; padding-top: 9px; border-top: 1px dashed var(--ink-soft); font-size: 13px;
+}
+.pr-best-box summary {
+  cursor: pointer; font-size: 12px; letter-spacing: .07em; text-transform: uppercase; color: var(--ink);
+  list-style-position: inside;
+}
+.pr-best-box summary strong { color: var(--red); }
+.pr-best-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; max-height: 220px; overflow-y: auto; }
+.pr-best-item {
+  display: grid; gap: 3px; padding: 7px 9px; border: 1.5px solid var(--ink-soft); background: var(--map-bg);
+}
+.pr-best-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.pr-best-btn {
+  background: transparent; border: 0; padding: 0; text-align: left; color: var(--ink); font-weight: 700;
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.pr-best-btn:hover { color: var(--red); }
+.pr-best-score { font-size: 12px; color: var(--red); font-weight: 700; white-space: nowrap; }
+.pr-best-note { font-size: 12.5px; color: var(--ink-soft); line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; }
 /* top panels: patterns + notes side by side */
 .top-panels { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); align-items: start; }
 .top-panels > * { min-width: 0; }
@@ -1267,7 +1330,7 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
 .gsi-material-button:not(:disabled):hover .gsi-material-button-state { background-color: #303030; opacity: 8%; }
 .gsi-material-button:not(:disabled):active .gsi-material-button-state, .gsi-material-button:not(:disabled):focus .gsi-material-button-state { background-color: #303030; opacity: 12%; }
 .gcal-user { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; padding: 6px 10px; border: 1px solid var(--ink-soft); background: var(--map-bg); color: var(--ink); }
-.gcal-modal-backdrop { position: fixed; inset: 0; z-index: 80; background: rgba(0, 0, 0, .55); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.gcal-modal-backdrop { position: fixed; inset: 0; z-index: 80; background: rgba(0, 0, 0, .55); display: flex; align-items: center; justify-content: center; padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)); }
 .gcal-modal { background: var(--paper); color: var(--ink); border: 2px solid var(--ink); max-width: 480px; width: 100%; max-height: 85vh; overflow: auto; padding: 16px; display: grid; gap: 10px; box-shadow: 6px 6px 0 rgba(0, 0, 0, .35); }
 .gcal-modal h3 { margin: 0; font-size: 15px; letter-spacing: .1em; text-transform: uppercase; font-weight: 400; color: var(--red); }
 .gcal-modal-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 240px; overflow-y: auto; border-top: 1px dashed var(--ink-soft); border-bottom: 1px dashed var(--ink-soft); padding-block: 8px; font-size: 13px; }
@@ -1276,6 +1339,28 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
 .gcal-modal-op.add { color: #2e7d32; }
 .gcal-modal-op.upd { color: #b86e00; }
 .gcal-modal-op.del { color: var(--red); }
+.pin-ctx { position: fixed; z-index: 82; width: min(296px, calc(100vw - 20px)); background: var(--paper); color: var(--ink); border: 2px solid var(--ink); box-shadow: 5px 5px 0 rgba(0, 0, 0, .38); padding: 10px; display: grid; gap: 8px; }
+.pin-ctx[hidden] { display: none; }
+.pin-ctx-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; border-bottom: 1px dashed var(--ink-soft); padding-bottom: 6px; }
+.pin-ctx-ttl { font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pin-ctx-sub { font-size: 10.5px; color: var(--ink-soft); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+.pin-ctx-lbl { font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-soft); }
+.pin-ctx-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+.pin-mode-btn { display: flex; align-items: center; gap: 6px; min-height: 30px; padding: 3px 7px; border: 1.5px solid var(--ink-soft); background: var(--paper); color: var(--ink); font-size: 11px; letter-spacing: .03em; text-align: left; }
+.pin-mode-btn:hover { border-color: var(--ink); }
+.pin-mode-btn[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); font-weight: 700; }
+.pin-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--ink-soft); background: transparent; flex: none; display: inline-block; }
+.pin-ctx-swatches { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.pin-sw { width: 22px; height: 22px; padding: 0; border-radius: 50%; border: 2px solid var(--ink); cursor: pointer; flex: none; }
+.pin-sw[aria-pressed="true"] { outline: 2px solid var(--ink); outline-offset: 2px; }
+.pin-color-inp { width: 32px; height: 24px; padding: 0; border: 1.5px solid var(--ink); background: transparent; cursor: pointer; flex: none; }
+.pin-ctx-acts { display: flex; gap: 6px; flex-wrap: wrap; padding-top: 6px; border-top: 1px dashed var(--ink-soft); }
+.pin-ctx-acts .btn { min-height: 30px; padding: 3px 8px; font-size: 11px; flex: 1 1 auto; }
+.pinset-list { display: grid; gap: 6px; }
+.pinset-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 6px; align-items: center; padding: 6px 8px; border: 1px solid var(--ink-soft); background: var(--map-bg); }
+.pinset-name { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pinset-sel { min-height: 30px; padding: 2px 6px; border: 1.5px solid var(--ink); background: var(--paper); color: var(--ink); font-size: 12px; max-width: 155px; }
+.chip-color { display: inline-flex; align-items: center; gap: 6px; }
 .mapnote { margin: 10px 0 0; padding: 8px 12px 10px; background: #ffe45e; color: #26210a; border: 2px solid #26210a; transform: rotate(-.8deg); box-shadow: 3px 3px 0 rgba(0, 0, 0, .25); }
 .mn-kicker { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; }
 .mn-text { margin-top: 4px; font-size: 14px; line-height: 1.4; }
@@ -1341,6 +1426,13 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
 .prod-best { font-size: 13px; color: var(--ink); }
 .prod-best strong { color: var(--red); font-weight: 700; }
 .prod-tip { font-size: 13px; line-height: 1.35; color: var(--ink); }
+.prod-sched {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
+  margin-top: 2px; padding-top: 5px; border-top: 1px dashed var(--ink-soft);
+  font-size: 12px; line-height: 1.35; color: var(--ink-soft);
+}
+.prod-sched strong { color: var(--ink); font-weight: 700; }
+.prod-sched.active strong { color: var(--red); }
 .prod-actions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; flex-wrap: wrap; align-self: center; }
 .prod-actions .btn { min-height: 36px; padding: 5px 10px; font-size: 12px; }
 @media (max-width: 520px) {
@@ -1368,7 +1460,7 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
   color: #eef1f5; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
   box-shadow: 0 8px 20px rgba(0, 0, 0, .48), inset 0 1px 0 rgba(255, 255, 255, .18), inset 0 -2px 3px rgba(0, 0, 0, .85);
   white-space: nowrap; position: relative; max-width: 100%;
-  transition: transform .18s cubic-bezier(.16, 1, .3, 1), box-shadow .18s;
+  transition: transform .16s cubic-bezier(.16, 1, .3, 1), box-shadow .18s;
 }
 .tape-tab::before {
   content: ""; position: absolute; left: 14px; right: 14px; top: 4px; height: 2px; border-radius: 2px;
@@ -1385,6 +1477,10 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
 }
 .tape-dock.recording .tape-tab-reels i,
 .tape-dock.playing .tape-tab-reels i { animation: tapeSpin calc(1.1s / var(--tape-speed, 1)) linear infinite; }
+.tape-dock.fastspin .tape-tab-reels i,
+.tape-dock.scrub-fwd .tape-tab-reels i { animation: tapeSpin .24s linear infinite; }
+.tape-dock.revspin .tape-tab-reels i,
+.tape-dock.scrub-rev .tape-tab-reels i { animation: tapeSpinRev .24s linear infinite; }
 .tape-led-dot {
   width: 7px; height: 7px; border-radius: 50%; background: #481d1d; flex: none;
   border: 1px solid rgba(255, 255, 255, .18);
@@ -1395,25 +1491,33 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
 .tape-dock.playing .tape-led-dot { background: #30d158; box-shadow: 0 0 9px #30d158; }
 .tape-dock.paused .tape-led-dot { background: #f5b942; box-shadow: 0 0 7px #f5b942; }
 
+.tape-tab { z-index: 2; }
+
 .tape-deck {
   position: fixed; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom, 0px));
   width: min(392px, calc(100vw - 24px)); overflow: visible;
-  margin: 0;
-  opacity: 0; visibility: hidden; transform: translateX(-50%) translateY(16px) scale(.97); pointer-events: none;
-  transition: opacity .22s cubic-bezier(.16, 1, .3, 1), transform .22s cubic-bezier(.16, 1, .3, 1), visibility .22s;
-  transform-origin: center bottom;
+  margin: 0; z-index: 1;
+  opacity: 1; visibility: hidden; transform: translateX(-50%) translateY(calc(100% + 120px)); pointer-events: none;
+  transition: transform .34s cubic-bezier(.22, 1, .36, 1), visibility 0s linear .34s;
+  will-change: transform;
 }
 .tape-deck-in {
   display: grid; gap: 7px; padding: 10px 12px 11px;
   max-height: calc(100dvh - 96px); overflow-y: auto;
 }
-.tape-dock.open .tape-deck,
-.tape-dock:focus-within .tape-deck {
-  opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0) scale(1); pointer-events: auto;
+.tape-dock.open .tape-deck {
+  opacity: 1; visibility: visible;
+  transform: translateX(-50%) translateY(calc(var(--tape-menu-scroll, 0) * (100% + 120px)));
+  pointer-events: auto;
+  transition: transform .36s cubic-bezier(.22, 1, .36, 1), visibility 0s linear 0s;
 }
+.tape-dock.open.menu-scrolling .tape-deck { transition: none; }
 @media (hover: hover) {
-  .tape-dock:hover .tape-deck {
-    opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0) scale(1); pointer-events: auto;
+  .tape-dock:not(.scroll-hidden):hover .tape-deck {
+    opacity: 1; visibility: visible;
+    transform: translateX(-50%) translateY(calc(var(--tape-menu-scroll, 0) * (100% + 120px)));
+    pointer-events: auto;
+    transition: transform .36s cubic-bezier(.22, 1, .36, 1), visibility 0s linear 0s;
   }
 }
 
@@ -1536,18 +1640,42 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
 .tape-dock.playing .tape-reel svg { animation: tapeSpin calc(1.35s / var(--tape-speed, 1)) linear infinite; }
 .tape-dock.recording .tape-reel.r svg { animation-duration: 1.05s; }
 .tape-dock.playing .tape-reel.r svg { animation-duration: calc(1.05s / var(--tape-speed, 1)); }
-.tape-dock.fastspin .tape-reel svg { animation: tapeSpin .32s linear infinite; }
-.tape-dock.revspin .tape-reel svg { animation: tapeSpinRev .32s linear infinite; }
+.tape-dock.fastspin .tape-reel svg { animation: tapeSpin .2s linear infinite; }
+.tape-dock.revspin .tape-reel svg { animation: tapeSpinRev .2s linear infinite; }
+.tape-dock.scrubbing .tape-reel.l svg { animation: none; transform: rotate(var(--tape-scrub-deg, 0deg)); }
+.tape-dock.scrubbing .tape-reel.r svg { animation: none; transform: rotate(calc(var(--tape-scrub-deg, 0deg) * 1.28)); }
 
 .tape-bridge { flex: 1; display: grid; gap: 5px; align-items: center; min-width: 48px; }
-.tape-ribbon { height: 5px; background: linear-gradient(90deg, #382316, #5e3b25, #382316); border-radius: 2px; border: 1px solid #1d120c; }
+.tape-ribbon {
+  height: 5px; background: linear-gradient(90deg, #382316, #5e3b25, #382316);
+  border-radius: 2px; border: 1px solid #1d120c; position: relative; overflow: hidden;
+}
+.tape-ribbon::after {
+  content: ""; position: absolute; inset: 0; opacity: 0; pointer-events: none;
+  background: repeating-linear-gradient(90deg, transparent 0 6px, rgba(255, 224, 185, .36) 6px 10px, transparent 10px 16px);
+  background-size: 32px 100%;
+}
+.tape-dock.fastspin .tape-ribbon::after,
+.tape-dock.scrubbing.scrub-fwd .tape-ribbon::after { opacity: .95; animation: tapeRibbonFwd .24s linear infinite; }
+.tape-dock.revspin .tape-ribbon::after,
+.tape-dock.scrubbing.scrub-rev .tape-ribbon::after { opacity: .95; animation: tapeRibbonRev .24s linear infinite; }
+.tape-dock.scrubbing:not(.scrub-fwd):not(.scrub-rev) .tape-ribbon::after { opacity: .42; }
 .tape-prog { height: 4px; background: rgba(255, 255, 255, .16); border-radius: 2px; overflow: hidden; }
-.tape-prog i { display: block; height: 100%; width: 0%; background: #e84b38; transition: width .12s linear; }
+.tape-prog i { display: block; height: 100%; width: 0%; background: #e84b38; transition: width .12s linear, box-shadow .14s; }
+.tape-dock.scrubbing .tape-prog i { transition: none; background: #ff624f; box-shadow: 0 0 8px rgba(255, 98, 79, .8); }
+.tape-dock.fastspin .tape-prog i,
+.tape-dock.revspin .tape-prog i {
+  transition: width .22s cubic-bezier(.22, 1, .36, 1), box-shadow .14s;
+  background: #ff624f; box-shadow: 0 0 8px rgba(255, 98, 79, .75);
+}
 
 .tape-door-bot {
   position: relative; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 8px;
   font-size: 9px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: rgba(255, 255, 255, .86);
 }
+.tape-dock.fastspin .tape-door-bot #tapeDoorMode,
+.tape-dock.revspin .tape-door-bot #tapeDoorMode,
+.tape-dock.scrubbing .tape-door-bot #tapeDoorMode { color: #ff7c6b; }
 .tape-play-wedge {
   display: inline-flex; align-items: center; gap: 6px;
 }
@@ -1582,6 +1710,13 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
   display: flex; align-items: center; gap: 7px; padding: 4px 8px; border-radius: 4px;
   background: linear-gradient(180deg, #0b0d10 0%, #14171c 100%);
   border: 1px solid #2b3038; box-shadow: inset 0 1px 3px rgba(0, 0, 0, .75);
+  transition: border-color .15s, box-shadow .15s;
+}
+.tape-dock.scrubbing .tape-seek-row,
+.tape-dock.fastspin .tape-seek-row,
+.tape-dock.revspin .tape-seek-row {
+  border-color: #dc2f24;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .75), 0 0 8px rgba(220, 47, 36, .35);
 }
 .tape-seek-time {
   min-width: 3.1em; font-family: var(--font-type); font-size: 10.5px;
@@ -1601,6 +1736,12 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
   -webkit-appearance: none; appearance: none;
   width: 14px; height: 14px; margin-top: -5px; border-radius: 50%;
   background: #f4f6f9; border: 2px solid #dc2f24; box-shadow: 0 1px 4px rgba(0, 0, 0, .7);
+  transition: transform .12s cubic-bezier(.22, 1, .36, 1), box-shadow .12s;
+}
+.tape-dock.scrubbing .tape-seek-row input[type="range"]::-webkit-slider-thumb,
+.tape-dock.fastspin .tape-seek-row input[type="range"]::-webkit-slider-thumb,
+.tape-dock.revspin .tape-seek-row input[type="range"]::-webkit-slider-thumb {
+  transform: scale(1.28); box-shadow: 0 0 0 4px rgba(232, 75, 56, .28), 0 1px 6px rgba(0, 0, 0, .85);
 }
 .tape-seek-row input[type="range"]::-moz-range-track {
   height: 6px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14);
@@ -1609,6 +1750,12 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
 .tape-seek-row input[type="range"]::-moz-range-thumb {
   width: 14px; height: 14px; border-radius: 50%;
   background: #f4f6f9; border: 2px solid #dc2f24; box-shadow: 0 1px 4px rgba(0, 0, 0, .7);
+  transition: transform .12s cubic-bezier(.22, 1, .36, 1), box-shadow .12s;
+}
+.tape-dock.scrubbing .tape-seek-row input[type="range"]::-moz-range-thumb,
+.tape-dock.fastspin .tape-seek-row input[type="range"]::-moz-range-thumb,
+.tape-dock.revspin .tape-seek-row input[type="range"]::-moz-range-thumb {
+  transform: scale(1.28); box-shadow: 0 0 0 4px rgba(232, 75, 56, .28), 0 1px 6px rgba(0, 0, 0, .85);
 }
 .tape-meta-row { display: flex; gap: 6px; align-items: center; }
 .tape-meta-row input {
@@ -1663,7 +1810,7 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
   border: 1px solid rgba(255, 255, 255, .14);
   box-shadow: inset 0 2px 3px rgba(0, 0, 0, .65);
 }
-.tape-key:active, .tape-key[aria-pressed="true"] {
+.tape-key:active, .tape-key[aria-pressed="true"], .tape-key.shuttle-on {
   transform: translateY(3px); box-shadow: 0 2px 0 #050608, inset 0 1px 2px rgba(0, 0, 0, .6);
 }
 .tape-key.rec {
@@ -1850,6 +1997,8 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
 @keyframes tapeSpin { to { transform: rotate(360deg); } }
 @keyframes tapeSpinRev { to { transform: rotate(-360deg); } }
 @keyframes tapePulse { 0%, 100% { opacity: 1; } 50% { opacity: .38; } }
+@keyframes tapeRibbonFwd { from { background-position: 0 0; } to { background-position: 32px 0; } }
+@keyframes tapeRibbonRev { from { background-position: 32px 0; } to { background-position: 0 0; } }
 @media (max-width: 768px) {
   .tape-dock {
     right: calc(max(12px, env(safe-area-inset-right, 0px)) + 94px);
@@ -1902,9 +2051,12 @@ body.fo-m .t, body.fo-m .note .t, body.fo-m .item .t { font-family: var(--fo-m) 
 }
 body.calm .tape-tab-reels i,
 body.calm .tape-reel svg,
+body.calm .tape-ribbon::after,
 body.calm .tape-led-dot { animation: none !important; }
+body.calm .tape-deck { transition: none !important; }
 @media (prefers-reduced-motion: reduce) {
-  .tape-tab-reels i, .tape-reel svg, .tape-led-dot { animation: none !important; }
+  .tape-tab-reels i, .tape-reel svg, .tape-ribbon::after, .tape-led-dot { animation: none !important; }
+  .tape-deck { transition: none !important; }
 }
 /* ===== Windows Desktop, Shortcuts Cheat Sheet & Always-on-Top Mini Mode ===== */
 .win-kbd {
@@ -1955,6 +2107,31 @@ body.win-mini .tape-tab { min-width: 104px; min-height: 40px; padding: 4px 10px;
 body.win-mini .btn.fab {
   right: 10px; bottom: 10px; min-width: 74px; height: 40px; padding: 0 12px; font-size: 13px;
 }
+body.is-desktop .head { -webkit-app-region: drag; padding-top: 2px; }
+body.is-desktop .head button,
+body.is-desktop .head a,
+body.is-desktop .head input,
+body.is-desktop .head select,
+body.is-desktop .head-act,
+body.is-desktop .pinbtn { -webkit-app-region: no-drag; }
+.win-ctrls {
+  display: inline-flex; align-items: stretch; flex: none;
+  border: 2px solid var(--ink); background: var(--paper); color: var(--ink);
+  margin-left: 2px;
+}
+.win-ctrls[hidden] { display: none; }
+.win-ctrl-btn {
+  min-width: 34px; min-height: 36px; padding: 0 9px; border: 0; border-left: 1px solid var(--ink-soft);
+  background: transparent; color: var(--ink); font-size: 13px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.win-ctrl-btn:first-child { border-left: 0; }
+.win-ctrl-btn:hover { background: var(--ink); color: var(--paper); }
+.win-ctrl-btn[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.win-ctrl-btn.win-ctrl-close:hover { background: var(--red); color: var(--on-red); }
+body.win-mini .win-ctrl-btn { min-width: 28px; min-height: 30px; padding: 0 6px; font-size: 11px; }
+body[data-view="amoled"] .win-ctrls { background: #000000; border-color: #343b47; }
+body[data-view="errands"] .win-ctrls { border-color: #000; background: var(--paper); color: var(--ink); }
 </style>
 </head>
 <body>
@@ -2014,6 +2191,12 @@ body.win-mini .btn.fab {
       </div>
       <button class="btn ghost" id="optBtn" type="button" aria-expanded="false" aria-controls="options">Options</button>
       <button class="btn ghost" id="aodBtn" type="button">Ambient</button>
+      <div class="win-ctrls" id="winCtrls" hidden aria-label="Window controls">
+        <button class="win-ctrl-btn" id="winCtrlMin" type="button" title="Minimize window" aria-label="Minimize window">&#8211;</button>
+        <button class="win-ctrl-btn" id="winCtrlMax" type="button" title="Maximize or restore window" aria-label="Maximize or restore window" aria-pressed="false">&#9633;</button>
+        <button class="win-ctrl-btn" id="winCtrlFs" type="button" title="Toggle Fullscreen (F11)" aria-label="Toggle Fullscreen" aria-pressed="false">&#x26F6;</button>
+        <button class="win-ctrl-btn win-ctrl-close" id="winCtrlClose" type="button" title="Close window" aria-label="Close window">&times;</button>
+      </div>
     </div>
   </header>
 
@@ -2152,6 +2335,18 @@ body.win-mini .btn.fab {
           </div>
           <form class="pinform" id="pinForm" hidden autocomplete="off">
             <input id="pinName" maxlength="24" placeholder="Name this pin" aria-label="Pin name">
+            <select id="pinDropStyle" aria-label="Pin priority or category">
+              <option value="">Color: Default</option>
+              <option value="auto">Auto (mission priority)</option>
+              <option value="prio-high">Priority: High</option>
+              <option value="prio-med">Priority: Medium</option>
+              <option value="prio-low">Priority: Low</option>
+              <option value="cat-errand">Category: Errand</option>
+              <option value="cat-home">Category: Home</option>
+              <option value="cat-work">Category: Work</option>
+              <option value="cat-health">Category: Health</option>
+              <option value="cat-leisure">Category: Leisure</option>
+            </select>
             <select id="pinGeoRad" aria-label="Optional geofence radius">
               <option value="0">No geofence</option>
               <option value="100">Fence: 100m</option>
@@ -2356,7 +2551,7 @@ body.win-mini .btn.fab {
           </div>
         </div>
         <div class="tape-door-bot" aria-hidden="true">
-          <span>VOICE TAPE</span>
+          <span id="tapeDoorMode">VOICE TAPE</span>
           <span class="tape-play-wedge">PLAY</span>
         </div>
       </div>
@@ -2523,6 +2718,11 @@ body.win-mini .btn.fab {
             <label class="chk"><input type="checkbox" id="geoOn"> Geofencing (GPS alerts near map icons)</label>
             <div class="msg" id="mapMsg">Use Drop a pin under the map to add your own places, and Fence icon to set GPS geofences.</div>
           </div>
+          <div class="pola-sec" data-search="custom pin color priority category stroke fill badge settings context menu">
+            <h3 class="pola-sh">Custom Pin Colors</h3>
+            <div class="pinset-list" id="pinColorSettings"></div>
+            <div class="msg">Tip: You can also right-click (or long-press) any custom pin on the map to change its priority, category, or color.</div>
+          </div>
           <div class="opts-empty" hidden></div>
         </div>
         <div class="pola-caption">
@@ -2638,10 +2838,16 @@ body.win-mini .btn.fab {
       <!-- 05 Calendar & Sync -->
       <article class="pola-card" data-cat="sync" data-deck-pos="4" role="tabpanel" aria-label="Calendar and Sync">
         <div class="pola-inner">
-          <div class="pola-sec" data-search="events reminders browser notifications allow">
+          <div class="pola-sec" id="notifSec" data-search="events reminders browser notifications allow productive hours check missions">
             <h3 class="pola-sh">Events &amp; Reminders</h3>
             <div class="msg">Open Month in the week strip, pick a day and use Add event. Events have times, colours, a place, details and an optional reminder.</div>
-            <div class="row-actions"><button class="btn ghost" id="notifBtn" type="button">Allow notifications</button></div>
+            <label class="chk"><input type="checkbox" id="remOn" checked> Enable reminders &amp; notifications</label>
+            <label class="chk"><input type="checkbox" id="prodRemOn" checked> Remind me to check missions during detected productive hours</label>
+            <div class="msg" id="prodRemInfo"></div>
+            <div class="row-actions">
+              <button class="btn ghost" id="notifBtn" type="button">Allow notifications</button>
+              <button class="btn ghost" id="remTestBtn" type="button">Test notification</button>
+            </div>
             <div class="msg" id="notifMsg" role="status"></div>
           </div>
 
@@ -2772,10 +2978,11 @@ body.win-mini .btn.fab {
             <div class="msg">The system tray and taskbar icons update dynamically to match Do / Don't-do mode, open mission count badge, Pomodoro state, and custom pin icons.</div>
           </div>
 
-          <div class="pola-sec" id="desktopSec" hidden data-search="windows desktop mini mode always on top minimize to tray">
+          <div class="pola-sec" id="desktopSec" hidden data-search="windows desktop mini mode fullscreen maximize always on top minimize to tray">
             <h3 class="pola-sh">Windows Desktop</h3>
             <div class="row-actions">
               <button class="btn ghost" id="winMiniBtn" type="button" aria-pressed="false">Enter mini mode</button>
+              <button class="btn ghost" id="winFsBtn" type="button" aria-pressed="false">Enter fullscreen</button>
               <button class="btn ghost" id="winShortcutsBtn" type="button">Shortcuts cheat sheet</button>
             </div>
             <label class="chk"><input type="checkbox" id="winTopOn"> Keep window always on top</label>
@@ -2838,10 +3045,21 @@ body.win-mini .btn.fab {
     </div>
   </div>
 </div>
+<div class="gcal-modal-backdrop" id="pinDeleteModal" hidden role="dialog" aria-modal="true" aria-labelledby="pinDeleteTitle">
+  <div class="gcal-modal">
+    <h3 id="pinDeleteTitle">Remove custom pin?</h3>
+    <div class="msg" id="pinDeleteMsg"></div>
+    <div class="row-actions">
+      <button class="btn" id="pinDeleteOk" type="button">Delete pin</button>
+      <button class="btn ghost" id="pinDeleteCancel" type="button">Cancel</button>
+    </div>
+  </div>
+</div>
+<div class="pin-ctx" id="pinCtxMenu" hidden role="dialog" aria-label="Pin color and options"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, browserPopupRedirectResolver } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { initializeAuth, inMemoryPersistence, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, browserPopupRedirectResolver } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyABFJpsNx0-H7-fXipb7L3hrGNY3RA6cOw",
@@ -2858,22 +3076,122 @@ const GCAL_SCOPES = [
   "https://www.googleapis.com/auth/calendar.calendarlist.readonly"
 ];
 
+const activeOp = { done: true, rejected: false, win: null };
+
+class SafePopupRedirectResolver extends browserPopupRedirectResolver {
+  async _openPopup(a, p, t, ev) {
+    const w = await super._openPopup(a, p, t, ev);
+    activeOp.win = w;
+    if (w && typeof w.close === "function") {
+      const origClose = w.close.bind(w);
+      w.close = () => {
+        activeOp.done = true;
+        return origClose();
+      };
+    }
+    return w;
+  }
+  _originValidation(a) {
+    return Promise.resolve(super._originValidation(a)).catch((err) => {
+      if (activeOp.done || activeOp.rejected || !activeOp.win || !activeOp.win.window || activeOp.win.window.closed) return;
+      activeOp.rejected = true;
+      throw err;
+    });
+  }
+  _isIframeWebStorageSupported(a, cb) {
+    try {
+      return super._isIframeWebStorageSupported(a, (ok) => {
+        if (activeOp.done || (!ok && activeOp.rejected)) return;
+        if (!ok) activeOp.rejected = true;
+        cb(ok);
+      });
+    } catch (_err) {
+      // Guard against Firebase 11.6.1 throwing internal-error after webStorageSupport callback
+    }
+  }
+}
+
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+const auth = initializeAuth(app, {
+  persistence: inMemoryPersistence,
+  popupRedirectResolver: SafePopupRedirectResolver
+});
 const provider = new GoogleAuthProvider();
 GCAL_SCOPES.forEach((s) => provider.addScope(s));
-provider.setCustomParameters({ prompt: "select_account" });
+provider.setCustomParameters({ prompt: "consent select_account" });
 
 // Strictly in-memory OAuth access token cache (never persisted to localStorage/sessionStorage)
 let cachedAccessToken = null;
+let tokenSource = null; // "firebase" | "gis" | null
 let currentUser = null;
 let gisLoadPromise = null;
 let inFlightSignIn = null;
+let cachedAuthorizedDomains = null;
+let authDomainsPromise = null;
+let preferGisOnRetry = false;
 const listeners = [];
 
 function notifyListeners() {
   listeners.forEach((fn) => { try { fn(currentUser); } catch (e) {} });
 }
+
+function loadAuthorizedDomains() {
+  if (Array.isArray(cachedAuthorizedDomains)) return Promise.resolve(cachedAuthorizedDomains);
+  if (authDomainsPromise) return authDomainsPromise;
+  authDomainsPromise = fetch("https://identitytoolkit.googleapis.com/v1/projects?key=" + encodeURIComponent(firebaseConfig.apiKey))
+    .then((r) => (r.ok ? r.json() : null))
+    .then((d) => {
+      if (d && Array.isArray(d.authorizedDomains)) {
+        cachedAuthorizedDomains = d.authorizedDomains;
+        return cachedAuthorizedDomains;
+      }
+      return null;
+    })
+    .catch(() => null);
+  return authDomainsPromise;
+}
+
+function isOriginMatchingDomainList(domains) {
+  if (location.protocol !== "http:" && location.protocol !== "https:") return false;
+  if (!Array.isArray(domains)) return null;
+  const host = (location.hostname || "").toLowerCase();
+  if (!host) return false;
+  const ipv4Re = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
+  for (const raw of domains) {
+    const dom = String(raw || "").trim().toLowerCase();
+    if (!dom) continue;
+    if (ipv4Re.test(dom)) {
+      if (host === dom) return true;
+    } else if (host === dom || host.endsWith("." + dom)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function validateOAuthConfigAndRedirect() {
+  if (!firebaseConfig.apiKey || !firebaseConfig.authDomain) {
+    throw new Error("Firebase authentication configuration is incomplete.");
+  }
+  const configuredScopes = typeof provider.getScopes === "function" ? provider.getScopes() : [];
+  const hasRequiredScopes = GCAL_SCOPES.every((s) => configuredScopes.includes(s));
+  if (!hasRequiredScopes) {
+    throw new Error("Google Calendar OAuth scopes are not properly configured.");
+  }
+  let redirectUrl = null;
+  try {
+    redirectUrl = new URL(location.href);
+  } catch (_e) {
+    throw new Error("Current window URL is invalid for OAuth sign-in.");
+  }
+  if (redirectUrl.protocol !== "http:" && redirectUrl.protocol !== "https:") {
+    throw new Error("Google sign-in requires an http(s) origin (current: " + redirectUrl.protocol + ").");
+  }
+  return redirectUrl;
+}
+
+// Prefetch authorized domains silently so domain validation runs synchronously at click time
+loadAuthorizedDomains();
 
 function loadGis() {
   if (window.google && window.google.accounts && window.google.accounts.oauth2) {
@@ -2922,7 +3240,7 @@ function loadGis() {
   return gisLoadPromise;
 }
 
-// Preload GIS script silently so clicking Sign in can open the OAuth popup synchronously within the user gesture
+// Preload GIS script silently so fallback/GIS token requests stay synchronous inside user gestures
 loadGis().catch(() => {});
 
 async function resolveCalendarEmail(token) {
@@ -2937,6 +3255,44 @@ async function resolveCalendarEmail(token) {
     return primary && primary.id ? String(primary.id) : "";
   } catch (e) {
     return "";
+  }
+}
+
+async function verifyCalendarTokenScopes(token) {
+  if (!token || typeof token !== "string") {
+    throw new Error("Google did not return a calendar access token. Please allow Calendar access when signing in.");
+  }
+  try {
+    const res = await fetch("https://oauth2.googleapis.com/tokeninfo", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "access_token=" + encodeURIComponent(token)
+    });
+    if (res.status === 400 || res.status === 401) {
+      throw new Error("Google returned an invalid or expired access token. Please try signing in again.");
+    }
+    if (!res.ok) return true;
+    const info = await res.json();
+    if (info && info.expires_in !== undefined && Number(info.expires_in) <= 0) {
+      throw new Error("Google returned an invalid or expired access token. Please try signing in again.");
+    }
+    if (info && typeof info.scope === "string") {
+      const granted = new Set(info.scope.split(/\s+/).filter(Boolean));
+      const hasWriteEvents = granted.has("https://www.googleapis.com/auth/calendar.events") ||
+        granted.has("https://www.googleapis.com/auth/calendar");
+      const hasCalList = granted.has("https://www.googleapis.com/auth/calendar.calendarlist.readonly") ||
+        granted.has("https://www.googleapis.com/auth/calendar.readonly") ||
+        granted.has("https://www.googleapis.com/auth/calendar");
+      if (!granted.size || !hasWriteEvents || !hasCalList) {
+        throw new Error("Google sign-in succeeded, but Google Calendar permissions were not granted. Please check all Calendar access boxes when signing in.");
+      }
+    }
+    return true;
+  } catch (err) {
+    if (err && /Calendar permissions|invalid or expired|did not return/i.test(String(err.message || ""))) {
+      throw err;
+    }
+    return true;
   }
 }
 
@@ -2964,7 +3320,7 @@ function runGisTokenRequest(oauth2) {
           settled = true;
           const typ = err && err.type ? String(err.type) : "";
           if (typ === "popup_closed") reject(new Error("Sign-in window was closed before finishing."));
-          else if (typ === "popup_failed_to_open") reject(new Error("Sign-in popup was blocked by the browser. Allow popups for this site and try again."));
+          else if (typ === "popup_failed_to_open") reject(new Error("Sign-in popup was blocked by the browser. Allow popups for this site and click Sign in with Google again."));
           else reject(new Error((err && err.message) || "Google sign-in could not complete in this window."));
         }
       });
@@ -2985,34 +3341,6 @@ function gisSignIn() {
   return loadGis().then((oauth2) => runGisTokenRequest(oauth2));
 }
 
-const activeOp = { done: true, rejected: false, win: null };
-
-class SafePopupRedirectResolver extends browserPopupRedirectResolver {
-  async _openPopup(a, p, t, ev) {
-    const w = await super._openPopup(a, p, t, ev);
-    activeOp.win = w;
-    return w;
-  }
-  _originValidation(a) {
-    return Promise.resolve(super._originValidation(a)).catch((err) => {
-      if (activeOp.done || activeOp.rejected || !activeOp.win || !activeOp.win.window || activeOp.win.window.closed) return;
-      activeOp.rejected = true;
-      throw err;
-    });
-  }
-  _isIframeWebStorageSupported(a, cb) {
-    try {
-      return super._isIframeWebStorageSupported(a, (ok) => {
-        if (activeOp.done || (!ok && activeOp.rejected)) return;
-        if (!ok) activeOp.rejected = true;
-        cb(ok);
-      });
-    } catch (_err) {
-      // Guard against Firebase 11.6.1 throwing internal-error after webStorageSupport callback
-    }
-  }
-}
-
 async function safeFirebasePopupSignIn() {
   activeOp.done = false;
   activeOp.rejected = false;
@@ -3027,8 +3355,14 @@ async function safeFirebasePopupSignIn() {
 onAuthStateChanged(auth, (user) => {
   if (user) {
     currentUser = { uid: user.uid, email: user.email || "", displayName: user.displayName || "" };
-  } else if (!cachedAccessToken) {
-    currentUser = null;
+  } else {
+    if (tokenSource === "firebase") {
+      cachedAccessToken = null;
+      tokenSource = null;
+    }
+    if (!cachedAccessToken) {
+      currentUser = null;
+    }
   }
   notifyListeners();
 });
@@ -3042,63 +3376,116 @@ window.__gcalAuth = {
   },
   getUser() { return currentUser; },
   getToken() { return cachedAccessToken; },
-  clearToken() { cachedAccessToken = null; },
+  clearToken() {
+    cachedAccessToken = null;
+    tokenSource = null;
+  },
   signIn() {
     if (inFlightSignIn) return inFlightSignIn;
-    const isDesktopOrLocalhost = !!(window.missionDesktop || location.hostname === "localhost");
+    validateOAuthConfigAndRedirect();
+    const initialDomainAllowed = isOriginMatchingDomainList(cachedAuthorizedDomains);
+    const isLocalHost = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+    const buildUnauthorizedError = () => {
+      if (location.hostname === "127.0.0.1") {
+        return new Error("This local address (127.0.0.1) is not in Firebase Authorized Domains. Add \"localhost\" to Firebase Authentication Authorized Domains and open http://localhost:" + (location.port || "3000") + ", use the hosted web URL, or paste your Secret iCal (.ics) URL below.");
+      }
+      if (location.hostname === "localhost" || window.missionDesktop) {
+        return new Error("This local domain (" + location.hostname + ") is not listed under Firebase Authorized Domains for project " + firebaseConfig.projectId + ". Add \"localhost\" in Firebase Console -> Authentication -> Settings -> Authorized domains, or paste your Secret iCal (.ics) URL below.");
+      }
+      return new Error("This origin (" + location.origin + ") is not listed under Firebase Authorized Domains. Open in an authorized browser tab or paste your Google Calendar Secret iCal address below.");
+    };
     const formatFbErr = (err) => {
       const code = err && err.code ? String(err.code) : "";
       if (code === "auth/popup-blocked") return new Error("Sign-in popup was blocked by the browser. Allow popups for this site and try again.");
       if (code === "auth/popup-closed-by-user") return new Error("Sign-in window was closed before finishing.");
       if (code === "auth/cancelled-popup-request") return new Error("Previous sign-in was cancelled. Please try again.");
       if (code === "auth/web-storage-unsupported") return new Error("Browser storage is blocked in this embedded frame. Open in a normal browser tab or paste your Google Calendar Secret iCal address below.");
-      if (code === "auth/unauthorized-domain") {
-        if (location.hostname === "127.0.0.1") {
-          const localhostUrl = location.protocol + "//localhost" + (location.port ? ":" + location.port : "");
-          return new Error("Google Sign-In requires localhost instead of 127.0.0.1. Open " + localhostUrl + " (or update the Windows app build) or paste your Secret iCal URL below.");
-        }
-        return new Error("This domain (" + location.host + ") is not authorized for OAuth sign-in. Open in a normal browser tab or paste your Google Calendar Secret iCal address below.");
-      }
+      if (code === "auth/bad-request") return new Error("Google sign-in request was rejected for this window (" + location.origin + "). Open in a normal browser tab or paste your Google Calendar Secret iCal address below.");
+      if (code === "auth/unauthorized-domain") return buildUnauthorizedError();
       return err;
     };
-    const finishFirebaseResult = (result) => {
+    const finishFirebaseResult = async (result) => {
       const credential = GoogleAuthProvider.credentialFromResult(result);
-      cachedAccessToken = credential && credential.accessToken ? credential.accessToken : null;
-      if (!cachedAccessToken) throw new Error("Google did not return a calendar access token. Please allow Calendar access when signing in.");
+      const token = credential && credential.accessToken ? credential.accessToken : null;
+      try {
+        await verifyCalendarTokenScopes(token);
+      } catch (scopeErr) {
+        cachedAccessToken = null;
+        tokenSource = null;
+        try { await signOut(auth); } catch (_e) {}
+        throw scopeErr;
+      }
+      cachedAccessToken = token;
+      tokenSource = "firebase";
+      preferGisOnRetry = false;
       currentUser = result.user ? { uid: result.user.uid, email: result.user.email || "", displayName: result.user.displayName || "" } : currentUser;
       notifyListeners();
       return { token: cachedAccessToken, user: currentUser };
     };
     const finishGisToken = async (token) => {
+      await verifyCalendarTokenScopes(token);
       cachedAccessToken = token;
+      tokenSource = "gis";
       const email = await resolveCalendarEmail(token);
       currentUser = { uid: "", email: email || (currentUser && currentUser.email) || "", displayName: "" };
       notifyListeners();
       return { token: cachedAccessToken, user: currentUser };
     };
-    inFlightSignIn = (async () => {
-      if (isDesktopOrLocalhost) {
-        try {
-          const result = await safeFirebasePopupSignIn();
-          return finishFirebaseResult(result);
-        } catch (err) {
-          throw formatFbErr(err);
-        }
-      }
+    const runGisFallback = async (fbErr) => {
+      preferGisOnRetry = true;
       try {
         const token = await gisSignIn();
         return await finishGisToken(token);
       } catch (gisErr) {
-        const msg = gisErr && gisErr.message ? String(gisErr.message) : "";
-        if (msg !== "gis-unavailable") {
-          throw gisErr;
+        const gMsg = gisErr && gisErr.message ? String(gisErr.message) : "";
+        if (gMsg === "gis-unavailable" && fbErr) throw formatFbErr(fbErr);
+        throw gisErr;
+      }
+    };
+    inFlightSignIn = (async () => {
+      let domainAllowed = initialDomainAllowed;
+      if (domainAllowed === null && isLocalHost) {
+        const domains = await Promise.race([
+          loadAuthorizedDomains(),
+          new Promise((resolve) => setTimeout(() => resolve(null), 1500))
+        ]);
+        domainAllowed = isOriginMatchingDomainList(domains);
+      }
+      if (domainAllowed === false) {
+        if (!isLocalHost && location.protocol === "https:" && window.google && window.google.accounts && window.google.accounts.oauth2) {
+          try {
+            const token = await gisSignIn();
+            return await finishGisToken(token);
+          } catch (_gisErr) {
+            throw buildUnauthorizedError();
+          }
+        }
+        throw buildUnauthorizedError();
+      }
+      if (domainAllowed === null && isLocalHost) {
+        throw buildUnauthorizedError();
+      }
+      if (location.protocol === "https:") {
+        if (preferGisOnRetry) {
+          return await runGisFallback(null);
         }
         try {
           const result = await safeFirebasePopupSignIn();
-          return finishFirebaseResult(result);
+          return await finishFirebaseResult(result);
         } catch (err) {
-          throw formatFbErr(err);
+          const code = err && err.code ? String(err.code) : "";
+          const canTryGis = code === "auth/web-storage-unsupported" || code === "auth/bad-request" || code === "auth/internal-error";
+          if (!canTryGis) {
+            throw formatFbErr(err);
+          }
+          return await runGisFallback(err);
         }
+      }
+      try {
+        const result = await safeFirebasePopupSignIn();
+        return await finishFirebaseResult(result);
+      } catch (err) {
+        throw formatFbErr(err);
       }
     })().finally(() => {
       inFlightSignIn = null;
@@ -3108,6 +3495,7 @@ window.__gcalAuth = {
   async signOut() {
     const prevTok = cachedAccessToken;
     cachedAccessToken = null;
+    tokenSource = null;
     currentUser = null;
     try {
       if (prevTok && window.google && window.google.accounts && window.google.accounts.oauth2 && typeof window.google.accounts.oauth2.revoke === "function") {
@@ -3320,6 +3708,55 @@ window.__gcalAuth = {
     if (isPinKey(k)) { var p = pinById(k.slice(2)); if (p) return { n: p.name, x: p.x, y: p.y }; }
     return PLACES.home;
   }
+  var PIN_STYLES = {
+    "": { label: "Default", short: "Default", stroke: "", fill: "" },
+    "auto": { label: "Auto (mission priority)", short: "Auto", stroke: "", fill: "" },
+    "prio-high": { label: "Priority: High", short: "High", stroke: "#c4382b", fill: "rgba(196, 56, 43, .26)" },
+    "prio-med": { label: "Priority: Medium", short: "Medium", stroke: "#c47a00", fill: "rgba(196, 122, 0, .24)" },
+    "prio-low": { label: "Priority: Low", short: "Low", stroke: "#2e7d32", fill: "rgba(46, 125, 50, .24)" },
+    "cat-errand": { label: "Category: Errand", short: "Errand", stroke: "#039be5", fill: "rgba(3, 155, 229, .24)" },
+    "cat-home": { label: "Category: Home", short: "Home", stroke: "#33b679", fill: "rgba(51, 182, 121, .24)" },
+    "cat-work": { label: "Category: Work", short: "Work", stroke: "#3f51b5", fill: "rgba(63, 81, 181, .24)" },
+    "cat-health": { label: "Category: Health", short: "Health", stroke: "#8e24aa", fill: "rgba(142, 36, 170, .24)" },
+    "cat-leisure": { label: "Category: Leisure", short: "Leisure", stroke: "#f4511e", fill: "rgba(244, 81, 30, .24)" },
+    "custom": { label: "Custom color", short: "Custom", stroke: "#039be5", fill: "rgba(3, 155, 229, .24)" }
+  };
+  var PIN_SWATCHES = ["#c4382b", "#c47a00", "#2e7d32", "#039be5", "#3f51b5", "#8e24aa", "#f4511e", "#4a4e52"];
+  function hexToRgba(hex, a) {
+    if (typeof hex !== "string" || !/^#[0-9a-f]{6}$/i.test(hex)) return "";
+    var r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+    return "rgba(" + r + ", " + g + ", " + b + ", " + (a == null ? 0.25 : a) + ")";
+  }
+  function resolvePinAppearance(p, mineList) {
+    if (!p) return { stroke: "", fill: "", active: false, label: "Default" };
+    var m = p.mode || "";
+    if (m === "custom" && /^#[0-9a-f]{6}$/i.test(p.color || "")) {
+      return { stroke: p.color, fill: hexToRgba(p.color, 0.26), active: true, label: "Custom" };
+    }
+    if (m === "auto") {
+      var k = "p:" + p.id, src = Array.isArray(mineList) ? mineList : (typeof cur === "function" ? cur() : []);
+      var best = 0;
+      for (var i = 0; i < src.length; i++) {
+        var it = src[i];
+        if (!it.done && it.place === k) {
+          var rk = PRIO_RANK[cleanPriority(it.priority)] || 2;
+          if (rk > best) best = rk;
+        }
+      }
+      var autoKey = best === 3 ? "prio-high" : best === 2 ? "prio-med" : best === 1 ? "prio-low" : "";
+      if (autoKey && PIN_STYLES[autoKey]) {
+        return { stroke: PIN_STYLES[autoKey].stroke, fill: PIN_STYLES[autoKey].fill, active: true, label: "Auto (" + PIN_STYLES[autoKey].short + ")" };
+      }
+      return { stroke: "", fill: "", active: false, label: "Auto" };
+    }
+    if (m && PIN_STYLES[m] && PIN_STYLES[m].stroke) {
+      return { stroke: PIN_STYLES[m].stroke, fill: PIN_STYLES[m].fill, active: true, label: PIN_STYLES[m].short };
+    }
+    if (!m && /^#[0-9a-f]{6}$/i.test(p.color || "")) {
+      return { stroke: p.color, fill: hexToRgba(p.color, 0.26), active: true, label: "Custom" };
+    }
+    return { stroke: "", fill: "", active: false, label: "Default" };
+  }
   function cleanPins(a) {
     var out = [];
     if (!Array.isArray(a)) return out;
@@ -3327,7 +3764,9 @@ window.__gcalAuth = {
       if (!p || typeof p.id !== "string" || !p.id) return;
       var x = Number(p.x), y = Number(p.y);
       if (!isFinite(x) || !isFinite(y)) return;
-      out.push({ id: p.id.slice(0, 20), name: str(p.name, 24) || "Pin", x: Math.max(8, Math.min(392, x)), y: Math.max(14, Math.min(286, y)) });
+      var mode = (typeof p.mode === "string" && Object.prototype.hasOwnProperty.call(PIN_STYLES, p.mode)) ? p.mode : "";
+      var color = (typeof p.color === "string" && /^#[0-9a-f]{6}$/i.test(p.color)) ? p.color.toLowerCase() : "";
+      out.push({ id: p.id.slice(0, 20), name: str(p.name, 24) || "Pin", x: Math.max(8, Math.min(392, x)), y: Math.max(14, Math.min(286, y)), mode: mode, color: color });
     });
     return out;
   }
@@ -3716,30 +4155,125 @@ window.__gcalAuth = {
       clearInterval(yhTimer); yhTimer = null;
     }
   }
+  var pinMapAnim = { raf: 0, triggerKey: null };
+  function startMapPinSpin(g) {
+    if (!g || isReduced()) return;
+    var spinEl = g.querySelector ? g.querySelector(".pin-sprite-spin") : null;
+    var frontImg = g.querySelector ? g.querySelector(".pin-face.front") : null;
+    var backImg = g.querySelector ? g.querySelector(".pin-face.back") : null;
+    if (!spinEl || !frontImg || !backImg) return;
+    if (pinMapAnim.raf) { cancelAnimationFrame(pinMapAnim.raf); pinMapAnim.raf = 0; }
+    var dur = 620, t0 = performance.now(), showingBack = false;
+    spinEl.style.transformOrigin = "center center";
+    function step(now) {
+      var p = Math.min(1, Math.max(0, (now - t0) / dur));
+      var u = 1 - Math.pow(1 - p, 2.8);
+      var theta = u * Math.PI * 2;
+      var cosT = Math.cos(theta);
+      var wantBack = cosT < 0;
+      var sx = Math.abs(cosT);
+      if (wantBack !== showingBack) {
+        sx = 0;
+        showingBack = wantBack;
+        frontImg.setAttribute("visibility", showingBack ? "hidden" : "visible");
+        backImg.setAttribute("visibility", showingBack ? "visible" : "hidden");
+      }
+      var br = 0.70 + 0.30 * Math.pow(sx, 0.75);
+      var sy = 1 + (1 - sx) * 0.045;
+      var skewDeg = -Math.sin(2 * theta) * 5.5;
+      spinEl.style.transform = "perspective(420px) scaleX(" + sx.toFixed(4) + ") scaleY(" + sy.toFixed(4) + ") skewY(" + skewDeg.toFixed(2) + "deg)";
+      spinEl.style.filter = "brightness(" + br.toFixed(3) + ")";
+      if (p < 1) {
+        pinMapAnim.raf = requestAnimationFrame(step);
+      } else {
+        pinMapAnim.raf = 0;
+        frontImg.setAttribute("visibility", "visible");
+        backImg.setAttribute("visibility", "hidden");
+        spinEl.style.transform = "";
+        spinEl.style.filter = "";
+      }
+    }
+    pinMapAnim.raf = requestAnimationFrame(step);
+  }
   function renderPins(mine) {
+    if (pinMapAnim.raf) { cancelAnimationFrame(pinMapAnim.raf); pinMapAnim.raf = 0; }
     var layer = $("pinLayer"), act = document.activeElement, focusKey = act && act.getAttribute ? act.getAttribute("data-p") : null;
     layer.innerHTML = "";
+    var defSmile = opts.pinAlt ? "pins/alt-smile.webp" : "pins/base-smile.png";
+    var defEvil = opts.pinAlt ? "pins/alt-evil.webp" : "pins/base-evil.png";
+    var customMapPin = mediaUrl("i:pinMap");
+    var smilePinUrl = customMapPin || mediaUrl("i:pinSmile") || mediaUrl("i:appSmile") || defSmile;
+    var evilPinUrl = customMapPin || mediaUrl("i:pinEvil") || mediaUrl("i:appEvil") || defEvil;
+    var hasCustomPin = !!(customMapPin || mediaUrl(evil ? "i:pinEvil" : "i:pinSmile") || mediaUrl(evil ? "i:appEvil" : "i:appSmile"));
+    var frontUrl = evil ? evilPinUrl : smilePinUrl;
+    var backUrl = evil ? smilePinUrl : evilPinUrl;
+    var spinTargetEl = null;
     pins.forEach(function (p) {
       var k = "p:" + p.id;
-      var cls = "place pin" + (filter === k ? " sel" : "") + (geofences[k] ? " has-geo" : "") + (geoInside[k] ? " in-geo" : "");
-      var g = svgEl("g", { "class": cls, "data-p": k, tabindex: 0, role: "button", "aria-label": p.name, transform: "translate(" + p.x + " " + p.y + ")" });
+      var app = resolvePinAppearance(p, mine);
+      var cls = "place pin" + (app.active ? " pin-colored" : "") + (filter === k ? " sel" : "") + (geofences[k] ? " has-geo" : "") + (geoInside[k] ? " in-geo" : "");
+      var g = svgEl("g", { "class": cls, "data-p": k, tabindex: 0, role: "button", "aria-label": p.name + (app.active ? " (" + app.label + ")" : ""), transform: "translate(" + p.x + " " + p.y + ")" });
+      if (app.active) {
+        g.style.setProperty("--pin-stroke", app.stroke);
+        g.style.setProperty("--pin-fill", app.fill);
+      }
       g.appendChild(svgEl("circle", { "class": "gf-ring", r: gfRingRadius(24, k) }));
-      g.appendChild(svgEl("circle", { "class": "ring", r: 22 }));
+      var ringAttrs = { "class": "ring", r: 22 };
+      if (app.active) ringAttrs.stroke = app.stroke;
+      g.appendChild(svgEl("circle", ringAttrs));
       var hit = svgEl("circle", { r: 24, fill: "transparent" }); g.appendChild(hit);
-      var piu = mediaUrl("i:pinMap") || mediaUrl(evil ? "i:pinEvil" : "i:pinSmile") || mediaUrl(evil ? "i:appEvil" : "i:appSmile");
-      if (piu) g.appendChild(svgEl("image", { href: piu, x: -12, y: -28, width: 24, height: 30, preserveAspectRatio: "xMidYMid meet" }));
-      else g.appendChild(svgEl("use", { href: evil ? "#pinEvil" : "#pinSmile", transform: "translate(-10 -25.8) scale(.4167)" }));
+      if (hasCustomPin) {
+        var anch = svgEl("g", { "class": "pin-sprite-anchor", transform: "translate(0 -13)" });
+        var spinG = svgEl("g", { "class": "pin-sprite-spin" });
+        spinG.appendChild(svgEl("rect", {
+          "class": "pin-color-disc",
+          x: -13.5, y: -16.5, width: 27, height: 33, rx: 6,
+          fill: app.active ? app.fill : "transparent",
+          stroke: app.active ? app.stroke : "none",
+          "stroke-width": 2
+        }));
+        spinG.appendChild(svgEl("image", { "class": "pin-face front", href: frontUrl, x: -12, y: -15, width: 24, height: 30, preserveAspectRatio: "xMidYMid meet" }));
+        spinG.appendChild(svgEl("image", { "class": "pin-face back", href: backUrl, x: -12, y: -15, width: 24, height: 30, preserveAspectRatio: "xMidYMid meet", visibility: "hidden" }));
+        anch.appendChild(spinG);
+        g.appendChild(anch);
+      } else {
+        var ndl = svgEl("g", { "class": "pin-needle", transform: "translate(-10 -25.8) scale(.4167)" });
+        ndl.appendChild(svgEl("ellipse", { cx: 31, cy: 61.5, rx: 11, ry: 2.6, fill: "#000", opacity: ".3", filter: "url(#pinBlur)" }));
+        var shaftAttrs = { d: "M22.4 38 L25.6 38 L24.5 62 L23.5 62 Z", fill: "url(#gMetal)" };
+        if (app.active) { shaftAttrs.stroke = app.stroke; shaftAttrs["stroke-width"] = 0.9; }
+        ndl.appendChild(svgEl("path", shaftAttrs));
+        var colAttrs = { "class": "pin-collar", cx: 24, cy: 38, rx: 6.4, ry: 2.3, fill: app.active ? app.stroke : "url(#gMetal)" };
+        if (app.active) { colAttrs.stroke = "#111"; colAttrs["stroke-width"] = 0.9; }
+        ndl.appendChild(svgEl("ellipse", colAttrs));
+        g.appendChild(ndl);
+        var anch2 = svgEl("g", { "class": "pin-sprite-anchor", transform: "translate(0 -16.63)" });
+        var spinG2 = svgEl("g", { "class": "pin-sprite-spin" });
+        spinG2.appendChild(svgEl("circle", {
+          "class": "pin-color-disc",
+          cx: 0, cy: 0, r: 9.4,
+          fill: app.active ? app.fill : "transparent",
+          stroke: app.active ? app.stroke : "none",
+          "stroke-width": 2.1
+        }));
+        spinG2.appendChild(svgEl("image", { "class": "pin-face front", href: frontUrl, x: -7.71, y: -7.71, width: 15.42, height: 15.42, preserveAspectRatio: "xMidYMid meet" }));
+        spinG2.appendChild(svgEl("image", { "class": "pin-face back", href: backUrl, x: -7.71, y: -7.71, width: 15.42, height: 15.42, preserveAspectRatio: "xMidYMid meet", visibility: "hidden" }));
+        anch2.appendChild(spinG2);
+        g.appendChild(anch2);
+      }
       var tx = svgEl("text", { "class": "plabel", y: 13 }); tx.textContent = p.name; g.appendChild(tx);
       var b = svgEl("g", { "class": "badge", transform: "translate(12 -26)" });
       var open = mine.filter(function (i) { return i.place === k && !i.done; }).length, all = mine.filter(function (i) { return i.place === k; }).length;
       b.innerHTML = stampHTML(open, all, k);
       g.appendChild(b);
       layer.appendChild(g);
+      if (pinMapAnim.triggerKey === k) spinTargetEl = g;
     });
     if (focusKey && isPinKey(focusKey)) { var f = layer.querySelector('[data-p="' + focusKey + '"]'); if (f && f.focus) f.focus(); }
     var tl = $("tempLayer"); tl.innerHTML = "";
     if (tempPin) tl.appendChild(svgEl("circle", { "class": "temp", cx: tempPin.x, cy: tempPin.y, r: 12 }));
     renderYouHere();
+    if (spinTargetEl) { pinMapAnim.triggerKey = null; startMapPinSpin(spinTargetEl); }
+    else pinMapAnim.triggerKey = null;
   }
 
   /* ---------- rows ---------- */
@@ -3896,6 +4430,51 @@ window.__gcalAuth = {
   ];
   var PR_NOTE = { A: "The aim is not to make the thought funny or to shrink it; it is to loosen its automatic hold and meaning.", B: "", C: "", D: "" };
   var PR_GROUP = { A: "Words and sounds", B: "Thought and action", C: "A different frame", D: "Outside of you" };
+  var PR_FEEDBACK_KEY = "mission-map-pr-feedback";
+  var PR_RATE_LABELS = ["", "1/5 · Didn't help", "2/5 · Slight help", "3/5 · Okay", "4/5 · Worked well", "5/5 · Works great"];
+  function prFbLoad() {
+    var out = {};
+    try {
+      var raw = JSON.parse(localStorage.getItem(PR_FEEDBACK_KEY) || "null");
+      if (raw && typeof raw === "object") {
+        Object.keys(raw).forEach(function (k) {
+          var v = raw[k];
+          if (!v || typeof v !== "object") return;
+          var r = parseInt(v.rating, 10);
+          out[k] = {
+            rating: (r >= 1 && r <= 5) ? r : 0,
+            note: typeof v.note === "string" ? v.note.slice(0, 600) : "",
+            updatedAt: isFinite(v.updatedAt) ? Number(v.updatedAt) : 0
+          };
+        });
+      }
+    } catch (e) {}
+    return out;
+  }
+  function prFbSave(map) { try { localStorage.setItem(PR_FEEDBACK_KEY, JSON.stringify(map)); } catch (e) {} }
+  function prFbKey(idx) { return (PRACTICE[idx] && PRACTICE[idx][1]) ? PRACTICE[idx][1] : String(idx); }
+  function prGetFeedback(idx) {
+    var map = prFbLoad(), k = prFbKey(idx), rec = map[k] || map[String(idx)];
+    return rec ? { rating: rec.rating || 0, note: rec.note || "", updatedAt: rec.updatedAt || 0 } : { rating: 0, note: "", updatedAt: 0 };
+  }
+  function prSetRating(idx, val) {
+    var map = prFbLoad(), k = prFbKey(idx), cur = map[k] || { rating: 0, note: "", updatedAt: 0 };
+    var nextRating = (val >= 1 && val <= 5) ? (cur.rating === val ? 0 : val) : 0;
+    cur.rating = nextRating;
+    cur.updatedAt = Date.now();
+    if (!cur.rating && !cur.note) delete map[k]; else map[k] = cur;
+    prFbSave(map);
+    if (nextRating > 0) logEv("r", idx, Date.now(), nextRating);
+    return nextRating;
+  }
+  function prSetNote(idx, text) {
+    var map = prFbLoad(), k = prFbKey(idx), cur = map[k] || { rating: 0, note: "", updatedAt: 0 };
+    cur.note = String(text || "").trim().slice(0, 600);
+    cur.updatedAt = Date.now();
+    if (!cur.rating && !cur.note) delete map[k]; else map[k] = cur;
+    prFbSave(map);
+    return cur;
+  }
   function prState() {
     var d = new Date(), key = d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(), s = null;
     try { s = JSON.parse(localStorage.getItem("mission-map-practice")); } catch (e) {}
@@ -3915,18 +4494,49 @@ window.__gcalAuth = {
   }
   function prStats() {
     var g = { A: [0, 0, 0], B: [0, 0, 0], C: [0, 0, 0], D: [0, 0, 0] }, ex = PRACTICE.map(function () { return [0, 0, 0, 0]; }), tot = 0;
+    var gRate = { A: { sum: 0, count: 0, avg: 0 }, B: { sum: 0, count: 0, avg: 0 }, C: { sum: 0, count: 0, avg: 0 }, D: { sum: 0, count: 0, avg: 0 } };
     logGet().forEach(function (r) {
       var i = parseInt(r[2], 10), k = { s: 0, p: 1, k: 2 }[r[1]]; if (k === undefined || !(i >= 0 && i < PRACTICE.length)) return;
       g[PRACTICE[i][0]][k]++; ex[i][k]++; if (k === 0) ex[i][3] = Math.max(ex[i][3], r[0]); if (k > 0) tot++;
     });
-    return { g: g, ex: ex, signals: tot };
+    var fbMap = prFbLoad(), rated = [], notedCount = 0;
+    PRACTICE.forEach(function (p, i) {
+      var rec = fbMap[p[1]] || fbMap[String(i)];
+      if (!rec) return;
+      if (rec.note) notedCount++;
+      if (rec.rating > 0) {
+        var gr = gRate[p[0]];
+        gr.sum += rec.rating;
+        gr.count++;
+        rated.push({ idx: i, group: p[0], title: p[1], rating: rec.rating, note: rec.note || "", updatedAt: rec.updatedAt || 0 });
+      } else if (rec.note) {
+        rated.push({ idx: i, group: p[0], title: p[1], rating: 0, note: rec.note, updatedAt: rec.updatedAt || 0 });
+      }
+    });
+    ["A", "B", "C", "D"].forEach(function (k) {
+      if (gRate[k].count > 0) gRate[k].avg = gRate[k].sum / gRate[k].count;
+    });
+    rated.sort(function (a, b) {
+      if (b.rating !== a.rating) return b.rating - a.rating;
+      if ((b.note ? 1 : 0) !== (a.note ? 1 : 0)) return (b.note ? 1 : 0) - (a.note ? 1 : 0);
+      return b.updatedAt - a.updatedAt;
+    });
+    var ratedOnlyCount = rated.filter(function (x) { return x.rating > 0; }).length;
+    return { g: g, ex: ex, signals: tot, gRate: gRate, rated: rated, ratedCount: ratedOnlyCount, notedCount: notedCount };
   }
   function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-  /* weighted by how often you actually try each kind, steady through the day, avoids exercises shown in the last 6 days */
+  /* weighted by how often you actually try each kind + user ratings, steady through the day, avoids exercises shown in the last 6 days */
   function prTailored(day, skip) {
-    var st = prStats(); if (st.signals < 5) return -1;
+    var st = prStats(); if (st.signals < 5 && st.ratedCount < 2) return -1;
+    var fbMap = prFbLoad();
     var rnd = mulberry(day * 97 + skip * 7919 + 13), w = PRACTICE.map(function (p, i) {
-      var q = st.g[p[0]], score = (q[1] + 1) / (q[1] + q[2] + 2), x = score;
+      var q = st.g[p[0]], gr = st.gRate[p[0]];
+      var tryScore = (q[1] + 1) / (q[1] + q[2] + 2);
+      var rateFactor = gr.count > 0 ? (0.65 + (gr.avg / 5) * 0.85) : 1;
+      var x = tryScore * rateFactor;
+      var fb = fbMap[p[1]] || fbMap[String(i)];
+      if (fb && fb.rating >= 4) x *= (fb.rating === 5 ? 1.85 : 1.4);
+      else if (fb && fb.rating > 0 && fb.rating <= 2) x *= (fb.rating === 1 ? 0.2 : 0.45);
       if (Date.now() - st.ex[i][3] < 6 * 864e5 && st.ex[i][3]) x *= 0.2;
       if (st.ex[i][2] >= 2 && st.ex[i][1] === 0) x *= 0.3;
       return x;
@@ -3949,15 +4559,26 @@ window.__gcalAuth = {
     var i = prPinned();
     if (!opts.practiceOn || i < 0) { n.hidden = true; return; }
     n.hidden = false; n.innerHTML = "";
-    var k = document.createElement("div"); k.className = "mn-kicker"; k.textContent = "Remember: " + PRACTICE[i][1];
-    var tx = document.createElement("div"); tx.className = "mn-text"; tx.textContent = PRACTICE[i][2];
+    var fb = prGetFeedback(i);
+    var k = document.createElement("div"); k.className = "mn-kicker";
+    k.textContent = "Remember: " + PRACTICE[i][1] + (fb.rating ? (" · ★ " + fb.rating + "/5") : "");
+    var tx = document.createElement("div"); tx.className = "mn-text";
+    tx.textContent = PRACTICE[i][2] + (fb.note ? ("\nNote to self: " + fb.note) : "");
     n.appendChild(k); n.appendChild(tx);
+  }
+  function prPickOptionLabel(q, k, fbMap) {
+    var fb = fbMap[q[1]] || fbMap[String(k)];
+    var tag = "";
+    if (fb && fb.rating > 0) tag += " · ★" + fb.rating;
+    if (fb && fb.note) tag += " · note";
+    return q[0] + ". " + q[1] + tag;
   }
   function renderPractice() {
     var box = $("practice"); if (!box) return;
     renderMapNote();
     if (!opts.practiceOn) { box.hidden = true; return; }
     var s = prState(), idx = prToday(s), p = PRACTICE[idx], pinned = prPinned() === idx;
+    var fb = prGetFeedback(idx), ps = prStats();
     if ((s.shown || []).indexOf(idx) < 0) { s.shown = (s.shown || []).concat([idx]); prSave(s); logEv("s", idx); }
     box.hidden = false; box.className = "practice" + (s.done ? " done" : "") + (pinned ? " pinned" : "");
     box.innerHTML = "";
@@ -3966,7 +4587,7 @@ window.__gcalAuth = {
     h.appendChild(el("span", "pr-group", PR_GROUP[p[0]])); box.appendChild(h);
     box.appendChild(el("h3", "pr-title", p[1])); box.appendChild(el("p", "pr-text", p[2]));
     if (PR_NOTE[p[0]]) box.appendChild(el("p", "pr-note", PR_NOTE[p[0]]));
-    if (opts.practiceTailor && s.pick === null && prTailored(0, 0) >= 0) box.appendChild(el("p", "pr-note", "Picked for you, based on the exercises you actually try."));
+    if (opts.practiceTailor && s.pick === null && prTailored(0, 0) >= 0) box.appendChild(el("p", "pr-note", "Picked for you, based on your ratings and the exercises you try."));
     var row = el("div", "pr-row");
     var dn = el("button", "btn" + (s.done ? "" : " ghost"), s.done ? "Done today" : "I tried it"); dn.type = "button";
     dn.setAttribute("aria-pressed", String(!!s.done));
@@ -3975,10 +4596,142 @@ window.__gcalAuth = {
     pn.setAttribute("aria-pressed", String(pinned));
     pn.addEventListener("click", function () { try { if (prPinned() === idx) localStorage.removeItem("mission-map-pin"); else localStorage.setItem("mission-map-pin", String(idx)); } catch (e) {} renderPractice(); fx("click"); });
     row.appendChild(dn); row.appendChild(pn); box.appendChild(row);
+
+    /* rating (1-5 stars) to discover which mind tricks work best */
+    var rateBox = el("div", "pr-rate-box");
+    rateBox.appendChild(el("span", "pr-rate-lbl", "How well did it work?"));
+    var starsWrap = el("div", "pr-stars");
+    starsWrap.setAttribute("role", "group");
+    starsWrap.setAttribute("aria-label", "Rate this mind trick from 1 to 5 stars");
+    var rateTxt = el("span", "pr-rate-txt");
+    function paintStars(curR) {
+      var btns = starsWrap.querySelectorAll(".pr-star");
+      for (var bi = 0; bi < btns.length; bi++) {
+        var sv = bi + 1, on = sv <= curR;
+        btns[bi].classList.toggle("on", on);
+        btns[bi].setAttribute("aria-pressed", String(curR === sv));
+        btns[bi].textContent = on ? "★" : "☆";
+      }
+      rateTxt.textContent = "";
+      if (curR > 0) rateTxt.appendChild(el("strong", null, PR_RATE_LABELS[curR]));
+      else rateTxt.textContent = "Tap 1–5★ to track what works";
+    }
+    for (var rv = 1; rv <= 5; rv++) {
+      (function (starVal) {
+        var sb = el("button", "pr-star");
+        sb.type = "button";
+        sb.setAttribute("aria-label", "Rate " + starVal + " of 5: " + PR_RATE_LABELS[starVal]);
+        sb.title = PR_RATE_LABELS[starVal];
+        sb.addEventListener("click", function () {
+          var nextR = prSetRating(idx, starVal);
+          paintStars(nextR);
+          renderPractice();
+          if (typeof patOpen !== "undefined" && patOpen) renderPatterns();
+          fx("click");
+          toast(nextR ? ("Rated \"" + p[1] + "\" " + nextR + "/5.") : ("Cleared rating for \"" + p[1] + "\"."));
+        });
+        starsWrap.appendChild(sb);
+      })(rv);
+    }
+    paintStars(fb.rating);
+    rateBox.appendChild(starsWrap);
+    rateBox.appendChild(rateTxt);
+    box.appendChild(rateBox);
+
+    /* per-mind-trick Notes to self */
+    var selfBox = el("div", "pr-self-box");
+    var selfHead = el("div", "pr-self-head");
+    var selfLbl = el("label", "", "Notes to self (" + p[1] + ")");
+    selfLbl.setAttribute("for", "prSelfNote");
+    var selfStat = el("span", "pr-self-status", fb.note ? "Saved for this trick" : "Auto-saves per trick");
+    selfHead.appendChild(selfLbl); selfHead.appendChild(selfStat);
+    var selfTa = document.createElement("textarea");
+    selfTa.id = "prSelfNote";
+    selfTa.rows = 2;
+    selfTa.maxLength = 600;
+    selfTa.value = fb.note || "";
+    selfTa.placeholder = "Notes to self for \"" + p[1] + "\": when did it help, what twist worked best...";
+    var selfSaveBtn = el("button", "btn ghost", "Save note");
+    selfSaveBtn.type = "button";
+    var selfDebT = null, lastSavedNote = fb.note || "";
+    function commitSelfNote(doFullRefresh) {
+      clearTimeout(selfDebT);
+      var val = selfTa.value.trim().slice(0, 600);
+      if (val !== lastSavedNote) {
+        prSetNote(idx, val);
+        lastSavedNote = val;
+        selfStat.textContent = val ? "Saved" : "Cleared";
+        renderMapNote();
+        var selEl = $("prPick");
+        if (selEl && selEl.options[idx]) selEl.options[idx].textContent = prPickOptionLabel(PRACTICE[idx], idx, prFbLoad());
+        if (typeof patOpen !== "undefined" && patOpen) renderPatterns();
+      } else {
+        selfStat.textContent = val ? "Saved for this trick" : "Auto-saves per trick";
+      }
+      if (doFullRefresh) renderPractice();
+    }
+    selfTa.addEventListener("input", function () {
+      selfStat.textContent = "Typing...";
+      clearTimeout(selfDebT);
+      selfDebT = setTimeout(function () { commitSelfNote(false); }, 450);
+    });
+    selfTa.addEventListener("blur", function () { commitSelfNote(false); });
+    selfSaveBtn.addEventListener("click", function () {
+      commitSelfNote(true);
+      fx("click");
+      toast(lastSavedNote ? ("Saved note for \"" + p[1] + "\".") : "Cleared note.");
+    });
+    var selfAct = el("div", "pr-self-act");
+    selfAct.appendChild(selfSaveBtn);
+    selfBox.appendChild(selfHead);
+    selfBox.appendChild(selfTa);
+    selfBox.appendChild(selfAct);
+    box.appendChild(selfBox);
+
+    /* "What works best for you" quick ranking across all rated/noted mind tricks */
+    if (ps.rated.length > 0) {
+      var det = document.createElement("details");
+      det.className = "pr-best-box";
+      var sum = document.createElement("summary");
+      var topRated = ps.rated.filter(function (x) { return x.rating > 0; });
+      if (topRated.length > 0) {
+        var best = topRated[0];
+        sum.appendChild(document.createTextNode("What works best for you (" + topRated.length + " rated) · Top: "));
+        sum.appendChild(el("strong", null, best.title + " (" + best.rating + "★)"));
+      } else {
+        sum.appendChild(document.createTextNode("Mind trick notes (" + ps.notedCount + " saved)"));
+      }
+      det.appendChild(sum);
+      var ulBest = el("ul", "pr-best-list");
+      ps.rated.slice(0, 12).forEach(function (item) {
+        var liB = el("li", "pr-best-item");
+        var topB = el("div", "pr-best-top");
+        var jBtn = el("button", "pr-best-btn", item.title + " (" + PR_GROUP[item.group] + ")");
+        jBtn.type = "button";
+        jBtn.addEventListener("click", function () {
+          var q = prState(); q.pick = item.idx; prSave(q); renderPractice(); fx("click");
+        });
+        topB.appendChild(jBtn);
+        topB.appendChild(el("span", "pr-best-score", item.rating ? ("★ " + item.rating + "/5") : "Noted"));
+        liB.appendChild(topB);
+        if (item.note) liB.appendChild(el("div", "pr-best-note", item.note));
+        ulBest.appendChild(liB);
+      });
+      det.appendChild(ulBest);
+      box.appendChild(det);
+    }
+
     var row2 = el("div", "pr-row pr-pick");
     var lb = el("label", "", "Choose one yourself"); lb.setAttribute("for", "prPick");
     var sel = document.createElement("select"); sel.id = "prPick";
-    PRACTICE.forEach(function (q, k) { var o = document.createElement("option"); o.value = String(k); o.textContent = q[0] + ". " + q[1]; if (k === idx) o.selected = true; sel.appendChild(o); });
+    var fbAll = prFbLoad();
+    PRACTICE.forEach(function (q, k) {
+      var o = document.createElement("option");
+      o.value = String(k);
+      o.textContent = prPickOptionLabel(q, k, fbAll);
+      if (k === idx) o.selected = true;
+      sel.appendChild(o);
+    });
     sel.addEventListener("change", function () { var q = prState(); if (!q.done) logEv("k", idx); q.pick = parseInt(this.value, 10); q.done = false; prSave(q); renderPractice(); fx("click"); });
     var an = el("button", "btn ghost", "Another"); an.type = "button";
     an.addEventListener("click", function () { var q = prState(); if (!q.done) logEv("k", idx); if (q.pick !== null) { q.skip = 0; q.pick = (q.pick + 1) % PRACTICE.length; } else q.skip++; q.done = false; prSave(q); renderPractice(); fx("click"); });
@@ -4482,18 +5235,285 @@ window.__gcalAuth = {
       pctTod: pctTod, score: score
     };
   }
+  var SCHED_KEY = "mission-map-prod-sched";
+  var prodSched = { jobs: [], lastSync: 0, lastFiredAt: 0, lastFiredId: "", lastSlotKey: "" };
+  try {
+    var psRaw = JSON.parse(localStorage.getItem(SCHED_KEY) || "null");
+    if (psRaw && typeof psRaw === "object") {
+      if (Array.isArray(psRaw.jobs)) prodSched.jobs = psRaw.jobs;
+      if (isFinite(psRaw.lastSync)) prodSched.lastSync = Number(psRaw.lastSync);
+      if (isFinite(psRaw.lastFiredAt)) prodSched.lastFiredAt = Number(psRaw.lastFiredAt);
+      if (typeof psRaw.lastFiredId === "string") prodSched.lastFiredId = psRaw.lastFiredId;
+      if (typeof psRaw.lastSlotKey === "string") prodSched.lastSlotKey = psRaw.lastSlotKey;
+    }
+  } catch (e) {}
+  var prodTimers = [];
+  function clearProdTimers() {
+    while (prodTimers.length) { clearTimeout(prodTimers.pop()); }
+  }
+  function saveProdSched() {
+    try { localStorage.setItem(SCHED_KEY, JSON.stringify(prodSched)); } catch (e) {}
+  }
+  function isHourInTod(h, def) {
+    return def[1] < def[2] ? (h >= def[1] && h < def[2]) : (h >= def[1] || h < def[2]);
+  }
+  function parseTodStart(label) {
+    var m = /^(\d{2}):(\d{2})/.exec(String(label || ""));
+    return m ? { hour: parseInt(m[1], 10), minute: parseInt(m[2], 10) } : { hour: 9, minute: 0 };
+  }
+  function fmtHm(h, m) {
+    return pad(h) + ":" + pad(m || 0);
+  }
+  function fmtSchedTime(ts) {
+    var d = new Date(ts), dk = dkey(d), tk = todayKey(), tom = dkey(new Date(Date.now() + 86400000));
+    var dayWord = dk === tk ? "Today" : dk === tom ? "Tomorrow" : DAYN[(d.getDay() + 6) % 7];
+    return dayWord + " " + fmtHm(d.getHours(), d.getMinutes());
+  }
+  function rankOpenMissionsForReminder(openItems, today) {
+    var pRank = { high: 0, medium: 1, low: 2 };
+    return openItems.slice().sort(function (a, b) {
+      var ao = a.date < today ? 0 : a.date === today ? 1 : 2;
+      var bo = b.date < today ? 0 : b.date === today ? 1 : 2;
+      if (ao !== bo) return ao - bo;
+      var ap = pRank[a.priority] !== undefined ? pRank[a.priority] : 1;
+      var bp = pRank[b.priority] !== undefined ? pRank[b.priority] : 1;
+      if (ap !== bp) return ap - bp;
+      if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+      return 0;
+    });
+  }
+  function getDetectedProductiveReminderPlan(pd) {
+    var st = pd || collectPatternStats();
+    var todDef = null, hour = -1, minute = 0, label = "", todName = "Peak", todTip = "", calibrated = false, source = "none";
+    if (st.doneN >= 1 && st.bestTod) {
+      todDef = st.bestTod;
+      todName = todDef[0];
+      todTip = todDef[4];
+      calibrated = st.doneN >= 3;
+      if (st.bestDoneWin && isHourInTod(st.bestDoneWin.from, todDef)) {
+        hour = st.bestDoneWin.from;
+        minute = 0;
+        label = st.bestDoneWin.label;
+        source = "tod+window";
+      } else {
+        var parsed = parseTodStart(todDef[3]);
+        hour = parsed.hour;
+        minute = parsed.minute;
+        label = todDef[3];
+        source = "tod-default";
+      }
+    } else if (st.total >= 5) {
+      var actWin = hourWindow(st.hrs);
+      todDef = PROD_TOD_DEFS.filter(function (d) { return isHourInTod(actWin.from, d); })[0] || PROD_TOD_DEFS[0];
+      hour = actWin.from;
+      minute = 0;
+      label = actWin.label;
+      todName = todDef[0];
+      todTip = todDef[4];
+      source = "activity";
+    }
+    var today = todayKey();
+    var openItems = rankOpenMissionsForReminder(norm().filter(function (x) { return !x.done; }), today);
+    var overdueCount = openItems.filter(function (x) { return x.date < today; }).length;
+    var urgent = openItems.filter(function (x) { return x.date <= today || x.priority === "high"; });
+    var lead = openItems[0] || null;
+    var inPeakNow = false;
+    if (hour >= 0) {
+      var nowD = new Date(), curMin = nowD.getHours() * 60 + nowD.getMinutes();
+      var startMin = hour * 60 + minute, endMin = (startMin + 120) % 1440;
+      inPeakNow = startMin < endMin ? (curMin >= startMin && curMin < endMin) : (curMin >= startMin || curMin < endMin);
+    }
+    return {
+      ready: hour >= 0,
+      calibrated: calibrated,
+      source: source,
+      hour: hour,
+      minute: minute,
+      label: label,
+      todName: todName,
+      todTip: todTip,
+      todDefaultWindow: todDef ? todDef[3] : "",
+      pctTod: st.pctTod || 0,
+      score: st.score,
+      inPeakNow: inPeakNow,
+      openCount: openItems.length,
+      dueCount: urgent.length,
+      overdueCount: overdueCount,
+      missions: openItems.slice(0, 3),
+      leadText: lead ? lead.text : "",
+      doneN: st.doneN,
+      total: st.total
+    };
+  }
+  function isProdJobFired(jobId, legacyId) {
+    if (typeof FIRED !== "object" || !FIRED) return false;
+    return !!(FIRED[jobId] || (legacyId && FIRED[legacyId]));
+  }
+  function buildProdNotifCopy(plan) {
+    var topNames = plan.missions.slice(0, 2).map(function (m) {
+      var t = String(m.text || "").trim();
+      return t.length > 34 ? t.slice(0, 33) + "…" : t;
+    }).filter(Boolean);
+    var summary = plan.openCount + " open mission" + (plan.openCount === 1 ? "" : "s");
+    if (plan.overdueCount > 0) summary += " (" + plan.overdueCount + " overdue)";
+    else if (plan.dueCount > 0) summary += " (" + plan.dueCount + " priority/due)";
+    var title = "Peak " + plan.todName + " · Check your missions";
+    var body = "Best window (" + plan.label + "): " + summary + "." + (topNames.length ? " Next: " + topNames.join(" · ") + "." : "");
+    return { title: title, body: body };
+  }
+  function buildPeakScheduleJobs(plan, nowMs) {
+    var now = nowMs || Date.now();
+    if (!opts.reminders || !opts.prodReminders || !plan || !plan.ready || plan.openCount <= 0) return [];
+    var jobs = [];
+    var copy = buildProdNotifCopy(plan);
+    var mIds = plan.missions.map(function (m) { return m.id; });
+    for (var dOff = 0; dOff < 4 && jobs.length < 3; dOff++) {
+      var dt = new Date(now + dOff * 86400000);
+      dt.setHours(plan.hour, plan.minute, 0, 0);
+      var dk = dkey(dt);
+      var jobId = "prod:" + dk + ":" + fmtHm(plan.hour, plan.minute);
+      var legacyId = "prod:" + dk + ":" + plan.hour;
+      if (isProdJobFired(jobId, legacyId)) continue;
+      var targetAt = dt.getTime();
+      var windowEndAt = targetAt + 2 * 3600000;
+      var triggerAt = targetAt;
+      var catchUp = false;
+      if (dOff === 0) {
+        if (targetAt <= now + 1000) {
+          if (now < windowEndAt) {
+            triggerAt = now + 2500;
+            catchUp = true;
+          } else {
+            continue;
+          }
+        }
+      }
+      jobs.push({
+        id: jobId,
+        legacyId: legacyId,
+        dayKey: dk,
+        triggerAt: triggerAt,
+        scheduledFor: targetAt,
+        catchUp: catchUp,
+        hour: plan.hour,
+        minute: plan.minute,
+        todName: plan.todName,
+        windowLabel: plan.label,
+        title: copy.title,
+        body: copy.body,
+        missionIds: mIds,
+        missionCount: plan.openCount,
+        urgentCount: plan.dueCount
+      });
+    }
+    return jobs;
+  }
+  function executeScheduledProdJob(job) {
+    if (!job || !opts.reminders || !opts.prodReminders) return false;
+    if (isProdJobFired(job.id, job.legacyId)) return false;
+    var plan = getDetectedProductiveReminderPlan();
+    var now = Date.now();
+    if (typeof FIRED === "object" && FIRED) {
+      FIRED[job.id] = now;
+      try { localStorage.setItem("mission-map-fired", JSON.stringify(FIRED)); } catch (e) {}
+    }
+    prodSched.lastFiredAt = now;
+    prodSched.lastFiredId = job.id;
+    saveProdSched();
+    if (plan.openCount > 0) {
+      var freshCopy = plan.ready ? buildProdNotifCopy(plan) : { title: job.title, body: job.body };
+      toast(freshCopy.body);
+      fx("chime");
+      if (!(typeof NATIVE !== "undefined" && NATIVE)) {
+        fireDesktopNotif(freshCopy.title, freshCopy.body, "");
+      }
+    }
+    syncProductiveScheduler({ skipPhone: true });
+    return true;
+  }
+  function armProductiveTimers() {
+    clearProdTimers();
+    if (!opts.reminders || !opts.prodReminders || !prodSched.jobs.length) return;
+    var MAX_DELAY = 21600000;
+    var nextJob = prodSched.jobs[0];
+    if (!nextJob || isProdJobFired(nextJob.id, nextJob.legacyId)) return;
+    function scheduleWait() {
+      var remaining = nextJob.triggerAt - Date.now();
+      if (remaining <= 500) {
+        if (Date.now() < nextJob.scheduledFor + 2 * 3600000 + 60000) {
+          executeScheduledProdJob(nextJob);
+        } else {
+          syncProductiveScheduler({ skipPhone: true });
+        }
+        return;
+      }
+      var waitMs = Math.min(remaining, MAX_DELAY);
+      var tid = setTimeout(function () {
+        if (Date.now() >= nextJob.triggerAt - 1000) {
+          executeScheduledProdJob(nextJob);
+        } else {
+          scheduleWait();
+        }
+      }, waitMs);
+      prodTimers.push(tid);
+    }
+    scheduleWait();
+  }
+  function syncProductiveScheduler(cfg) {
+    cfg = cfg || {};
+    var plan = getDetectedProductiveReminderPlan();
+    var now = Date.now();
+    var jobs = buildPeakScheduleJobs(plan, now);
+    var slotKey = plan.ready ? (plan.todName + "@" + fmtHm(plan.hour, plan.minute) + ":" + plan.openCount) : "unready";
+    var prevSlot = prodSched.lastSlotKey;
+    prodSched.jobs = jobs;
+    prodSched.lastSync = now;
+    prodSched.lastSlotKey = slotKey;
+    saveProdSched();
+    if (cfg.checkDue && jobs.length && jobs[0].triggerAt <= now + 500) {
+      executeScheduledProdJob(jobs[0]);
+      return;
+    }
+    armProductiveTimers();
+    if (!cfg.skipUi) syncProdRemUi(plan);
+    if (!cfg.skipPhone && prevSlot !== slotKey && typeof schedulePhone === "function") {
+      schedulePhone();
+    }
+  }
+  function syncProdRemUi(pdPlan) {
+    var infoEl = $("prodRemInfo");
+    if (!infoEl) return;
+    if (!opts.reminders) {
+      infoEl.textContent = "Enable reminders above to schedule mission check-ins and event alerts.";
+      return;
+    }
+    if (!opts.prodReminders) {
+      infoEl.textContent = "Peak productivity task scheduler is paused.";
+      return;
+    }
+    var plan = pdPlan || getDetectedProductiveReminderPlan();
+    var nextJob = prodSched.jobs && prodSched.jobs[0];
+    if (plan.ready) {
+      var base = "Best time-of-day: " + plan.todName + " (" + plan.label + (plan.calibrated ? "" : ", early signal") + "). ";
+      if (nextJob) {
+        infoEl.textContent = base + "Next local notification: " + (nextJob.catchUp ? "active window right now" : fmtSchedTime(nextJob.triggerAt)) + " · " + plan.openCount + " open mission" + (plan.openCount === 1 ? "" : "s") + ".";
+      } else if (plan.openCount === 0) {
+        infoEl.textContent = base + "All missions complete — notifications will queue automatically when you add a mission.";
+      } else {
+        infoEl.textContent = base + "Today's check-in is complete; tomorrow's check-in queues automatically.";
+      }
+    } else {
+      infoEl.textContent = "Calibrating best time-of-day: complete 1+ mission (" + plan.doneN + " so far) or log 5 actions (" + plan.total + " so far) to auto-schedule local notifications.";
+    }
+  }
   function renderProductivityWidget(pd) {
     var box = $("prodWidget"); if (!box) return;
     box.hidden = !prodOpen;
     syncTopPanels();
     if (box.hidden) return;
     var st = pd || collectPatternStats();
-    var nowH = new Date().getHours();
-    var inPeakNow = false;
-    if (st.doneN >= 3 && st.bestDoneWin) {
-      var pf = st.bestDoneWin.from;
-      inPeakNow = (nowH === pf || nowH === (pf + 1) % 24);
-    }
+    var plan = getDetectedProductiveReminderPlan(st);
+    var inPeakNow = plan.ready && plan.calibrated && plan.inPeakNow;
     box.innerHTML = "";
 
     var sBox = el("div", "prod-score-box" + (inPeakNow ? " peak-now" : ""));
@@ -4507,11 +5527,11 @@ window.__gcalAuth = {
     var bestEl = el("span", "prod-best");
     if (st.doneN >= 3 && st.bestDoneWin && st.bestTod) {
       bestEl.appendChild(document.createTextNode("Peak time: "));
-      bestEl.appendChild(el("strong", null, st.bestTod[0] + " (" + st.bestDoneWin.label + ")"));
+      bestEl.appendChild(el("strong", null, st.bestTod[0] + " (" + plan.label + ")"));
       bestEl.appendChild(document.createTextNode(" · " + st.pctTod + "% of completions"));
-    } else if (st.doneN > 0 && st.bestDoneWin) {
+    } else if (st.doneN > 0 && st.bestTod) {
       bestEl.appendChild(document.createTextNode("Early trend: "));
-      bestEl.appendChild(el("strong", null, st.bestTod[0] + " (" + st.bestDoneWin.label + ")"));
+      bestEl.appendChild(el("strong", null, st.bestTod[0] + " (" + plan.label + ")"));
       bestEl.appendChild(document.createTextNode(" · " + st.doneN + "/3 to calibrate"));
     } else {
       bestEl.appendChild(document.createTextNode("Best time of day: calibrating (finish 3 tasks)"));
@@ -4522,7 +5542,7 @@ window.__gcalAuth = {
     var tipTxt = "";
     if (st.doneN >= 3 && st.bestTod && st.bestDoneWin) {
       if (inPeakNow) {
-        tipTxt = "Tip: You're in your most productive " + st.bestTod[0].toLowerCase() + " window right now (" + st.bestDoneWin.label + ") — knock out a high-priority task first.";
+        tipTxt = "Tip: You're in your most productive " + st.bestTod[0].toLowerCase() + " window right now (" + plan.label + ") — knock out a high-priority task first.";
       } else {
         tipTxt = "Tip: " + st.bestTod[4] + (st.overdueN ? " Clear " + st.overdueN + " overdue item" + (st.overdueN === 1 ? "" : "s") + " next." : "");
       }
@@ -4532,9 +5552,58 @@ window.__gcalAuth = {
       tipTxt = "Tip: Check off missions as you finish them—your score and peak productivity window will automatically tune to your schedule.";
     }
     body.appendChild(el("div", "prod-tip", tipTxt));
+
+    var schedActive = !!(opts.reminders && opts.prodReminders && plan.ready && prodSched.jobs && prodSched.jobs.length);
+    var schedRow = el("div", "prod-sched" + (schedActive ? " active" : ""));
+    if (!opts.reminders || !opts.prodReminders) {
+      schedRow.appendChild(document.createTextNode("Task scheduler: paused — enable auto-remind to get local alerts at your peak time."));
+    } else if (!plan.ready) {
+      schedRow.appendChild(document.createTextNode("Task scheduler: waiting for best time-of-day data (" + plan.doneN + " done, " + plan.total + "/5 actions)."));
+    } else if (schedActive) {
+      var nxt = prodSched.jobs[0];
+      schedRow.appendChild(document.createTextNode("Scheduled alert: "));
+      schedRow.appendChild(el("strong", null, (nxt.catchUp ? "Now (" + plan.todName + ")" : fmtSchedTime(nxt.triggerAt))));
+      schedRow.appendChild(document.createTextNode(" · " + plan.openCount + " open mission" + (plan.openCount === 1 ? "" : "s") + " queued"));
+    } else if (plan.openCount === 0) {
+      schedRow.appendChild(document.createTextNode("Task scheduler: standing by (" + plan.todName + " " + fmtHm(plan.hour, plan.minute) + ") — no open missions left."));
+    } else {
+      schedRow.appendChild(document.createTextNode("Task scheduler: today's " + plan.todName.toLowerCase() + " check-in sent · next queues tomorrow."));
+    }
+    body.appendChild(schedRow);
     box.appendChild(body);
 
     var act = el("div", "prod-actions");
+    var remActive = !!(opts.reminders && opts.prodReminders);
+    var remTog = el("button", "btn ghost", remActive ? "Auto-remind: On" : "Auto-remind: Off");
+    remTog.type = "button";
+    remTog.setAttribute("aria-pressed", remActive ? "true" : "false");
+    remTog.addEventListener("click", function () {
+      var turnOn = !(opts.reminders && opts.prodReminders);
+      if (turnOn) {
+        opts.reminders = true;
+        opts.prodReminders = true;
+        if ($("remOn")) $("remOn").checked = true;
+        if ($("prodRemOn")) $("prodRemOn").checked = true;
+        if (!NATIVE && !DESKTOP && window.Notification && Notification.permission === "default") {
+          try { Notification.requestPermission(function () { if (typeof notifState === "function") notifState(); }); } catch (e) {}
+        }
+        if (NATIVE && LN) {
+          LN.checkPermissions().then(function (pm) { if (!pm || pm.display !== "granted") return LN.requestPermissions(); }).catch(function () {}).then(function () { if (typeof notifState === "function") notifState(); });
+        }
+      } else {
+        opts.prodReminders = false;
+        if ($("prodRemOn")) $("prodRemOn").checked = false;
+      }
+      saveOpts();
+      if (typeof syncProductiveScheduler === "function") syncProductiveScheduler();
+      if (typeof notifState === "function") notifState();
+      if (typeof schedulePhone === "function") schedulePhone();
+      render();
+      updateOptBadges();
+      fx("click");
+      toast(turnOn ? "Peak-hour mission reminders enabled." : "Peak-hour mission reminders paused.");
+    });
+    act.appendChild(remTog);
     var btn = el("button", "btn ghost", patOpen ? "Hide patterns" : "Details");
     btn.type = "button";
     btn.addEventListener("click", function () { patOpen = !patOpen; render(); fx("click"); });
@@ -4634,17 +5703,45 @@ window.__gcalAuth = {
       }
       box.appendChild(recErr);
 
-      box.appendChild(el("div", "pat-h", "Practice style"));
+      box.appendChild(el("div", "pat-h", "Mind tricks & what works best"));
       var ps = prStats(), keys = ["A", "B", "C", "D"], rows = el("div", "pat-grid");
       keys.forEach(function (k) {
-        var q = ps.g[k], r = el("div", "pat-row"); r.appendChild(el("b", null, PR_GROUP[k]));
-        r.appendChild(el("span", null, q[1] + " tried, " + q[2] + " skipped")); rows.appendChild(r);
+        var q = ps.g[k], gr = ps.gRate[k], r = el("div", "pat-row"); r.appendChild(el("b", null, PR_GROUP[k]));
+        var txt = q[1] + " tried, " + q[2] + " skipped" + (gr.count ? (" · ★ " + gr.avg.toFixed(1).replace(/\.0$/, "") + " (" + gr.count + ")") : "");
+        r.appendChild(el("span", null, txt)); rows.appendChild(r);
       });
       box.appendChild(rows);
-      if (ps.signals >= 5) {
-        var rank = keys.slice().sort(function (a, b) { var A = ps.g[a], B = ps.g[b]; return (B[1] + 1) / (B[1] + B[2] + 2) - (A[1] + 1) / (A[1] + A[2] + 2); });
-        box.appendChild(el("div", "wrapline", "Your style so far: " + PR_STYLE[rank[0]] + ". The daily practice now leans that way" + (opts.practiceTailor ? "" : " (switch it on in Options)") + ", with a little of everything mixed in."));
-      } else box.appendChild(el("div", "wrapline", "Try or skip a few more practice exercises (" + ps.signals + " of 5) and the daily pick will start to suit you."));
+      var ratedOnly = ps.rated.filter(function (x) { return x.rating > 0; });
+      if (ratedOnly.length > 0) {
+        var recTricks = el("div", "pat-rec");
+        recTricks.appendChild(el("b", null, "Top-rated mind tricks"));
+        var topSummary = ratedOnly.slice(0, 3).map(function (it) {
+          return it.title + " (" + it.rating + "★" + (it.note ? (": \"" + it.note.slice(0, 48) + (it.note.length > 48 ? "…" : "") + "\"") : "") + ")";
+        }).join(" · ");
+        recTricks.appendChild(document.createTextNode(topSummary));
+        box.appendChild(recTricks);
+      }
+      if (ps.signals >= 5 || ps.ratedCount >= 2) {
+        var rank = keys.slice().sort(function (a, b) {
+          var A = ps.g[a], B = ps.g[b], Ar = ps.gRate[a], Br = ps.gRate[b];
+          var aScore = ((A[1] + 1) / (A[1] + A[2] + 2)) * (Ar.count > 0 ? (0.65 + (Ar.avg / 5) * 0.85) : 1);
+          var bScore = ((B[1] + 1) / (B[1] + B[2] + 2)) * (Br.count > 0 ? (0.65 + (Br.avg / 5) * 0.85) : 1);
+          return bScore - aScore;
+        });
+        box.appendChild(el("div", "wrapline", "Your best style so far: " + PR_STYLE[rank[0]] + ". The daily mind trick leans that way" + (opts.practiceTailor ? "" : " (switch it on in Options)") + ", prioritizing higher-rated tricks."));
+      } else box.appendChild(el("div", "wrapline", "Rate a couple of mind tricks (1–5★) or try/skip a few (" + ps.signals + " of 5) and your best-working tricks will surface automatically."));
+    }
+    if (total < NEED) {
+      var psEarly = prStats();
+      if (psEarly.ratedCount > 0 || psEarly.notedCount > 0) {
+        box.appendChild(el("div", "pat-h", "What works best (Mind tricks)"));
+        var eRec = el("div", "pat-rec");
+        eRec.appendChild(el("b", null, psEarly.ratedCount > 0 ? "Top-rated mind tricks" : "Mind trick notes"));
+        eRec.appendChild(document.createTextNode(psEarly.rated.slice(0, 3).map(function (it) {
+          return it.title + (it.rating ? (" (" + it.rating + "★)") : "") + (it.note ? (" — " + it.note.slice(0, 50) + (it.note.length > 50 ? "…" : "")) : "");
+        }).join(" · ")));
+        box.appendChild(eRec);
+      }
     }
 
     /* listening frequency & history section */
@@ -4705,6 +5802,7 @@ window.__gcalAuth = {
     tintReds();
     applyMedia();
     $("pinBtn").setAttribute("aria-pressed", evil ? "true" : "false");
+    if (typeof syncHeaderPinFace === "function") syncHeaderPinFace();
     if (!editingId) {
       $("newText").placeholder = evil ? "Something you shouldn't do" : "New mission";
       $("addBtn").textContent = evil ? "Jot down" : "Add";
@@ -4757,11 +5855,28 @@ window.__gcalAuth = {
       fc.addEventListener("click", function () { openGeoForm(filter); });
       f.appendChild(fc);
       if (isPinKey(filter)) {
+        var pinId = filter.slice(2), pinObj = pinById(pinId), pinApp = resolvePinAppearance(pinObj, mine);
+        var colBtn = el("button", "chip chip-color"); colBtn.type = "button";
+        var colDot = el("span", "pin-dot");
+        if (pinApp.active) { colDot.style.borderColor = pinApp.stroke; colDot.style.background = pinApp.fill; }
+        colBtn.appendChild(colDot);
+        colBtn.appendChild(document.createTextNode("Color" + (pinObj && pinObj.mode ? ": " + pinApp.label : "")));
+        colBtn.setAttribute("aria-label", "Customize color for " + placeInfo(filter).n);
+        colBtn.addEventListener("click", function () {
+          var r = colBtn.getBoundingClientRect();
+          openPinCtxMenu(pinId, r.left, r.bottom + 6);
+        });
+        f.appendChild(colBtn);
         var rm = el("button", "chip", "Remove pin"); rm.type = "button";
-        rm.addEventListener("click", function () { removePin(filter.slice(2)); });
+        rm.setAttribute("aria-label", "Remove custom pin " + placeInfo(filter).n);
+        rm.addEventListener("click", function () { openPinDeleteModal(pinId); });
         f.appendChild(rm);
       }
-    } else { f.hidden = true; }
+      if (pinCtxId && !pinById(pinCtxId)) closePinCtxMenu();
+    } else {
+      f.hidden = true;
+      if (pinCtxId && !pinById(pinCtxId)) closePinCtxMenu();
+    }
     var title = view === "receipt" ? "MISSION MAP" : view === "errands" ? dayName + " errands" : evil ? "Shouldn't-do list" : "Missions";
     if (filter && showMap && view !== "receipt") title += ": " + placeInfo(filter).n;
     $("listTitle").textContent = title;
@@ -4799,6 +5914,7 @@ window.__gcalAuth = {
 
     var patData = collectPatternStats(), days = weekDays();
     renderMeters(); renderWeek(mine); renderWrap(days); renderCal(mine); renderPatterns(patData); renderProductivityWidget(patData); renderSubmenu(patData); syncMapBarUi(); renderRoad(); renderNext(); renderNotebook(); renderPractice();
+    if (typeof syncProdRemUi === "function") syncProdRemUi();
     if ($("options") && !$("options").hidden) renderAch();
 
     if (lastToggled) {
@@ -4826,6 +5942,7 @@ window.__gcalAuth = {
     }
     if (typeof syncAppIcon === "function") syncAppIcon();
     if (opts.wobble && typeof wobTick === "function") wobTick();
+    if (typeof syncTapeScroll === "function") syncTapeScroll();
   }
   var dayName = "Today";
   try { dayName = new Date().toLocaleDateString("en-US", { weekday: "long" }); } catch (e) {}
@@ -4916,18 +6033,276 @@ window.__gcalAuth = {
     $("newPicClear").hidden = !hasImg;
     addSheet(true);
   }
+  var pendingDeletePinId = null, pinDeleteReturnFocus = null;
+  function closePinDeleteModal(restoreFocus) {
+    var m = $("pinDeleteModal");
+    if (m) m.hidden = true;
+    pendingDeletePinId = null;
+    var ret = pinDeleteReturnFocus;
+    pinDeleteReturnFocus = null;
+    if (restoreFocus && ret && ret.isConnected && ret.focus) {
+      try { ret.focus(); } catch (e) {}
+    }
+  }
+  function openPinDeleteModal(id) {
+    var p = pinById(id);
+    if (!p) return;
+    var m = $("pinDeleteModal"), ttl = $("pinDeleteTitle"), msg = $("pinDeleteMsg"), cancelBtn = $("pinDeleteCancel");
+    if (!m || !ttl || !msg) { removePin(id); return; }
+    var attached = items.filter(function (i) { return i.place === "p:" + id; }).length;
+    var hasFence = !!geofences["p:" + id];
+    ttl.textContent = 'Remove "' + p.name + '"?';
+    var parts = ["This removes the custom pin from your map."];
+    if (attached > 0) parts.push(attached + (attached === 1 ? " mission using it will move back to Home." : " missions using it will move back to Home."));
+    if (hasFence) parts.push("Its geofence will also be cleared.");
+    msg.textContent = parts.join(" ");
+    pendingDeletePinId = id;
+    pinDeleteReturnFocus = document.activeElement;
+    m.hidden = false;
+    if (cancelBtn && cancelBtn.focus) cancelBtn.focus();
+  }
+  if ($("pinDeleteOk")) $("pinDeleteOk").addEventListener("click", function () {
+    var id = pendingDeletePinId;
+    closePinDeleteModal(false);
+    if (id) removePin(id);
+  });
+  if ($("pinDeleteCancel")) $("pinDeleteCancel").addEventListener("click", function () { closePinDeleteModal(true); });
+  if ($("pinDeleteModal")) $("pinDeleteModal").addEventListener("click", function (e) {
+    if (e.target === $("pinDeleteModal")) closePinDeleteModal(true);
+  });
+  function setPinStyle(id, mode, color, keepInputs) {
+    var p = pinById(id); if (!p) return;
+    p.mode = (typeof mode === "string" && Object.prototype.hasOwnProperty.call(PIN_STYLES, mode)) ? mode : "";
+    if (typeof color === "string" && /^#[0-9a-f]{6}$/i.test(color)) p.color = color.toLowerCase();
+    else if (p.mode !== "custom") p.color = "";
+    render(); persist();
+    if (typeof renderPinColorSettings === "function") renderPinColorSettings(keepInputs);
+    if (typeof updateOptBadges === "function") updateOptBadges();
+    if (pinCtxId === id && $("pinCtxMenu") && !$("pinCtxMenu").hidden) {
+      if (keepInputs) {
+        var sub = $("pinCtxMenu").querySelector(".pin-ctx-sub");
+        if (sub) sub.textContent = resolvePinAppearance(p).label;
+        var modeBtns = $("pinCtxMenu").querySelectorAll(".pin-mode-btn");
+        for (var i = 0; i < modeBtns.length; i++) modeBtns[i].setAttribute("aria-pressed", "false");
+        var swBtns = $("pinCtxMenu").querySelectorAll(".pin-sw");
+        for (var j = 0; j < swBtns.length; j++) swBtns[j].setAttribute("aria-pressed", "false");
+      } else {
+        var r = $("pinCtxMenu").getBoundingClientRect();
+        openPinCtxMenu(id, r.left, r.top);
+      }
+    }
+  }
+  function renderPinColorSettings(keepInputs) {
+    var box = $("pinColorSettings"); if (!box) return;
+    if (keepInputs) {
+      var rows = box.querySelectorAll(".pinset-row[data-pid]");
+      for (var ri = 0; ri < rows.length; ri++) {
+        var pid = rows[ri].getAttribute("data-pid"), p0 = pinById(pid);
+        if (!p0) continue;
+        var app0 = resolvePinAppearance(p0);
+        var dot0 = rows[ri].querySelector(".pin-dot");
+        if (dot0) {
+          dot0.style.borderColor = app0.active ? app0.stroke : "";
+          dot0.style.background = app0.active ? app0.fill : "";
+        }
+        var sel0 = rows[ri].querySelector(".pinset-sel");
+        if (sel0) sel0.value = p0.mode || "";
+      }
+      return;
+    }
+    box.innerHTML = "";
+    if (!pins.length) {
+      box.appendChild(el("div", "msg", "No dropped pins yet. Use Drop a pin under the map to add one."));
+      return;
+    }
+    pins.forEach(function (p) {
+      var app = resolvePinAppearance(p);
+      var row = el("div", "pinset-row");
+      row.setAttribute("data-pid", p.id);
+      var dot = el("span", "pin-dot");
+      if (app.active) { dot.style.borderColor = app.stroke; dot.style.background = app.fill; }
+      row.appendChild(dot);
+      row.appendChild(el("span", "pinset-name", p.name));
+      var sel = el("select", "pinset-sel");
+      sel.setAttribute("aria-label", "Pin color style for " + p.name);
+      Object.keys(PIN_STYLES).forEach(function (sk) {
+        var op = el("option", null, PIN_STYLES[sk].label);
+        op.value = sk;
+        sel.appendChild(op);
+      });
+      sel.value = p.mode || "";
+      sel.addEventListener("change", function () {
+        var nextMode = this.value;
+        var curApp = resolvePinAppearance(p);
+        var nextCol = nextMode === "custom" ? (p.color || curApp.stroke || "#039be5") : "";
+        setPinStyle(p.id, nextMode, nextCol);
+      });
+      row.appendChild(sel);
+      var col = document.createElement("input");
+      col.type = "color"; col.className = "pin-color-inp";
+      col.value = app.stroke || "#039be5";
+      col.setAttribute("aria-label", "Custom hex color for " + p.name);
+      col.addEventListener("input", function () { setPinStyle(p.id, "custom", this.value, true); });
+      col.addEventListener("change", function () { setPinStyle(p.id, "custom", this.value, false); });
+      row.appendChild(col);
+      box.appendChild(row);
+    });
+  }
+  var pinCtxId = null;
+  function closePinCtxMenu() {
+    var m = $("pinCtxMenu"); if (m) m.hidden = true;
+    pinCtxId = null;
+  }
+  function openPinCtxMenu(id, clientX, clientY) {
+    var p = pinById(id), m = $("pinCtxMenu");
+    if (!p || !m) return;
+    pinCtxId = id;
+    var app = resolvePinAppearance(p);
+    m.innerHTML = "";
+    var hd = el("div", "pin-ctx-head");
+    hd.appendChild(el("span", "pin-ctx-ttl", p.name));
+    hd.appendChild(el("span", "pin-ctx-sub", app.label));
+    m.appendChild(hd);
+
+    m.appendChild(el("div", "pin-ctx-lbl", "Priority or Category"));
+    var grid = el("div", "pin-ctx-modes");
+    ["", "auto", "prio-high", "prio-med", "prio-low", "cat-errand", "cat-home", "cat-work", "cat-health", "cat-leisure"].forEach(function (mk) {
+      var st = PIN_STYLES[mk];
+      var b = el("button", "pin-mode-btn"); b.type = "button";
+      b.setAttribute("aria-pressed", (p.mode || "") === mk ? "true" : "false");
+      var d = el("span", "pin-dot");
+      if (st.stroke) { d.style.borderColor = st.stroke; d.style.background = st.fill; }
+      b.appendChild(d);
+      b.appendChild(document.createTextNode(st.short));
+      b.addEventListener("click", function () { setPinStyle(id, mk, ""); });
+      grid.appendChild(b);
+    });
+    m.appendChild(grid);
+
+    m.appendChild(el("div", "pin-ctx-lbl", "Custom Color"));
+    var swRow = el("div", "pin-ctx-swatches");
+    PIN_SWATCHES.forEach(function (hex) {
+      var sw = el("button", "pin-sw"); sw.type = "button";
+      sw.style.background = hex;
+      sw.title = hex;
+      sw.setAttribute("aria-label", "Set pin color " + hex);
+      sw.setAttribute("aria-pressed", (p.mode === "custom" && (p.color || "").toLowerCase() === hex) ? "true" : "false");
+      sw.addEventListener("click", function () { setPinStyle(id, "custom", hex); });
+      swRow.appendChild(sw);
+    });
+    var cp = document.createElement("input");
+    cp.type = "color"; cp.className = "pin-color-inp";
+    cp.value = app.stroke || "#039be5";
+    cp.setAttribute("aria-label", "Pick custom color");
+    cp.addEventListener("input", function () { setPinStyle(id, "custom", this.value, true); });
+    cp.addEventListener("change", function () { setPinStyle(id, "custom", this.value, false); });
+    swRow.appendChild(cp);
+    m.appendChild(swRow);
+
+    var acts = el("div", "pin-ctx-acts");
+    var fBtn = el("button", "btn ghost", filter === "p:" + id ? "Unfilter" : "Filter"); fBtn.type = "button";
+    fBtn.addEventListener("click", function () {
+      closePinCtxMenu();
+      pinMapAnim.triggerKey = "p:" + id;
+      toggleFilter("p:" + id);
+    });
+    var gBtn = el("button", "btn ghost", geofences["p:" + id] ? "Fence" : "Add fence"); gBtn.type = "button";
+    gBtn.addEventListener("click", function () { closePinCtxMenu(); openGeoForm("p:" + id); });
+    var rBtn = el("button", "btn", "Remove"); rBtn.type = "button";
+    rBtn.addEventListener("click", function () { closePinCtxMenu(); openPinDeleteModal(id); });
+    acts.appendChild(fBtn); acts.appendChild(gBtn); acts.appendChild(rBtn);
+    m.appendChild(acts);
+
+    m.hidden = false;
+    var r = m.getBoundingClientRect(), vw = window.innerWidth || 360, vh = window.innerHeight || 640;
+    var x = Math.max(10, Math.min(vw - r.width - 10, Number(clientX) || 20));
+    var y = Math.max(10, Math.min(vh - r.height - 10, Number(clientY) || 20));
+    m.style.left = Math.round(x) + "px";
+    m.style.top = Math.round(y) + "px";
+  }
   function removePin(id) {
+    if (pinCtxId === id) closePinCtxMenu();
     pins = pins.filter(function (p) { return p.id !== id; });
     items.forEach(function (i) { if (i.place === "p:" + id) i.place = "home"; });
     delete visited["p:" + id];
     delete geofences["p:" + id];
     delete geoInside["p:" + id];
     if (hoverPin === "p:" + id) hoverPin = null;
-    filter = null; fillSelect(); if (!$("geoForm").hidden) { fillGeoTargets(); syncGeoFormFields(); } render(); persist(); fx("del");
+    filter = null; fillSelect(); if (!$("geoForm").hidden) { fillGeoTargets(); syncGeoFormFields(); }
+    render(); persist(); fx("del");
+    if (typeof renderPinColorSettings === "function") renderPinColorSettings();
+    if (typeof updateOptBadges === "function") updateOptBadges();
+  }
+  var pinBtnState = { raf: 0, pending: false, showingBack: !!evil, curSx: 1 };
+  function syncHeaderPinFace() {
+    if (pinBtnState.raf || pinBtnState.pending) return;
+    var p3d = document.querySelector("#pinBtn .pin3d");
+    if (!p3d) return;
+    pinBtnState.showingBack = !!evil;
+    pinBtnState.curSx = 1;
+    p3d.setAttribute("data-face", evil ? "back" : "front");
+    p3d.style.transform = "";
+    p3d.style.filter = "";
+  }
+  function startHeaderPinFlip(targetBack) {
+    var p3d = document.querySelector("#pinBtn .pin3d");
+    if (!p3d) return;
+    if (pinBtnState.raf) { cancelAnimationFrame(pinBtnState.raf); pinBtnState.raf = 0; }
+    var wantBack = !!targetBack;
+    if (isReduced()) {
+      pinBtnState.showingBack = wantBack;
+      pinBtnState.curSx = 1;
+      p3d.setAttribute("data-face", wantBack ? "back" : "front");
+      p3d.style.transform = "";
+      p3d.style.filter = "";
+      return;
+    }
+    var curSx = Math.max(0, Math.min(1, pinBtnState.curSx));
+    var startTheta = curSx < 0.999 ? Math.acos(curSx) : 0;
+    var needSwap = (pinBtnState.showingBack !== wantBack);
+    var endTheta = needSwap ? Math.PI : 0;
+    var span = Math.abs(endTheta - startTheta);
+    var dur = needSwap ? Math.max(220, Math.round(420 * (span / Math.PI))) : Math.max(140, Math.round(240 * (span / (Math.PI * 0.5 || 1))));
+    var t0 = performance.now();
+    p3d.style.transformOrigin = "center center";
+    function step(now) {
+      var p = dur > 0 ? Math.min(1, Math.max(0, (now - t0) / dur)) : 1;
+      var u = 1 - Math.pow(1 - p, 3);
+      var theta = startTheta + (endTheta - startTheta) * u;
+      var cosT = Math.cos(theta);
+      var sx = Math.abs(cosT);
+      if (needSwap && cosT < 0 && pinBtnState.showingBack !== wantBack) {
+        sx = 0;
+        pinBtnState.showingBack = wantBack;
+        p3d.setAttribute("data-face", wantBack ? "back" : "front");
+      }
+      pinBtnState.curSx = sx;
+      var br = 0.70 + 0.30 * Math.pow(sx, 0.75);
+      var sy = 1 + (1 - sx) * 0.045;
+      var skewDeg = -Math.sin(2 * theta) * 5.5;
+      p3d.style.transform = "perspective(420px) scaleX(" + sx.toFixed(4) + ") scaleY(" + sy.toFixed(4) + ") skewY(" + skewDeg.toFixed(2) + "deg)";
+      p3d.style.filter = "brightness(" + br.toFixed(3) + ")";
+      if (p < 1) {
+        pinBtnState.raf = requestAnimationFrame(step);
+      } else {
+        pinBtnState.raf = 0;
+        pinBtnState.curSx = 1;
+        pinBtnState.showingBack = wantBack;
+        p3d.setAttribute("data-face", wantBack ? "back" : "front");
+        p3d.style.transform = "";
+        p3d.style.filter = "";
+      }
+    }
+    pinBtnState.raf = requestAnimationFrame(step);
   }
   function flipEvil() {
     evil = !evil; try { localStorage.setItem(EKEY, evil ? "1" : "0"); } catch (e) {}
-    editMode = false; filter = null; render(); fx("flip");
+    editMode = false; filter = null;
+    pinBtnState.pending = true;
+    render();
+    pinBtnState.pending = false;
+    startHeaderPinFlip(evil);
+    fx("flip");
     musicRefresh();
     if (typeof syncAppIcon === "function") syncAppIcon();
   }
@@ -5270,9 +6645,19 @@ window.__gcalAuth = {
   });
   $("addClose").addEventListener("click", function () { addSheet(false); });
   $("scrim").addEventListener("click", function () { addSheet(false); });
+  document.addEventListener("pointerdown", function (e) {
+    var m = $("pinCtxMenu");
+    if (!m || m.hidden) return;
+    if (m.contains(e.target)) return;
+    if (e.target && e.target.closest && e.target.closest(".chip-color")) return;
+    closePinCtxMenu();
+  });
+  window.addEventListener("resize", closePinCtxMenu);
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
-    if ($("shortcutsModal") && !$("shortcutsModal").hidden) { if (typeof openShortcutsModal === "function") openShortcutsModal(false); }
+    if ($("pinCtxMenu") && !$("pinCtxMenu").hidden) { closePinCtxMenu(); }
+    else if ($("pinDeleteModal") && !$("pinDeleteModal").hidden) { closePinDeleteModal(true); }
+    else if ($("shortcutsModal") && !$("shortcutsModal").hidden) { if (typeof openShortcutsModal === "function") openShortcutsModal(false); }
     else if ($("options") && !$("options").hidden) { if (typeof openOptions === "function") openOptions(false); }
     else if (toolsMenuOpen) { setToolsMenu(false); if ($("toolsMenuBtn")) $("toolsMenuBtn").focus(); }
     else if (!$("addForm").hidden) addSheet(false);
@@ -5281,16 +6666,54 @@ window.__gcalAuth = {
   $("pinBtn").addEventListener("click", flipEvil);
   $("clearSamples").addEventListener("click", function () { items = items.filter(function (i) { return !i.sample; }); render(); persist(); });
   function toggleFilter(k) { filter = filter === k ? null : k; render(); }
+  var pinLongTimer = 0, pinLongStart = null, suppressMapPinClick = false;
+  function cancelPinLongPress() { if (pinLongTimer) { clearTimeout(pinLongTimer); pinLongTimer = 0; } pinLongStart = null; }
+  $("map").addEventListener("pointerdown", function (e) {
+    cancelPinLongPress();
+    if (dropping || e.button === 2) return;
+    var g = e.target.closest ? e.target.closest(".place.pin") : null;
+    if (!g) return;
+    var gk = g.getAttribute("data-p");
+    if (!isPinKey(gk)) return;
+    var cx = e.clientX, cy = e.clientY;
+    pinLongStart = { x: cx, y: cy };
+    pinLongTimer = setTimeout(function () {
+      pinLongTimer = 0;
+      pinLongStart = null;
+      suppressMapPinClick = true;
+      openPinCtxMenu(gk.slice(2), cx, cy);
+    }, 520);
+  });
+  $("map").addEventListener("pointermove", function (e) {
+    if (!pinLongStart) return;
+    if (Math.hypot(e.clientX - pinLongStart.x, e.clientY - pinLongStart.y) > 8) cancelPinLongPress();
+  });
+  $("map").addEventListener("pointerup", cancelPinLongPress);
+  $("map").addEventListener("pointercancel", cancelPinLongPress);
+  $("map").addEventListener("contextmenu", function (e) {
+    var g = e.target.closest ? e.target.closest(".place.pin") : null;
+    if (!g || dropping) return;
+    var gk = g.getAttribute("data-p");
+    if (!isPinKey(gk)) return;
+    e.preventDefault();
+    cancelPinLongPress();
+    openPinCtxMenu(gk.slice(2), e.clientX, e.clientY);
+  });
   $("map").addEventListener("click", function (e) {
+    if (suppressMapPinClick) { suppressMapPinClick = false; return; }
     var g = e.target.closest ? e.target.closest(".place") : null;
     if (dropping) {
       if (g) return;
       var r = $("map").getBoundingClientRect(); if (!r.width) return;
       tempPin = { x: Math.round((e.clientX - r.left) / r.width * 400), y: Math.round((e.clientY - r.top) / r.height * 300) };
-      $("pinForm").hidden = false; $("pinName").value = ""; $("pinGeoRad").value = "0"; $("pinUseGps").checked = false; $("pinName").focus(); render();
+      $("pinForm").hidden = false; $("pinName").value = ""; if ($("pinDropStyle")) $("pinDropStyle").value = ""; $("pinGeoRad").value = "0"; $("pinUseGps").checked = false; $("pinName").focus(); render();
       return;
     }
-    if (g) toggleFilter(g.getAttribute("data-p"));
+    if (g) {
+      var gk = g.getAttribute("data-p");
+      if (isPinKey(gk)) pinMapAnim.triggerKey = gk;
+      toggleFilter(gk);
+    }
   });
   $("map").addEventListener("mouseover", function (e) {
     var g = e.target.closest ? e.target.closest(".place") : null;
@@ -5318,7 +6741,10 @@ window.__gcalAuth = {
   $("map").addEventListener("keydown", function (e) {
     if (e.key !== "Enter" && e.key !== " ") return;
     var g = e.target.closest ? e.target.closest(".place") : null; if (!g || dropping) return;
-    e.preventDefault(); toggleFilter(g.getAttribute("data-p"));
+    e.preventDefault();
+    var gk = g.getAttribute("data-p");
+    if (isPinKey(gk)) pinMapAnim.triggerKey = gk;
+    toggleFilter(gk);
   });
   $("dropBtn").addEventListener("click", function () { dropping = !dropping; tempPin = null; $("pinForm").hidden = true; render(); });
   $("pinCancel").addEventListener("click", function () { dropping = false; tempPin = null; $("pinForm").hidden = true; render(); });
@@ -5327,7 +6753,8 @@ window.__gcalAuth = {
     if (!tempPin) return;
     if (pins.length >= 30) { toast("That is the pin limit."); return; }
     var id = uid().slice(0, 8), name = str($("pinName").value, 24) || "Pin " + (pins.length + 1);
-    pins.push({ id: id, name: name, x: Math.max(8, Math.min(392, tempPin.x)), y: Math.max(14, Math.min(286, tempPin.y)) });
+    var dropMode = $("pinDropStyle") ? $("pinDropStyle").value : "";
+    pins.push({ id: id, name: name, x: Math.max(8, Math.min(392, tempPin.x)), y: Math.max(14, Math.min(286, tempPin.y)), mode: dropMode, color: "" });
     var k = "p:" + id, rad = parseInt($("pinGeoRad").value, 10) || 0, useGps = $("pinUseGps").checked;
     dropping = false; tempPin = null; $("pinForm").hidden = true;
     fillSelect(); $("newPlace").value = k;
@@ -5351,6 +6778,8 @@ window.__gcalAuth = {
     }
     if (!$("geoForm").hidden) { fillGeoTargets(k); syncGeoFormFields(); }
     render(); persist(); fx("pin"); toast("Pin saved. It is selected in the Where list.");
+    if (typeof renderPinColorSettings === "function") renderPinColorSettings();
+    if (typeof updateOptBadges === "function") updateOptBadges();
   });
   var mapExporting = false;
   function loadHtmlImg(src) {
@@ -5432,7 +6861,7 @@ window.__gcalAuth = {
     clone.setAttribute("height", "840");
     clone.removeAttribute("style");
 
-    ["#traffic", "#tempLayer", ".ring"].forEach(function (sel) {
+    ["#traffic", "#tempLayer", ".ring", ".pin-face.back"].forEach(function (sel) {
       var list = clone.querySelectorAll(sel);
       for (var i = 0; i < list.length; i++) {
         if (list[i].parentNode) list[i].parentNode.removeChild(list[i]);
@@ -6318,7 +7747,8 @@ window.__gcalAuth = {
   var OPT_DEFAULTS = { scribble: false, wobble: true, strike: true, tilt: true, reduce: false, doneBottom: false, tags: true, mode: "auto",
     print: true, week: true, hassles: true, stress: true, bring: false, rank: true, race: true, road: false, station: "auto", ads: true,
     fog: true, moving: false, mapAll: false, geo: false, wobAll: true, wobSlow: false, stressRed: true, stampRound: true, practiceOn: true, practiceTailor: true,
-    aodIdle: "0", aodLevel: "10", aodHideBar: true, mapVariant: "town", tapeStyle: "realistic", tapeFilter: true, tapeRate: 1, fontAll: "", fontMission: "", pinAlt: false };
+    aodIdle: "0", aodLevel: "10", aodHideBar: true, mapVariant: "town", tapeStyle: "realistic", tapeFilter: true, tapeRate: 1, fontAll: "", fontMission: "", pinAlt: false,
+    reminders: true, prodReminders: true };
   var opts = JSON.parse(JSON.stringify(OPT_DEFAULTS));
   var modeTouched = false;
   try {
@@ -6432,7 +7862,8 @@ window.__gcalAuth = {
   function saveOpts() { try { localStorage.setItem("mission-map-opts", JSON.stringify(opts)); } catch (e) {} }
   var BOXES = [["scrOn", "scribble"], ["wobOn", "wobble"], ["strOn", "strike"], ["tiltOn", "tilt"], ["calmOn", "reduce"], ["botOn", "doneBottom"], ["tagOn", "tags"],
     ["prtOn", "print"], ["weekOn", "week"], ["hasOn", "hassles"], ["strsOn", "stress"], ["brOn", "bring"], ["rankOn", "rank"], ["raceOn", "race"],
-    ["roadOn", "road"], ["adsOn", "ads"], ["fogOn", "fog"], ["movOn", "moving"], ["mapAllOn", "mapAll"], ["geoOn", "geo"], ["wobAllOn", "wobAll"], ["wobSlowOn", "wobSlow"], ["srOn", "stressRed"], ["stRoundOn", "stampRound"], ["prOn", "practiceOn"], ["ptOn", "practiceTailor"], ["aodHideBar", "aodHideBar"], ["tapeFilterOpt", "tapeFilter"]];
+    ["roadOn", "road"], ["adsOn", "ads"], ["fogOn", "fog"], ["movOn", "moving"], ["mapAllOn", "mapAll"], ["geoOn", "geo"], ["wobAllOn", "wobAll"], ["wobSlowOn", "wobSlow"], ["srOn", "stressRed"], ["stRoundOn", "stampRound"], ["prOn", "practiceOn"], ["ptOn", "practiceTailor"], ["aodHideBar", "aodHideBar"], ["tapeFilterOpt", "tapeFilter"],
+    ["remOn", "reminders"], ["prodRemOn", "prodReminders"]];
 
   function countCatActive(cat) {
     var n = 0;
@@ -6463,6 +7894,8 @@ window.__gcalAuth = {
       ["doneBottom", "tags", "week", "hassles", "stress", "stressRed", "practiceOn", "practiceTailor", "bring", "rank", "race", "road", "aodHideBar"].forEach(function (k) { if (opts[k]) n++; });
       if (opts.aodIdle !== "0") n++;
     } else if (cat === "sync") {
+      if (opts.reminders) n++;
+      if (opts.reminders && opts.prodReminders) n++;
       if (typeof gcalHasAuth === "function" && gcalHasAuth()) n++;
       if (typeof gcal !== "undefined" && gcal && gcal.icalUrl) n++;
       if ($("phRem") && $("phRem").checked) n++;
@@ -6654,6 +8087,9 @@ window.__gcalAuth = {
     if ($("tapeStyleOpt")) $("tapeStyleOpt").value = opts.tapeStyle;
     $("station").value = opts.station; $("aodIdle").value = opts.aodIdle; $("aodLevel").value = opts.aodLevel; $("fontAll").value = opts.fontAll; $("fontMission").value = opts.fontMission;
     syncFontSwatches();
+    if (typeof renderPinColorSettings === "function") renderPinColorSettings();
+    if (typeof syncProdRemUi === "function") syncProdRemUi();
+    if (typeof notifState === "function") notifState();
     if (typeof syncAppIcon === "function") syncAppIcon();
     renderAch();
     updateOptBadges();
@@ -6664,6 +8100,28 @@ window.__gcalAuth = {
       if (b[1] === "geo" && this.checked) ensureAndroidGeoPerm(false);
       if (b[1] === "aodHideBar" && typeof aodSystemBar === "function" && aodOn) aodSystemBar(true);
       if (b[1] === "tapeFilter" && typeof syncTapeFilterRoute === "function") syncTapeFilterRoute();
+      if (b[1] === "reminders") {
+        if (this.checked) {
+          if (!NATIVE && !DESKTOP && window.Notification && Notification.permission === "default") {
+            try { var pr = Notification.requestPermission(function () { if (typeof notifState === "function") notifState(); }); if (pr && pr.then) pr.then(function () { if (typeof notifState === "function") notifState(); }); } catch (e) {}
+          }
+          if (NATIVE && typeof phone !== "undefined") {
+            phone.remind = true;
+            if ($("phRem")) $("phRem").checked = true;
+            if (typeof saveP === "function") saveP();
+            if (LN) LN.checkPermissions().then(function (pm) { if (!pm || pm.display !== "granted") return LN.requestPermissions(); }).catch(function () {}).then(function () { if (typeof reminderStatus === "function") reminderStatus(); });
+          }
+        }
+        if (typeof syncProductiveScheduler === "function") syncProductiveScheduler();
+        if (typeof schedulePhone === "function") schedulePhone();
+        if (typeof notifState === "function") notifState();
+        if (typeof remCheck === "function") remCheck();
+      }
+      if (b[1] === "prodReminders") {
+        if (typeof syncProductiveScheduler === "function") syncProductiveScheduler();
+        if (typeof schedulePhone === "function") schedulePhone();
+        if (typeof remCheck === "function") remCheck();
+      }
       saveOpts(); applyOpts(); render(); updateAd(); updateOptBadges();
     });
   });
@@ -6746,7 +8204,7 @@ window.__gcalAuth = {
     ];
     return "M" + p.map(function (q) { return q[0].toFixed(1) + " " + q[1].toFixed(1); }).join(" L");
   }
-  var WA_SEL = "#prodWidget,.prod-score-box,#patterns,.practice,.practice select,.practice .btn,.notebook,.notebook textarea,.nb-ico-box,.seg,.sug,.suggest,.mapcard,.mapvar-sel,.paper,.note,.box,.tbtn,.rankbox,.stress .meter,.daybtn,.lane,.mapbar,.pinform,.pinform input,.pinform select,.geoform,.geoform input,.geoform select,.dash,.thumb,.edit-mode-btn,.list-sort-sel,.cal,.calbtn,.calmodes,.calday,.calwk-col,.suggest textarea,.stamp,.go,.pinbtn,.evform,.evform input,.evform select,.evform textarea";
+  var WA_SEL = "#prodWidget,.prod-score-box,#patterns,.practice,.practice select,.practice textarea,.practice .btn,.notebook,.notebook textarea,.nb-ico-box,.seg,.sug,.suggest,.mapcard,.mapvar-sel,.paper,.note,.box,.tbtn,.rankbox,.stress .meter,.daybtn,.lane,.mapbar,.pinform,.pinform input,.pinform select,.geoform,.geoform input,.geoform select,.dash,.thumb,.edit-mode-btn,.list-sort-sel,.cal,.calbtn,.calmodes,.calday,.calwk-col,.suggest textarea,.stamp,.go,.pinbtn,.evform,.evform input,.evform select,.evform textarea";
   var waSvg = null, waTick = 0;
   function waOn() { return opts.wobble && opts.wobAll; }
   function isFixedEl(el0) {
@@ -6984,9 +8442,11 @@ window.__gcalAuth = {
       if (it.done || !(it.limitMin > 0) || !(it.limitAt > 0)) return;
       if (now >= it.limitAt && !it.limitAlerted) {
         it.limitAlerted = true; dirty = true;
-        toast("Time limit reached: " + it.text);
-        fx("chime");
-        fireDesktopNotif("Mission time limit", it.text + " (" + placeInfo(it.place).n + ")", "");
+        if (opts.reminders) {
+          toast("Time limit reached: " + it.text);
+          fx("chime");
+          fireDesktopNotif("Mission time limit", it.text + " (" + placeInfo(it.place).n + ")", "");
+        }
       }
     });
     if (dirty) {
@@ -7008,34 +8468,104 @@ window.__gcalAuth = {
   }
   function remCheck() {
     var now = Date.now(), changed = false;
-    events.forEach(function (e) {
-      if (e.remind < 0) return;
-      var at = evStartMs(e) - e.remind * 60000, key = e.id + ":" + e.date + ":" + e.start + ":" + e.remind;
-      if (now >= at && now < at + 150000 && !FIRED[key]) {
-        FIRED[key] = now; changed = true;
-        var msg = e.title + (e.allDay || !e.start ? " (today)" : " at " + e.start);
-        toast("Reminder: " + msg); fx("chime");
-        fireDesktopNotif(e.title, msg, "");
+    if (opts.reminders) {
+      events.forEach(function (e) {
+        if (e.remind < 0) return;
+        var at = evStartMs(e) - e.remind * 60000, key = e.id + ":" + e.date + ":" + e.start + ":" + e.remind;
+        if (now >= at && now < at + 150000 && !FIRED[key]) {
+          FIRED[key] = now; changed = true;
+          var msg = e.title + (e.allDay || !e.start ? " (today)" : " at " + e.start);
+          toast("Reminder: " + msg); fx("chime");
+          fireDesktopNotif(e.title, msg, "");
+        }
+      });
+      if (opts.prodReminders) {
+        syncProductiveScheduler({ skipPhone: true, checkDue: true });
       }
-    });
+    }
     Object.keys(FIRED).forEach(function (k) { if (now - FIRED[k] > 3 * 86400000) { delete FIRED[k]; changed = true; } });
     if (changed) { try { localStorage.setItem("mission-map-fired", JSON.stringify(FIRED)); } catch (x) {} }
     limitTick();
     renderNext();
+    syncProdRemUi();
   }
   setInterval(remCheck, 30000);
   setInterval(limitTick, 15000);
   function notifState() {
     var m = $("notifMsg"), b = $("notifBtn");
-    if (!window.Notification) { m.textContent = "This browser has no notifications. Reminders show inside the page."; b.hidden = true; return; }
+    if (!m || !b) return;
+    if (!opts.reminders) {
+      m.textContent = "Reminders are switched off. Enable reminders above to get event and productive-hour check-ins.";
+      b.hidden = true;
+      return;
+    }
+    if (DESKTOP) {
+      m.textContent = "Reminders are on using native desktop notifications.";
+      b.hidden = true;
+      return;
+    }
+    if (NATIVE && LN) {
+      LN.checkPermissions().then(function (r) {
+        var ok = r && r.display === "granted";
+        m.textContent = ok
+          ? "Android reminders are on (events, limits, and detected productive-hour check-ins)."
+          : "Notification permission is off on Android. Tap Allow notifications to get alerts even when the app is closed.";
+        b.hidden = ok;
+      }).catch(function () {
+        m.textContent = "Allow notifications so Mission Map can alert you for events and productive hours.";
+        b.hidden = false;
+      });
+      return;
+    }
+    if (!window.Notification) { m.textContent = "This browser has no system notifications. Reminders show inside the page."; b.hidden = true; return; }
     var s = Notification.permission;
-    m.textContent = s === "granted" ? "Notifications are on. They only fire while this page is open." : s === "denied" ? "Notifications are blocked for this page in the browser settings. Reminders still show inside the page." : "Not allowed yet. Reminders show inside the page until you allow notifications.";
+    m.textContent = s === "granted" ? "Notifications are on. Reminders fire while Mission Map is open." : s === "denied" ? "Notifications are blocked for this page in browser settings. Reminders still show inside the page." : "Not allowed yet. Tap Allow notifications or reminders will show inside the page.";
     b.hidden = s !== "default";
   }
   $("notifBtn").addEventListener("click", function () {
-    try { var r = Notification.requestPermission(function () { notifState(); }); if (r && r.then) r.then(notifState); } catch (e) {}
+    if (NATIVE && LN) {
+      var p = AP ? AP.requestNotifications().then(function () { return LN.requestPermissions(); }).catch(function () { return LN.requestPermissions(); }) : LN.requestPermissions();
+      Promise.resolve(p).catch(function () {}).then(function () { notifState(); reminderStatus(); syncProductiveScheduler(); schedulePhone(); });
+      return;
+    }
+    try { var r = Notification.requestPermission(function () { notifState(); syncProductiveScheduler(); }); if (r && r.then) r.then(function () { notifState(); syncProductiveScheduler(); }); } catch (e) {}
   });
-  notifState();
+  if ($("remTestBtn")) $("remTestBtn").addEventListener("click", function () {
+    if (!opts.reminders) {
+      opts.reminders = true;
+      if ($("remOn")) $("remOn").checked = true;
+      saveOpts(); applyOpts();
+    }
+    syncProductiveScheduler({ skipPhone: true });
+    var plan = getDetectedProductiveReminderPlan();
+    var copy = plan.openCount > 0 && plan.ready
+      ? buildProdNotifCopy(plan)
+      : {
+          title: "Mission Map Reminders Ready",
+          body: plan.openCount > 0
+            ? ("Reminders active · " + plan.openCount + " open mission" + (plan.openCount === 1 ? "" : "s") + " waiting.")
+            : "Task scheduler active for events, time limits, and detected productive hours."
+        };
+    var nextJob = prodSched.jobs && prodSched.jobs[0];
+    var body = copy.body + (nextJob && !nextJob.catchUp ? (" Next scheduled: " + fmtSchedTime(nextJob.triggerAt) + ".") : "");
+    toast(body);
+    fx("chime");
+    var sent = fireDesktopNotif(copy.title, body, "");
+    if (!sent && NATIVE && LN) {
+      LN.checkPermissions().then(function (pm) {
+        return pm && pm.display === "granted" ? pm : LN.requestPermissions();
+      }).then(function (pm) {
+        if (!pm || pm.display !== "granted") { notifState(); return; }
+        return LN.createChannel({ id: "productivity", name: "Mission check-ins", description: "Productive-hour mission check-ins", importance: 3, visibility: 1 }).catch(function () {})
+          .then(function () {
+            return LN.schedule({ notifications: [{ id: 989101, title: copy.title, body: body, channelId: "productivity", smallIcon: "ic_stat_mission", schedule: { at: new Date(Date.now() + 1500), allowWhileIdle: true } }] });
+          });
+      }).catch(function () {});
+    } else if (!sent && !DESKTOP && !NATIVE && window.Notification && Notification.permission === "default") {
+      try { Notification.requestPermission(function (s) { notifState(); if (s === "granted") fireDesktopNotif(copy.title, body, ""); }); } catch (e) {}
+    }
+  });
+  notifState(); syncProdRemUi();
 
   /* ---------- phone features: permissions, reminders and calendar sync, inside the Android app ---------- */
   var NATIVE = false, LN = null, CAL = null, AP = null;
@@ -7072,30 +8602,46 @@ window.__gcalAuth = {
   function doSchedule() {
     if (schedBusy) { schedAgain = true; return; }
     schedBusy = true;
-    var now = Date.now(), itemsList = [];
-    if (phone.remind) events.forEach(function (e) {
-      if (e.remind < 0 || e.src === "device") return;
-      var at = evStartMs(e) - e.remind * 60000;
-      if (at > now + 3000 && at < now + 120 * 86400000) itemsList.push({ e: e, at: at });
-    });
-    itemsList.sort(function (a, b) { return a.at - b.at; }); itemsList = itemsList.slice(0, 60);
+    var now = Date.now(), itemsList = [], prodList = [];
+    if (opts.reminders && phone.remind) {
+      events.forEach(function (e) {
+        if (e.remind < 0 || e.src === "device") return;
+        var at = evStartMs(e) - e.remind * 60000;
+        if (at > now + 3000 && at < now + 120 * 86400000) itemsList.push({ e: e, at: at });
+      });
+      if (opts.prodReminders) {
+        var jobs = buildPeakScheduleJobs(getDetectedProductiveReminderPlan(), now);
+        jobs.forEach(function (j) {
+          if (j.triggerAt > now + 3000) {
+            prodList.push({ id: hash32(j.id), title: j.title, body: j.body, at: j.triggerAt });
+          }
+        });
+      }
+    }
+    itemsList.sort(function (a, b) { return a.at - b.at; }); itemsList = itemsList.slice(0, 56);
     LN.getPending().then(function (p) {
       var ids = (p.notifications || []).map(function (n) { return { id: n.id }; });
       return ids.length ? LN.cancel({ notifications: ids }) : null;
     }).then(function () {
-      if (!itemsList.length) return;
+      if (!itemsList.length && !prodList.length) return;
       return LN.checkPermissions().then(function (p) { return p.display === "granted" ? p : LN.requestPermissions(); }).then(function (p) {
         if (p.display !== "granted") { pMsg("Notifications are blocked. Allow them for Mission Map in Android settings to get reminders."); return; }
-        return LN.createChannel({ id: "events", name: "Event reminders", description: "Reminders for your events", importance: 4, visibility: 1, vibration: true }).catch(function () {})
-          .then(checkExact).then(function () {
-            return LN.schedule({ notifications: itemsList.map(function (o) {
-              var e = o.e, bits = [e.allDay || !e.start ? "Today" : "At " + e.start];
-              if (e.place) bits.push(placeInfo(e.place).n);
-              if (e.where) bits.push(e.where);
-              return { id: hash32(e.id + ":" + o.at), title: e.title, body: bits.join(" · "), channelId: "events", smallIcon: "ic_stat_mission",
-                schedule: { at: new Date(o.at), allowWhileIdle: true }, isExactNotification: exactOK, extra: { evId: e.id } };
-            }) });
-          });
+        return Promise.all([
+          LN.createChannel({ id: "events", name: "Event reminders", description: "Reminders for your events", importance: 4, visibility: 1, vibration: true }).catch(function () {}),
+          LN.createChannel({ id: "productivity", name: "Mission check-ins", description: "Productive-hour mission check-ins", importance: 3, visibility: 1, vibration: true }).catch(function () {})
+        ]).then(checkExact).then(function () {
+          var notifs = itemsList.map(function (o) {
+            var e = o.e, bits = [e.allDay || !e.start ? "Today" : "At " + e.start];
+            if (e.place) bits.push(placeInfo(e.place).n);
+            if (e.where) bits.push(e.where);
+            return { id: hash32(e.id + ":" + o.at), title: e.title, body: bits.join(" · "), channelId: "events", smallIcon: "ic_stat_mission",
+              schedule: { at: new Date(o.at), allowWhileIdle: true }, isExactNotification: exactOK, extra: { evId: e.id } };
+          }).concat(prodList.map(function (po) {
+            return { id: po.id, title: po.title, body: po.body, channelId: "productivity", smallIcon: "ic_stat_mission",
+              schedule: { at: new Date(po.at), allowWhileIdle: true }, isExactNotification: exactOK };
+          }));
+          return LN.schedule({ notifications: notifs });
+        });
       });
     }).catch(function (e) { pMsg("Could not set reminders: " + errText(e)); }).then(function () {
       schedBusy = false; if (schedAgain) { schedAgain = false; schedulePhone(); }
@@ -7244,16 +8790,17 @@ window.__gcalAuth = {
   function syncSoon() { if (!NATIVE || !phone.calOn) return; clearTimeout(syncT); syncT = setTimeout(phoneSync, 2500); }
   function phoneForget(e) { if (e && e.ext && e.src !== "device") { phone.del.push(e.ext.id); saveP(); } }
   function phoneInit() {
-    var sec = $("phoneSec"); sec.hidden = !NATIVE; if (!NATIVE) return;
+    var sec = $("phoneSec"); sec.hidden = !NATIVE; notifState(); if (!NATIVE) return;
     $("phRem").checked = phone.remind;
     $("phRem").addEventListener("change", function () {
       phone.remind = this.checked; saveP();
+      opts.reminders = this.checked; if ($("remOn")) $("remOn").checked = this.checked; saveOpts();
       if (this.checked && LN) {
         LN.checkPermissions().then(function (pm) {
           if (!pm || pm.display !== "granted") return LN.requestPermissions();
-        }).catch(function () {}).then(function () { reminderStatus(); schedulePhone(); });
+        }).catch(function () {}).then(function () { reminderStatus(); notifState(); syncProdRemUi(); schedulePhone(); });
       } else {
-        schedulePhone();
+        notifState(); syncProdRemUi(); schedulePhone();
       }
     });
     $("phNotif").addEventListener("click", function () {
@@ -8560,6 +10107,7 @@ window.__gcalAuth = {
       localStorage.setItem(XKEY, JSON.stringify({ pins: pins, notes: notes, visited: visited, geofences: geofences, stats: stats, events: events }));
     } catch (e) {}
     schedulePhone();
+    if (typeof syncProductiveScheduler === "function") syncProductiveScheduler({ skipPhone: true });
     if (!ref) return;
     var copy = JSON.parse(JSON.stringify({ items: items, pins: pins, notes: notes, visited: visited, geofences: geofences, stats: stats, events: events.filter(function (x) { return x.src !== "device"; }) }));
     queue = queue.then(function () { return ref.set(copy); }).catch(function () { setStatus("Could not sync just now. Changes are kept on this device."); });
@@ -8602,7 +10150,7 @@ window.__gcalAuth = {
     if (!isFinite(n)) n = 1;
     return Math.round(Math.min(1.75, Math.max(0.5, n)) * 100) / 100;
   }
-  var tapeState = { recording: false, playing: false, paused: false, scrubbing: false, scrubWasPlaying: false, startedAt: 0, recAccum: 0, offset: 0, rate: clampTapeRate(opts.tapeRate),
+  var tapeState = { recording: false, playing: false, paused: false, scrubbing: false, scrubWasPlaying: false, scrubDeg: 0, lastScrubPos: 0, scrubDirT: null, startedAt: 0, recAccum: 0, offset: 0, rate: clampTapeRate(opts.tapeRate),
     dur: 0, chunks: [], stream: null, mr: null, micSrc: null, analyser: null, vuRaf: 0, recTimer: null, playTimer: null, playSrc: null,
     playStartCtx: 0, playGain: null, hissSrc: null, hissGain: null, lfo1: null, lfo2: null, dryBus: null, wetBus: null, curBuf: null, curBufId: null, spinT: null };
 
@@ -8645,7 +10193,7 @@ window.__gcalAuth = {
     dk.classList.toggle("recording", tapeState.recording && !tapeState.paused);
     dk.classList.toggle("playing", tapeState.playing);
     dk.classList.toggle("paused", tapeState.paused);
-    dk.classList.toggle("open", tapePinned || tapeState.recording || tapeState.playing || tapeState.paused);
+    dk.classList.toggle("open", tapePinned || tapeState.recording);
     if ($("tapeTab")) $("tapeTab").setAttribute("aria-expanded", dk.classList.contains("open") ? "true" : "false");
     if ($("tapeRecBtn")) $("tapeRecBtn").setAttribute("aria-pressed", tapeState.recording ? "true" : "false");
     if ($("tapePlayBtn")) $("tapePlayBtn").setAttribute("aria-pressed", tapeState.playing ? "true" : "false");
@@ -8657,6 +10205,7 @@ window.__gcalAuth = {
         : tapeState.playing ? "Playing Tape"
         : tapeState.paused ? "Tape Paused" : "Tape Deck";
     }
+    if (typeof window.syncTapeScroll === "function") window.syncTapeScroll();
     if (typeof syncListenUi === "function") syncListenUi();
   }
   function syncTapePitchUi() {
@@ -8704,12 +10253,35 @@ window.__gcalAuth = {
     noise(t, heavy ? 0.045 : 0.028, "bandpass", heavy ? 1100 : 1800, 700, heavy ? 0.35 : 0.22, 1.4);
     tone("triangle", heavy ? 180 : 260, 75, t, 0.04, 0.25);
   }
+  function setTapeDoorMode(txt) {
+    if ($("tapeDoorMode")) $("tapeDoorMode").textContent = txt || "VOICE TAPE";
+  }
+  function pulseScrubVu(intensity) {
+    var box = $("tapeVu"); if (!box) return;
+    var bars = box.children, amp = Math.min(1, Math.max(0.18, intensity || 0.45));
+    for (var i = 0; i < bars.length; i++) {
+      var wave = 0.45 + 0.55 * Math.abs(Math.sin((tapeState.scrubDeg * 0.04) + i * 0.9));
+      var pct = Math.round(18 + wave * amp * 74);
+      bars[i].style.height = pct + "%";
+      bars[i].classList.toggle("hot", pct >= 76);
+    }
+  }
   function tapeSpinBurst(dir) {
     var dk = $("tapeDock"); if (!dk) return;
     clearTimeout(tapeState.spinT);
     dk.classList.remove("fastspin", "revspin");
+    if ($("tapeRewBtn")) $("tapeRewBtn").classList.remove("shuttle-on");
+    if ($("tapeFfBtn")) $("tapeFfBtn").classList.remove("shuttle-on");
     dk.classList.add(dir < 0 ? "revspin" : "fastspin");
-    tapeState.spinT = setTimeout(function () { dk.classList.remove("fastspin", "revspin"); }, 420);
+    if (dir < 0 && $("tapeRewBtn")) $("tapeRewBtn").classList.add("shuttle-on");
+    if (dir > 0 && $("tapeFfBtn")) $("tapeFfBtn").classList.add("shuttle-on");
+    setTapeDoorMode(dir < 0 ? "« REWINDING" : "FAST FWD »");
+    tapeState.spinT = setTimeout(function () {
+      dk.classList.remove("fastspin", "revspin");
+      if ($("tapeRewBtn")) $("tapeRewBtn").classList.remove("shuttle-on");
+      if ($("tapeFfBtn")) $("tapeFfBtn").classList.remove("shuttle-on");
+      if (!tapeState.scrubbing) setTapeDoorMode("VOICE TAPE");
+    }, 460);
   }
   function makeSatCurve(amount) {
     var n = 2048, curve = new Float32Array(n), x;
@@ -9119,16 +10691,36 @@ window.__gcalAuth = {
   (function initTapeDock() {
     var dk = $("tapeDock"), deckEl = $("tapeDeck"), hoverT = null;
     if (!dk) return;
+    var tapeOpenScrollY = null, tapeHideT = null;
+    function getPageScrollY() {
+      var de = document.documentElement, bd = document.body;
+      return Math.max(0, window.scrollY || window.pageYOffset || (de ? de.scrollTop : 0) || (bd ? bd.scrollTop : 0) || 0);
+    }
+    function setTapeDeckOpen(on) {
+      if (on) {
+        dk.classList.remove("scroll-hidden");
+        dk.classList.add("open");
+        dk.style.setProperty("--tape-menu-scroll", "0");
+        tapeOpenScrollY = getPageScrollY();
+      } else {
+        dk.classList.remove("open", "menu-scrolling");
+        dk.style.setProperty("--tape-menu-scroll", "0");
+        tapeOpenScrollY = null;
+        if (dk.contains(document.activeElement) && document.activeElement.blur) document.activeElement.blur();
+      }
+      if ($("tapeTab")) $("tapeTab").setAttribute("aria-expanded", dk.classList.contains("open") ? "true" : "false");
+    }
     function hoverIn(ev) {
       if (ev.pointerType === "touch") return;
       clearTimeout(hoverT);
-      dk.classList.add("open");
+      if (dk.classList.contains("scroll-hidden")) return;
+      setTapeDeckOpen(true);
     }
     function hoverOut(ev) {
       if (ev.pointerType === "touch") return;
       clearTimeout(hoverT);
       hoverT = setTimeout(function () {
-        if (!tapePinned && !tapeState.recording && !tapeState.playing && !tapeState.paused) dk.classList.remove("open");
+        if (!tapePinned && !tapeState.recording && !tapeState.playing && !tapeState.paused) setTapeDeckOpen(false);
       }, 650);
     }
     dk.addEventListener("pointerenter", hoverIn);
@@ -9138,16 +10730,16 @@ window.__gcalAuth = {
       deckEl.addEventListener("pointerleave", hoverOut);
     }
     $("tapeTab").addEventListener("click", function () {
-      tapePinned = !dk.classList.contains("open") ? true : !tapePinned;
-      if (tapePinned) dk.classList.add("open");
-      else if (!tapeState.recording && !tapeState.playing && !tapeState.paused) dk.classList.remove("open");
-      $("tapeTab").setAttribute("aria-expanded", dk.classList.contains("open") ? "true" : "false");
+      tapePinned = !dk.classList.contains("open") ? true : false;
+      if (tapePinned || tapeState.recording) setTapeDeckOpen(true);
+      else setTapeDeckOpen(false);
+      if (typeof syncTapeScroll === "function") syncTapeScroll();
       tapeMechClick(false);
     });
     $("tapeCloseBtn").addEventListener("click", function () {
       tapePinned = false;
-      if (!tapeState.recording && !tapeState.playing && !tapeState.paused) dk.classList.remove("open");
-      $("tapeTab").setAttribute("aria-expanded", dk.classList.contains("open") ? "true" : "false");
+      if (!tapeState.recording) setTapeDeckOpen(false);
+      if (typeof syncTapeScroll === "function") syncTapeScroll();
       tapeMechClick(false);
     });
     $("tapeStyleBtn").addEventListener("click", function () {
@@ -9182,12 +10774,26 @@ window.__gcalAuth = {
       }
       function startScrub() {
         if (tapeState.recording) return;
+        var tp = findTape(tapeActiveId) || tapes[0];
+        var totalDur = tp ? getSeekTotalDur(tp) : 1;
+        var curFrac = Math.min(1, Math.max(0, (+seekInp.value || 0) / 1000));
         tapeState.scrubbing = true;
         tapeState.scrubWasPlaying = tapeState.playing;
+        tapeState.lastScrubPos = curFrac * totalDur;
+        dk.classList.add("scrubbing");
+      }
+      function stopScrubState(dir) {
+        clearTimeout(tapeState.scrubDirT);
+        tapeState.scrubbing = false;
+        tapeState.scrubWasPlaying = false;
+        dk.classList.remove("scrubbing", "scrub-fwd", "scrub-rev");
+        if (!tapeState.playing && !tapeState.recording) drawTapeVuIdle();
+        if (dir) tapeSpinBurst(dir);
+        else setTapeDoorMode("VOICE TAPE");
       }
       function endScrubFallback() {
         setTimeout(function () {
-          if (tapeState.scrubbing) { tapeState.scrubbing = false; tapeState.scrubWasPlaying = false; }
+          if (tapeState.scrubbing) stopScrubState(0);
         }, 0);
       }
       seekInp.addEventListener("pointerdown", startScrub);
@@ -9198,20 +10804,38 @@ window.__gcalAuth = {
       seekInp.addEventListener("input", function () {
         if (tapeState.recording) return;
         var tp = findTape(tapeActiveId) || tapes[0]; if (!tp) return;
-        if (!tapeState.scrubbing) { tapeState.scrubbing = true; tapeState.scrubWasPlaying = tapeState.playing; }
+        if (!tapeState.scrubbing) startScrub();
         var totalDur = getSeekTotalDur(tp);
         var frac = Math.min(1, Math.max(0, (+this.value || 0) / 1000));
         var pos = frac * totalDur;
+        var delta = pos - (tapeState.lastScrubPos || 0);
+        tapeState.lastScrubPos = pos;
+        tapeState.scrubDeg += (delta / Math.max(0.5, totalDur)) * 1800;
+        dk.style.setProperty("--tape-scrub-deg", tapeState.scrubDeg.toFixed(1) + "deg");
+        if (Math.abs(delta) > 0.001) {
+          var fwd = delta > 0;
+          dk.classList.toggle("scrub-fwd", fwd);
+          dk.classList.toggle("scrub-rev", !fwd);
+          setTapeDoorMode(fwd ? "SCRUB »" : "« SCRUB");
+          pulseScrubVu(Math.min(1, Math.abs(delta) * 4));
+          clearTimeout(tapeState.scrubDirT);
+          tapeState.scrubDirT = setTimeout(function () {
+            dk.classList.remove("scrub-fwd", "scrub-rev");
+            if (tapeState.scrubbing) setTapeDoorMode("SCRUBBING");
+          }, 180);
+        }
         updateTapeSeekUi(pos, totalDur, true);
       });
       seekInp.addEventListener("change", function () {
         var shouldPlay = tapeState.playing || tapeState.scrubWasPlaying;
-        tapeState.scrubbing = false; tapeState.scrubWasPlaying = false;
-        if (tapeState.recording) return;
-        var tp = findTape(tapeActiveId) || tapes[0]; if (!tp) return;
+        if (tapeState.recording) { stopScrubState(0); return; }
+        var tp = findTape(tapeActiveId) || tapes[0];
+        if (!tp) { stopScrubState(0); return; }
         var totalDur = getSeekTotalDur(tp);
+        var prevOffset = tapeState.offset || 0;
         var frac = Math.min(1, Math.max(0, (+this.value || 0) / 1000));
         var nextPos = Math.min(Math.max(0, totalDur - 0.12), Math.max(0, frac * totalDur));
+        stopScrubState(Math.abs(nextPos - prevOffset) > 0.15 ? (nextPos >= prevOffset ? 1 : -1) : 0);
         tapeState.offset = nextPos;
         updateTapeSeekUi(nextPos, totalDur, false);
         if (shouldPlay && tapeState.curBuf && tapeState.curBufId === tp.id) {
@@ -9243,13 +10867,50 @@ window.__gcalAuth = {
       }
     });
     document.addEventListener("pointerdown", function (e) {
-      if (!dk.contains(e.target) && !tapeState.recording && !tapeState.playing && !tapeState.paused) {
+      if (!dk.contains(e.target) && !tapeState.recording) {
         tapePinned = false;
-        dk.classList.remove("open");
-        if ($("tapeTab")) $("tapeTab").setAttribute("aria-expanded", "false");
+        setTapeDeckOpen(false);
       }
     });
-    /* "Now Listening" display + external song toggle + listening heartbeat */
+    /* keep the Tape Deck button stationary; move/hide the open Tape Deck menu when scrolling */
+    var tapeScrollRaf = 0;
+    function applyTapeScroll() {
+      tapeScrollRaf = 0;
+      var de = document.documentElement, bd = document.body;
+      var sy = getPageScrollY();
+      var docH = Math.max(de ? de.scrollHeight : 0, bd ? bd.scrollHeight : 0);
+      var maxScroll = Math.max(0, docH - window.innerHeight);
+      var isOpen = dk.classList.contains("open");
+      if (!isOpen || tapeState.recording || tapeState.scrubbing) {
+        dk.classList.remove("menu-scrolling");
+        dk.style.setProperty("--tape-menu-scroll", "0");
+        tapeOpenScrollY = isOpen ? sy : null;
+        return;
+      }
+      if (tapeOpenScrollY === null) tapeOpenScrollY = sy;
+      var delta = Math.abs(sy - tapeOpenScrollY);
+      var range = maxScroll > 20 ? Math.min(84, Math.max(36, maxScroll * 0.55)) : 84;
+      var p = maxScroll > 20 ? Math.min(1, delta / range) : 0;
+      dk.classList.toggle("menu-scrolling", p > 0 && p < 0.98);
+      dk.style.setProperty("--tape-menu-scroll", p.toFixed(3));
+      if (p >= 0.98) {
+        tapePinned = false;
+        dk.classList.add("scroll-hidden");
+        setTapeDeckOpen(false);
+        clearTimeout(tapeHideT);
+        tapeHideT = setTimeout(function () { dk.classList.remove("scroll-hidden"); }, 320);
+      }
+    }
+    window.syncTapeScroll = applyTapeScroll;
+    function onTapeScroll() {
+      if (tapeScrollRaf) return;
+      tapeScrollRaf = requestAnimationFrame(applyTapeScroll);
+    }
+    window.addEventListener("scroll", onTapeScroll, { passive: true });
+    window.addEventListener("resize", onTapeScroll, { passive: true });
+    applyTapeScroll();
+
+    /* "Now Listening" display + automatic OS/DOM media reader + listening heartbeat */
     var EXT_LISTEN_KEY = "mission-map-listen";
     var extListen = { on: false, title: "" };
     try {
@@ -9257,6 +10918,80 @@ window.__gcalAuth = {
       if (el0 && typeof el0 === "object") extListen = { on: !!el0.on, title: str(el0.title, 64) };
     } catch (e) {}
     function saveExtListen() { try { localStorage.setItem(EXT_LISTEN_KEY, JSON.stringify(extListen)); } catch (e) {} }
+
+    var autoMedia = { on: false, label: "", detail: "", sig: "" };
+    var lastAutoMediaSig = "", lastAutoMediaLabel = "", lastAutoMediaLogAt = 0, autoMediaBusy = false;
+
+    function cleanMediaSourceName(src) {
+      var s = str(src || "", 80);
+      if (!s) return "";
+      s = s.replace(/\.exe$/i, "");
+      if (s.indexOf("!") >= 0) s = s.split("!")[0];
+      if (s.indexOf(".") >= 0 && s.length > 18) {
+        var parts = s.split(".");
+        s = parts[parts.length - 1] || s;
+      }
+      return s.slice(0, 28);
+    }
+
+    function applyDetectedMedia(res) {
+      var active = !!(res && (res.active || res.playing));
+      var title = str(res && res.title ? res.title : "", 80);
+      var artist = str(res && res.artist ? res.artist : "", 60);
+      var src = cleanMediaSourceName(res && res.source ? res.source : "");
+      var label = title ? (artist ? (title + " — " + artist) : title) : (src ? ("Playing on " + src) : "Active media");
+      var detail = src ? ("Auto · " + src) : "Active media";
+      var sig = active ? (label + "|" + src) : "";
+      var changed = (autoMedia.on !== active) || (autoMedia.sig !== sig);
+      autoMedia = active ? { on: true, label: label, detail: detail, sig: sig } : { on: false, label: "", detail: "", sig: "" };
+      var internalOn = (tapeState.recording && !tapeState.paused) || tapeState.playing || (snd.music && (mus.timer || mus.el));
+      if (active && !internalOn) {
+        var now = Date.now();
+        if (sig !== lastAutoMediaSig && (label !== lastAutoMediaLabel || now - lastAutoMediaLogAt > 120000)) {
+          lastAutoMediaSig = sig;
+          lastAutoMediaLabel = label;
+          lastAutoMediaLogAt = now;
+          logEv("lx", label);
+        }
+      } else if (!active) {
+        lastAutoMediaSig = "";
+      }
+      if (changed && typeof window.syncListenUi === "function") window.syncListenUi();
+    }
+
+    function readDomActiveMedia() {
+      var els = document.querySelectorAll("audio, video");
+      for (var i = 0; i < els.length; i++) {
+        var m = els[i];
+        if (!m || m === mus.el || m.paused || m.ended || m.readyState < 2) continue;
+        var ms = navigator.mediaSession && navigator.mediaSession.metadata;
+        var t = (ms && ms.title) || m.getAttribute("data-title") || m.title || "In-page media";
+        var a = (ms && ms.artist) || "";
+        return { active: true, playing: true, title: t, artist: a, source: "Browser Audio" };
+      }
+      return null;
+    }
+
+    function pollActiveMedia() {
+      if (autoMediaBusy) return;
+      var domHit = readDomActiveMedia();
+      if (domHit) { applyDetectedMedia(domHit); return; }
+      if (DESKTOP && typeof DESKTOP.getActiveMedia === "function") {
+        autoMediaBusy = true;
+        DESKTOP.getActiveMedia().then(function (r) {
+          applyDetectedMedia(r);
+        }).catch(function () {}).then(function () { autoMediaBusy = false; });
+        return;
+      }
+      if (NATIVE && AP && typeof AP.getActiveMedia === "function") {
+        autoMediaBusy = true;
+        AP.getActiveMedia().then(function (r) {
+          applyDetectedMedia(r);
+        }).catch(function () {}).then(function () { autoMediaBusy = false; });
+        return;
+      }
+      if (autoMedia.on) applyDetectedMedia({ active: false });
+    }
 
     window.currentListeningInfo = function () {
       if (tapeState.recording && !tapeState.paused) {
@@ -9271,6 +11006,9 @@ window.__gcalAuth = {
         if (mus.cur === "pl") return { on: true, kind: "song", label: mus.trackLabel || "Playlist track", detail: "Playlist" };
         if (mus.cur && mus.cur.indexOf("t:") === 0) return { on: true, kind: "song", label: mus.trackLabel || mmeta.themeMus[view] || "Theme audio", detail: "Theme track" };
         return { on: true, kind: "radio", label: mus.trackLabel || STATION_NAMES[stationKey()] || "Built-in Radio", detail: "Radio" };
+      }
+      if (autoMedia.on) {
+        return { on: true, kind: "auto", label: autoMedia.label || "Active media", detail: autoMedia.detail || "Active media" };
       }
       if (extListen.on) {
         return { on: true, kind: "ext", label: extListen.title || "Listening (External)", detail: "External song" };
@@ -9297,8 +11035,12 @@ window.__gcalAuth = {
 
     setInterval(function () {
       var info = currentListeningInfo();
-      if (info.on && !document.hidden && info.kind !== "rec") logEv("lm", info.label);
+      if (info.on && info.kind !== "rec") logEv("lm", info.label);
     }, 180000);
+    setInterval(pollActiveMedia, 15000);
+    window.addEventListener("focus", pollActiveMedia);
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) pollActiveMedia(); });
+    setTimeout(pollActiveMedia, 1500);
 
     if ($("tapeMusToggle")) $("tapeMusToggle").addEventListener("click", function () {
       snd.music = !snd.music;
@@ -9369,10 +11111,12 @@ window.__gcalAuth = {
   });
 
   function desktopInit() {
-    var sec = $("desktopSec"), headBtn = $("winMiniHeadBtn"), optBtn = $("winMiniBtn"), topChk = $("winTopOn"), trayChk = $("winTrayOn");
+    var sec = $("desktopSec"), headBtn = $("winMiniHeadBtn"), optBtn = $("winMiniBtn"), fsOptBtn = $("winFsBtn"), topChk = $("winTopOn"), trayChk = $("winTrayOn");
+    var winCtrls = $("winCtrls"), cMin = $("winCtrlMin"), cMax = $("winCtrlMax"), cFs = $("winCtrlFs"), cClose = $("winCtrlClose");
     function applyDesktopState(st) {
       if (!st || typeof st !== "object") return;
       document.body.classList.toggle("win-mini", !!st.miniMode);
+      document.body.classList.toggle("win-fullscreen", !!st.fullscreen);
       if (headBtn) {
         headBtn.textContent = st.miniMode ? "Full" : "Mini";
         headBtn.setAttribute("aria-pressed", st.miniMode ? "true" : "false");
@@ -9382,15 +11126,54 @@ window.__gcalAuth = {
         optBtn.textContent = st.miniMode ? "Exit mini mode" : "Enter mini mode";
         optBtn.setAttribute("aria-pressed", st.miniMode ? "true" : "false");
       }
+      if (cMax) {
+        cMax.textContent = st.maximized ? "❐" : "□";
+        cMax.setAttribute("aria-pressed", st.maximized ? "true" : "false");
+        cMax.title = st.maximized ? "Restore window" : "Maximize window";
+      }
+      if (cFs) {
+        cFs.setAttribute("aria-pressed", st.fullscreen ? "true" : "false");
+        cFs.title = st.fullscreen ? "Exit Fullscreen (F11)" : "Fullscreen (F11)";
+      }
+      if (fsOptBtn) {
+        fsOptBtn.textContent = st.fullscreen ? "Exit fullscreen" : "Enter fullscreen";
+        fsOptBtn.setAttribute("aria-pressed", st.fullscreen ? "true" : "false");
+      }
       if (topChk) topChk.checked = !!st.alwaysOnTop;
       if (trayChk) trayChk.checked = st.minimizeToTray !== false;
       if (typeof updateOptBadges === "function") updateOptBadges();
     }
     if (DESKTOP) {
+      document.body.classList.add("is-desktop");
       if (sec) sec.hidden = false;
       if (headBtn) headBtn.hidden = false;
+      if (winCtrls) winCtrls.hidden = false;
       if (DESKTOP.onState) DESKTOP.onState(applyDesktopState);
       if (DESKTOP.getState) DESKTOP.getState().then(applyDesktopState).catch(function () {});
+      if (cMin) cMin.addEventListener("click", function () {
+        if (DESKTOP.minimize) DESKTOP.minimize().catch(function () {});
+        fx("click");
+      });
+      if (cMax) cMax.addEventListener("click", function () {
+        if (DESKTOP.toggleMaximize) DESKTOP.toggleMaximize().then(applyDesktopState).catch(function () {});
+        fx("click");
+      });
+      if (cFs) cFs.addEventListener("click", function () {
+        if (DESKTOP.toggleFullscreen) DESKTOP.toggleFullscreen().then(applyDesktopState).catch(function () {});
+        fx("click");
+      });
+      if (fsOptBtn) fsOptBtn.addEventListener("click", function () {
+        if (DESKTOP.toggleFullscreen) DESKTOP.toggleFullscreen().then(applyDesktopState).catch(function () {});
+        fx("click");
+      });
+      if (cClose) cClose.addEventListener("click", function () {
+        if (DESKTOP.closeWindow) DESKTOP.closeWindow().catch(function () {});
+      });
+      var hd = document.querySelector(".head");
+      if (hd) hd.addEventListener("dblclick", function (ev) {
+        if (ev.target && ev.target.closest && ev.target.closest("button, a, input, select, .head-act, .pinbtn")) return;
+        if (DESKTOP.toggleMaximize) DESKTOP.toggleMaximize().then(applyDesktopState).catch(function () {});
+      });
       if (headBtn) headBtn.addEventListener("click", function () {
         if (DESKTOP.toggleMiniMode) DESKTOP.toggleMiniMode().then(applyDesktopState).catch(function () {});
         fx("click");
@@ -9433,6 +11216,11 @@ window.__gcalAuth = {
     document.addEventListener("keydown", function (e) {
       var tag = e.target && e.target.tagName ? e.target.tagName.toLowerCase() : "";
       var editing = tag === "input" || tag === "textarea" || tag === "select" || (e.target && e.target.isContentEditable);
+      if (e.key === "F11" && !e.ctrlKey && !e.metaKey && !e.altKey && DESKTOP && DESKTOP.toggleFullscreen) {
+        e.preventDefault();
+        DESKTOP.toggleFullscreen().then(applyDesktopState).catch(function () {});
+        return;
+      }
       if (!editing && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === "?" || e.key === "F1")) {
         e.preventDefault();
         openShortcutsModal($("shortcutsModal") ? $("shortcutsModal").hidden : true);
@@ -9474,6 +11262,14 @@ window.__gcalAuth = {
 
   /* ---------- start ---------- */
   buildMap(); fillSelect(); applyOpts(); render(); initDb(); mediaInit(); phoneInit(); gcalInit(); desktopInit();
+  if (typeof syncProductiveScheduler === "function") {
+    syncProductiveScheduler();
+    renderProductivityWidget();
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) syncProductiveScheduler({ skipPhone: true, checkDue: true });
+    });
+  }
+  setTimeout(remCheck, 2000);
   if (typeof syncAppIcon === "function") syncAppIcon();
   setInterval(updateSky, 60000);
 })();

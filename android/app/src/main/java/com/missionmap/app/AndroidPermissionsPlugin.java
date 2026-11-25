@@ -3,11 +3,17 @@ package com.missionmap.app;
 import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.AudioAttributes;
+import android.media.AudioManager;
+import android.media.AudioPlaybackConfiguration;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -31,6 +37,7 @@ import com.getcapacitor.annotation.PermissionCallback;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.util.List;
 
 @CapacitorPlugin(
     name = "AndroidPermissions",
@@ -57,6 +64,67 @@ import java.io.OutputStream;
     }
 )
 public class AndroidPermissionsPlugin extends Plugin {
+
+    private String lastMediaTrack = "";
+    private String lastMediaArtist = "";
+    private String lastMediaAlbum = "";
+    private String lastMediaSource = "";
+    private boolean lastMediaPlaying = false;
+    private long lastMediaAt = 0L;
+    private BroadcastReceiver mediaReceiver = null;
+
+    @Override
+    public void load() {
+        super.load();
+        try {
+            if (mediaReceiver != null) return;
+            mediaReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    if (intent == null) return;
+                    String action = intent.getAction();
+                    String track = intent.getStringExtra("track");
+                    String artist = intent.getStringExtra("artist");
+                    String album = intent.getStringExtra("album");
+                    boolean hasPlay = intent.hasExtra("playing");
+                    boolean playing = hasPlay ? intent.getBooleanExtra("playing", true) : true;
+                    if (track != null && !track.trim().isEmpty()) {
+                        lastMediaTrack = track.trim();
+                    }
+                    if (artist != null) lastMediaArtist = artist.trim();
+                    if (album != null) lastMediaAlbum = album.trim();
+                    lastMediaPlaying = playing;
+                    lastMediaAt = System.currentTimeMillis();
+                    if (action != null && action.contains("spotify")) lastMediaSource = "Spotify";
+                    else if (action != null && action.contains("youtube")) lastMediaSource = "YouTube Music";
+                    else lastMediaSource = "Android Media";
+                }
+            };
+            IntentFilter filter = new IntentFilter();
+            filter.addAction("com.android.music.metachanged");
+            filter.addAction("com.android.music.playstatechanged");
+            filter.addAction("com.spotify.music.metachanged");
+            filter.addAction("com.spotify.music.playbackstatechanged");
+            filter.addAction("com.google.android.apps.youtube.music.metachanged");
+            filter.addAction("org.lineageos.eleven.metachanged");
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                getContext().registerReceiver(mediaReceiver, filter, Context.RECEIVER_EXPORTED);
+            } else {
+                getContext().registerReceiver(mediaReceiver, filter);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    @Override
+    protected void handleOnDestroy() {
+        try {
+            if (mediaReceiver != null) {
+                getContext().unregisterReceiver(mediaReceiver);
+                mediaReceiver = null;
+            }
+        } catch (Exception ignored) {}
+        super.handleOnDestroy();
+    }
 
     private JSObject buildStatus() {
         JSObject res = new JSObject();
@@ -314,4 +382,43 @@ public class AndroidPermissionsPlugin extends Plugin {
             call.reject("Could not export map PNG.");
         }
     }
+
+    @PluginMethod
+    public void getActiveMedia(PluginCall call) {
+        boolean audioActive = false;
+        try {
+            AudioManager am = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
+            if (am != null) {
+                audioActive = am.isMusicActive();
+                if (!audioActive && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    List<AudioPlaybackConfiguration> cfgs = am.getActivePlaybackConfigurations();
+                    if (cfgs != null) {
+                        for (AudioPlaybackConfiguration cfg : cfgs) {
+                            if (cfg == null) continue;
+                            AudioAttributes attrs = cfg.getAudioAttributes();
+                            if (attrs != null && (attrs.getUsage() == AudioAttributes.USAGE_MEDIA || attrs.getUsage() == AudioAttributes.USAGE_GAME)) {
+                                audioActive = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+
+        long ageMs = System.currentTimeMillis() - lastMediaAt;
+        boolean hasRecentBroadcast = lastMediaAt > 0 && ageMs < 6 * 3600 * 1000L && !lastMediaTrack.isEmpty();
+        boolean playing = audioActive || (lastMediaPlaying && lastMediaAt > 0 && ageMs < 15 * 60 * 1000L);
+
+        JSObject res = new JSObject();
+        res.put("active", playing);
+        res.put("playing", playing);
+        res.put("audioActive", audioActive);
+        res.put("title", (playing && hasRecentBroadcast) ? lastMediaTrack : (audioActive ? "Active media audio" : ""));
+        res.put("artist", (playing && hasRecentBroadcast) ? lastMediaArtist : "");
+        res.put("album", (playing && hasRecentBroadcast) ? lastMediaAlbum : "");
+        res.put("source", !lastMediaSource.isEmpty() ? lastMediaSource : (audioActive ? "Android Audio" : ""));
+        call.resolve(res);
+    }
 }
+

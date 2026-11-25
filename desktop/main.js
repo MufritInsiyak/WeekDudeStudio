@@ -18,6 +18,7 @@ const http = require("http");
 const https = require("https");
 const fs = require("fs");
 const path = require("path");
+const { execFile } = require("child_process");
 
 const APP_ID = "com.missionmap.app";
 const PREFERRED_PORT = 45719;
@@ -158,11 +159,14 @@ function clampBoundsToWorkArea(b) {
 }
 
 function getDesktopState() {
+  const winOk = !!(mainWindow && !mainWindow.isDestroyed());
   return {
     miniMode: !!prefs.miniMode,
     alwaysOnTop: !!(prefs.miniMode || prefs.alwaysOnTop),
     minimizeToTray: !!prefs.minimizeToTray,
-    evilMode: !!currentEvilMode
+    evilMode: !!currentEvilMode,
+    maximized: winOk ? !!mainWindow.isMaximized() : !!prefs.maximized,
+    fullscreen: winOk ? !!mainWindow.isFullScreen() : false
   };
 }
 
@@ -583,6 +587,7 @@ function createWindow() {
     title: currentTitle,
     icon: currentIconImage && !currentIconImage.isEmpty() ? currentIconImage : undefined,
     backgroundColor: "#d6d7c0",
+    frame: false,
     autoHideMenuBar: true,
     alwaysOnTop: !!(prefs.miniMode || prefs.alwaysOnTop),
     webPreferences: {
@@ -652,8 +657,10 @@ function createWindow() {
 
   mainWindow.on("resize", persistWindowGeometry);
   mainWindow.on("move", persistWindowGeometry);
-  mainWindow.on("maximize", persistWindowGeometry);
-  mainWindow.on("unmaximize", persistWindowGeometry);
+  mainWindow.on("maximize", () => { persistWindowGeometry(); broadcastState(); });
+  mainWindow.on("unmaximize", () => { persistWindowGeometry(); broadcastState(); });
+  mainWindow.on("enter-full-screen", broadcastState);
+  mainWindow.on("leave-full-screen", broadcastState);
   mainWindow.on("show", rebuildTrayMenu);
   mainWindow.on("hide", rebuildTrayMenu);
 
@@ -709,6 +716,72 @@ function registerShortcuts() {
   } catch (_err) {}
 }
 
+let mediaCache = { ts: 0, promise: null, data: { active: false, playing: false, title: "", artist: "", album: "", source: "" } };
+const WIN_SMTC_SCRIPT = [
+  "$ErrorActionPreference = 'Stop'",
+  "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8",
+  "$null = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager, Windows.Media.Control, ContentType=WindowsRuntime]",
+  "$null = [Windows.Foundation.IAsyncOperation`1, Windows.Foundation, ContentType=WindowsRuntime]",
+  "Add-Type -AssemblyName System.Runtime.WindowsRuntime",
+  "$asTaskGeneric = ([System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object { $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation`1' })[0]",
+  "function Await($WinRtTask, $ResultType) { $m = $asTaskGeneric.MakeGenericMethod($ResultType); $t = $m.Invoke($null, @($WinRtTask)); $t.Wait(2200) | Out-Null; $t.Result }",
+  "$mgr = Await ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager])",
+  "$sessions = $mgr.GetSessions()",
+  "$cur = $mgr.GetCurrentSession()",
+  "$pick = $null",
+  "if ($cur -and ([string]$cur.SourceAppUserModelId) -notmatch 'missionmap|electron') { $pick = $cur }",
+  "if (-not $pick -and $sessions) { foreach ($s in $sessions) { $id = [string]$s.SourceAppUserModelId; if ($id -notmatch 'missionmap|electron') { $pb0 = $s.GetPlaybackInfo(); if ($pb0 -and $pb0.PlaybackStatus -eq [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionPlaybackStatus]::Playing) { $pick = $s; break } } } }",
+  "if (-not $pick) { @{ active = $false; playing = $false; title = ''; artist = ''; album = ''; source = '' } | ConvertTo-Json -Compress; exit 0 }",
+  "$pb = $pick.GetPlaybackInfo()",
+  "$playing = ($pb -and $pb.PlaybackStatus -eq [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionPlaybackStatus]::Playing)",
+  "$props = Await ($pick.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])",
+  "$src = [string]$pick.SourceAppUserModelId",
+  "@{ active = [bool]$playing; playing = [bool]$playing; title = if ($props) { [string]$props.Title } else { '' }; artist = if ($props) { [string]$props.Artist } else { '' }; album = if ($props) { [string]$props.AlbumTitle } else { '' }; source = $src } | ConvertTo-Json -Compress"
+].join("\n");
+const WIN_SMTC_ENC = Buffer.from(WIN_SMTC_SCRIPT, "utf16le").toString("base64");
+
+function readActiveMedia() {
+  const empty = { active: false, playing: false, title: "", artist: "", album: "", source: "" };
+  if (process.platform !== "win32") return Promise.resolve(empty);
+  const now = Date.now();
+  if (now - mediaCache.ts < 8000 && mediaCache.data) return Promise.resolve(mediaCache.data);
+  if (mediaCache.promise) return mediaCache.promise;
+  mediaCache.promise = new Promise((resolve) => {
+    execFile(
+      "powershell.exe",
+      ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", WIN_SMTC_ENC],
+      { timeout: 3500, windowsHide: true, maxBuffer: 256 * 1024 },
+      (err, stdout) => {
+        mediaCache.ts = Date.now();
+        mediaCache.promise = null;
+        if (err || !stdout) {
+          mediaCache.data = empty;
+          resolve(empty);
+          return;
+        }
+        try {
+          const line = String(stdout).trim().split(/\r?\n/).pop() || "";
+          const parsed = JSON.parse(line);
+          const out = {
+            active: !!(parsed && parsed.playing),
+            playing: !!(parsed && parsed.playing),
+            title: parsed && typeof parsed.title === "string" ? parsed.title.trim().slice(0, 120) : "",
+            artist: parsed && typeof parsed.artist === "string" ? parsed.artist.trim().slice(0, 80) : "",
+            album: parsed && typeof parsed.album === "string" ? parsed.album.trim().slice(0, 80) : "",
+            source: parsed && typeof parsed.source === "string" ? parsed.source.trim().slice(0, 80) : ""
+          };
+          mediaCache.data = out;
+          resolve(out);
+        } catch (_e) {
+          mediaCache.data = empty;
+          resolve(empty);
+        }
+      }
+    );
+  });
+  return mediaCache.promise;
+}
+
 function wireIpc() {
   ipcMain.handle("desktop:getState", () => getDesktopState());
 
@@ -716,6 +789,36 @@ function wireIpc() {
   ipcMain.handle("desktop:toggleMiniMode", () => applyMiniMode(!prefs.miniMode));
   ipcMain.handle("desktop:setAlwaysOnTop", (_ev, enabled) => setAlwaysOnTop(!!enabled));
   ipcMain.handle("desktop:setMinimizeToTray", (_ev, enabled) => setMinimizeToTray(!!enabled));
+
+  ipcMain.handle("desktop:minimize", () => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.minimize();
+    return getDesktopState();
+  });
+
+  ipcMain.handle("desktop:toggleMaximize", () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isFullScreen()) mainWindow.setFullScreen(false);
+      if (mainWindow.isMaximized()) mainWindow.unmaximize();
+      else mainWindow.maximize();
+    }
+    broadcastState();
+    return getDesktopState();
+  });
+
+  ipcMain.handle("desktop:toggleFullscreen", () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.setFullScreen(!mainWindow.isFullScreen());
+    }
+    broadcastState();
+    return getDesktopState();
+  });
+
+  ipcMain.handle("desktop:closeWindow", () => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.close();
+    return { ok: true };
+  });
+
+  ipcMain.handle("desktop:getActiveMedia", () => readActiveMedia());
 
   ipcMain.handle("desktop:setAppIcon", (_ev, payload) => {
     updateAppIcons(payload || {});

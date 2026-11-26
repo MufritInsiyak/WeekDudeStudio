@@ -496,9 +496,6 @@ body[data-view="errands"] .opts-overlay .opts-search-inp,
 body[data-view="errands"] .opts-overlay textarea { background: #efe7c8; color: #1c1a15; border-color: #000; }
 body[data-view="errands"] .opts-overlay .seg { border-color: #1c1a15; background: #efe7c8; }
 body[data-view="errands"] .opts-overlay .seg button[aria-pressed="true"] { background: #1c1a15; color: #d6cba3; }
-body[data-view="racer"] .opts-overlay .pola-card { border-color: #00e5ff; box-shadow: 6px 6px 0 #ff4f8b; }
-body[data-view="racer"] .opts-overlay .opts-tab { border-color: #00e5ff; font-family: "VT323", monospace; font-size: 15px; }
-body[data-view="racer"] .opts-overlay .opts-tab[aria-selected="true"] { border-color: #ff4f8b; color: #00e5ff; box-shadow: 3px 3px 0 #ff4f8b, inset 0 -3px 0 #ff4f8b; }
 body[data-view="zine"] .opts-overlay .pola-card { box-shadow: 6px 6px 0 #111; }
 body[data-view="zine"] .opts-overlay .opts-tab[aria-selected="true"] { box-shadow: 3px 3px 0 #111, inset 0 -3px 0 #d94a38; }
 body[data-view="wanted"] .opts-overlay .pola-card,
@@ -754,35 +751,6 @@ body.calm .place.in-geo .gf-ring, body.calm .yh-bob { animation: none; }
 .item.printing .row { animation: feed .8s steps(8, end) both; }
 body.no-print .item.printing, body.no-print .item.printing .row { animation: none; }
 
-/* racer: late-night arcade dusk */
-body[data-view="racer"] {
-  --bg: #120826; --paper: #1c0f3d; --ink: #f3eaff; --ink-soft: #a898d8; --red: #ff4f8b; --on-red: #17082e;
-  --map-bg: #1c0f3d; --water: #3b1f7a;
-  --prio-low: #5cf29c; --prio-low-bg: rgba(92, 242, 156, .16);
-  --prio-med: #ffd15c; --prio-med-bg: rgba(255, 209, 92, .16);
-  --prio-high: #ff4f8b; --prio-high-bg: rgba(255, 79, 139, .2);
-  --font-type: "VT323", "Courier New", monospace; --font-hand: "VT323", "Courier New", monospace;
-  color: #f3eaff; color-scheme: dark;
-  background-color: #120826; background-image: linear-gradient(#120826 0, #2a1054 55%, #5b1b6e 82%, #120826 100%); background-attachment: fixed;
-  font-size: 18px;
-}
-body[data-view="racer"]::before {
-  content: ""; position: fixed; left: 0; right: 0; bottom: 0; height: 34vh; pointer-events: none; z-index: 0; opacity: .5;
-  background: repeating-linear-gradient(90deg, rgba(0, 229, 255, .35) 0 2px, transparent 2px 46px), repeating-linear-gradient(0deg, rgba(255, 79, 139, .35) 0 2px, transparent 2px 26px);
-  transform: perspective(220px) rotateX(58deg); transform-origin: 50% 100%;
-  -webkit-mask-image: linear-gradient(transparent, #000 70%); mask-image: linear-gradient(transparent, #000 70%);
-}
-body[data-view="racer"] .stamp { font-family: "Press Start 2P", "Courier New", monospace; font-size: 14px; border: 0; padding: 0; transform: none; color: #f3eaff; letter-spacing: .08em; }
-body[data-view="racer"] .stamp::after { content: ""; display: block; height: 8px; margin-top: 6px; background: conic-gradient(#f3eaff 25%, #120826 0 50%, #f3eaff 0 75%, #120826 0) 0 0 / 8px 8px; }
-body[data-view="racer"] .count { font-size: 28px; color: #00e5ff; }
-body[data-view="racer"] .layout { max-width: 700px; width: 100%; margin: 0 auto; }
-body[data-view="racer"] .paper { border: 3px solid #00e5ff; box-shadow: 5px 5px 0 #ff4f8b; }
-body[data-view="racer"] .paper h2 { font-family: "Press Start 2P", monospace; font-size: 12px; color: #ff4f8b; }
-body[data-view="racer"] .t { font-size: 24px; }
-body[data-view="racer"] .btn { background: #ff4f8b; color: #17082e; border-color: #00e5ff; font-family: "Press Start 2P", monospace; font-size: 10px; --wob: #00e5ff; }
-body[data-view="racer"] .btn.ghost { background: #1c0f3d; color: #00e5ff; }
-body[data-view="racer"] .t::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 10' preserveAspectRatio='none'%3E%3Cpath d='M0 5 L100 5' fill='none' stroke='%2300e5ff' stroke-width='4' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E"); }
-body[data-view="racer"] .wrap::after { content: ""; display: none; }
 
 /* zine: photocopy, tape and ransom letters */
 body[data-view="zine"] {
@@ -957,7 +925,6 @@ body[data-view="amoled"] .t::after { background-image: url("data:image/svg+xml,%
 body.evil { --red: #ff3b2a; }
 body.evil::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(ellipse at 50% 40%, transparent 45%, rgba(160, 0, 0, .3) 100%); }
 body.evil .stamp::after { content: " / NO"; }
-body[data-view="racer"].evil .stamp::after { content: ""; display: block; height: 8px; margin-top: 6px; background: conic-gradient(#f3eaff 25%, #120826 0 50%, #f3eaff 0 75%, #120826 0) 0 0 / 8px 8px; }
 body.evil .count { color: var(--red); }
 body.evil .item.evil .t { text-decoration: none; }
 @media (prefers-reduced-motion: reduce) { .pinbtn { animation: none; } .pin3d, .place.pin .pin-sprite-spin { transform: none !important; filter: none !important; } .item.printing, .item.printing .row { animation: none; } .place .fog { transition: none; } .bike { transition: none; } }
@@ -1141,7 +1108,6 @@ html { scroll-padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
 .sheethead b { font-weight: 400; }
 .toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); max-width: calc(100vw - 24px); }
 @media (min-width: 769px) {
-  body[data-view="racer"] .layout,
   body[data-view="zine"] .layout,
   body[data-view="comic"] .layout { max-width: min(1040px, 100%); }
 }
@@ -3016,10 +2982,10 @@ body.sheet-open .tape-dock { opacity: 0; pointer-events: none; transform: transl
           </div>
 
           <div class="pola-sec" data-search="racer rank cash race the clock pomodoro timer watch road progress strip">
-            <h3 class="pola-sh">Racer &amp; Pomodoro</h3>
+            <h3 class="pola-sh">Road &amp; Pomodoro</h3>
             <label class="chk"><input type="checkbox" id="rankOn"> Rank and cash</label>
             <label class="chk"><input type="checkbox" id="raceOn"> Race the clock panel</label>
-            <label class="chk"><input type="checkbox" id="roadOn"> Road progress strip (always on in the Racer theme)</label>
+            <label class="chk"><input type="checkbox" id="roadOn"> Road progress strip</label>
             <div class="msg">Rank goes up with cash from finished missions. Nothing is locked yet, so every theme and sound is already open.</div>
           </div>
 
@@ -3805,7 +3771,7 @@ window.__gcalAuth = {
   var ADS = ["Pit Stop Pies: hot, fast, mostly legal.", "Tuesday Tires: round things for round people.",
     "Neon Noodles, open until the sun says otherwise.", "Ask your mechanic about gravity.",
     "Left Lane Lemonade. Sip responsibly.", "The Night Shift hour is brought to you by thermos coffee."];
-  var THEMES = [["map", "Map"], ["notes", "Notes"], ["errands", "Errands"], ["racer", "Racer"], ["zine", "Zine"], ["wanted", "Wanted"], ["receipt", "Receipt"], ["comic", "Comic"], ["amoled", "AMOLED"]];
+  var THEMES = [["map", "Map"], ["notes", "Notes"], ["errands", "Errands"], ["zine", "Zine"], ["wanted", "Wanted"], ["receipt", "Receipt"], ["comic", "Comic"], ["amoled", "AMOLED"]];
   if (document.getElementById("mytheme")) THEMES.push(["mine", "Custom"]);
   var GRID = { notes: 1, wanted: 1 };
   var RANKS = [[0, "Rookie"], [50, "Courier"], [150, "Roadie"], [300, "Street racer"], [600, "Road king"]];
@@ -6231,7 +6197,7 @@ window.__gcalAuth = {
     var row = el("div", "row-actions"); row.appendChild(cl); row.appendChild(cr); box.appendChild(row);
   }
   function renderRoad() {
-    var show = (opts.road || view === "racer") && !evil, box = $("road"); box.hidden = !show; if (!show) return;
+    var show = opts.road && !evil, box = $("road"); box.hidden = !show; if (!show) return;
     var list = norm().slice(0, 14).reverse(), n = list.length, done = list.filter(function (i) { return i.done; }).length;
     var cps = $("cps"); cps.innerHTML = "";
     list.forEach(function (it, i) {
@@ -8754,7 +8720,7 @@ window.__gcalAuth = {
     pit:     { root: 48, tempo: 104, pent: [0, 2, 4, 7, 9],  prog: [[0, [0, 4, 7]], [5, [0, 4, 7]], [7, [0, 4, 7]], [5, [0, 4, 7]]], drive: true }
   };
   var STATION_NAMES = { map: "Dusty Map FM", notes: "Cork Board Radio", errands: "Night Shift 88", highway: "Neon Highway", pit: "Pit Stop FM" };
-  var STATION_AUTO = { map: "map", notes: "notes", errands: "errands", racer: "highway", zine: "notes", wanted: "errands", receipt: "notes", comic: "pit", amoled: "errands" };
+  var STATION_AUTO = { map: "map", notes: "notes", errands: "errands", zine: "notes", wanted: "errands", receipt: "notes", comic: "pit", amoled: "errands" };
   function stationKey() {
     var k = opts.station === "auto" ? (evil ? "errands" : (STATION_AUTO[view] || "map")) : opts.station;
     return MUS[k] ? k : "map";
@@ -8864,7 +8830,6 @@ window.__gcalAuth = {
     map: ["#d6d7c0", "#e9e9da", "#2a2c25", "#c4382b"],
     notes: ["#b48a5c", "#f6e27a", "#2a2a22", "#c4382b"],
     errands: ["#15110d", "#d6cba3", "#1c1a15", "#cf2b1e"],
-    racer: ["#120826", "#1c0f3d", "#00e5ff", "#ff4f8b"],
     zine: ["#e7e4db", "#f6f3ea", "#111111", "#d94a38"],
     wanted: ["#3b2a1d", "#dcc79b", "#3a2410", "#a3261a"],
     receipt: ["#2a2d33", "#f6f3ea", "#1d1d1b", "#6e6e68"],

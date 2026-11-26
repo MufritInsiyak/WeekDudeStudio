@@ -3,6 +3,7 @@ package com.missionmap.app;
 import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.AlarmManager;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -147,6 +148,17 @@ public class AndroidPermissionsPlugin extends Plugin {
 
         PermissionState mic = getPermissionState("microphone");
         res.put("microphone", mic != null ? mic.toString() : "prompt");
+
+        boolean exactAlarms = true;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            try {
+                AlarmManager am = (AlarmManager) getContext().getSystemService(Context.ALARM_SERVICE);
+                exactAlarms = (am == null) || am.canScheduleExactAlarms();
+            } catch (Exception ignored) {
+                exactAlarms = false;
+            }
+        }
+        res.put("exactAlarms", exactAlarms ? "granted" : "denied");
         return res;
     }
 
@@ -250,6 +262,25 @@ public class AndroidPermissionsPlugin extends Plugin {
             }
         } catch (Exception ignored) {}
         openSettings(call);
+    }
+
+    @PluginMethod
+    public void requestExactAlarms(PluginCall call) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            try {
+                AlarmManager am = (AlarmManager) getContext().getSystemService(Context.ALARM_SERVICE);
+                if (am != null && am.canScheduleExactAlarms()) {
+                    call.resolve(buildStatus());
+                    return;
+                }
+                Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+                intent.setData(Uri.fromParts("package", getContext().getPackageName(), null));
+                getActivity().startActivity(intent);
+                call.resolve(buildStatus());
+                return;
+            } catch (Exception ignored) {}
+        }
+        call.resolve(buildStatus());
     }
 
     @PluginMethod

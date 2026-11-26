@@ -3050,7 +3050,9 @@ body.sheet-open .tape-dock { opacity: 0; pointer-events: none; transform: transl
             <div class="msg" id="prodRemInfo"></div>
             <div class="row-actions">
               <button class="btn ghost" id="notifBtn" type="button">Allow notifications</button>
+              <button class="btn ghost" id="exactAlarmBtn" type="button" hidden>Allow alarms</button>
               <button class="btn ghost" id="remTestBtn" type="button">Test notification</button>
+              <button class="btn ghost" id="remTestAlarmBtn" type="button" hidden>Test 5s alarm</button>
             </div>
             <div class="msg" id="notifMsg" role="status"></div>
           </div>
@@ -3075,6 +3077,7 @@ body.sheet-open .tape-dock { opacity: 0; pointer-events: none; transform: transl
                   <span class="gsi-material-button-contents">Sign in with Google</span>
                 </div>
               </button>
+              <button class="btn" id="gcalPhoneSyncBtn" type="button" hidden>Connect phone calendar</button>
               <button class="btn" id="gcalSyncBtn" type="button" hidden>Sync now</button>
               <button class="btn ghost" id="gcalDisconnect" type="button" hidden>Sign out</button>
             </div>
@@ -3515,6 +3518,18 @@ onAuthStateChanged(auth, (user) => {
   notifyListeners();
 });
 
+function isCapacitorNative() {
+  return !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === "function" && window.Capacitor.isNativePlatform());
+}
+
+function isMobileOrPartitionedContext() {
+  const ua = (navigator && navigator.userAgent) ? navigator.userAgent : "";
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+  let inFrame = false;
+  try { inFrame = window.self !== window.top; } catch (_e) { inFrame = true; }
+  return isMobile || inFrame;
+}
+
 window.__gcalAuth = {
   onChange(fn) {
     if (typeof fn === "function") {
@@ -3530,6 +3545,9 @@ window.__gcalAuth = {
   },
   signIn() {
     if (inFlightSignIn) return inFlightSignIn;
+    if (isCapacitorNative()) {
+      return Promise.reject(new Error("In the Android app, Google blocks web sign-in popups inside WebViews. Tap Connect phone calendar below to sync your device's Google Calendar directly, or paste your Secret iCal (.ics) URL."));
+    }
     validateOAuthConfigAndRedirect();
     const buildUnauthorizedError = () => {
       if (location.hostname === "127.0.0.1") {
@@ -3545,7 +3563,7 @@ window.__gcalAuth = {
       if (code === "auth/popup-blocked") return new Error("Sign-in popup was blocked by the browser. Allow popups for this site and try again.");
       if (code === "auth/popup-closed-by-user") return new Error("Sign-in window was closed before finishing.");
       if (code === "auth/cancelled-popup-request") return new Error("Previous sign-in was cancelled. Please try again.");
-      if (code === "auth/web-storage-unsupported" || code === "auth/operation-not-supported-in-this-environment") return new Error("Browser storage is blocked in this embedded frame. Open in a normal browser tab or paste your Google Calendar Secret iCal address below.");
+      if (code === "auth/web-storage-unsupported" || code === "auth/operation-not-supported-in-this-environment") return new Error("Browser storage is blocked or partitioned in this tab. Open in a normal browser tab or paste your Google Calendar Secret iCal address below.");
       if (code === "auth/bad-request") return new Error("Google sign-in request was rejected for this window (" + location.origin + "). Open in a normal browser tab or paste your Google Calendar Secret iCal address below.");
       if (code === "auth/unauthorized-domain") return buildUnauthorizedError();
       return err;
@@ -3564,10 +3582,11 @@ window.__gcalAuth = {
       cachedAccessToken = token;
       tokenSource = "firebase";
       preferGisOnRetry = false;
-      currentUser = result.user ? { uid: result.user.uid, email: result.user.email || "", displayName: result.user.displayName || "" } : currentUser;
+      currentUser = result.user ? { uid: result.user.uid, email: userEmail(result.user), displayName: result.user.displayName || "" } : currentUser;
       notifyListeners();
       return { token: cachedAccessToken, user: currentUser };
     };
+    function userEmail(u) { return (u && u.email) ? u.email : ""; }
     const finishGisToken = async (token) => {
       await verifyCalendarTokenScopes(token);
       cachedAccessToken = token;
@@ -3590,8 +3609,36 @@ window.__gcalAuth = {
       }
     };
     inFlightSignIn = (async () => {
-      if (preferGisOnRetry && (location.protocol === "https:" || location.protocol === "http:")) {
-        return await runGisFallback(null);
+      const gisReady = !!(window.google && window.google.accounts && window.google.accounts.oauth2);
+      // On mobile browsers (e.g. Android Chrome) and embedded iframes, Firebase's firebaseapp.com
+      // popup/redirect handler fails with missing initial state under third-party storage partitioning.
+      // Use direct Google Identity Services (GIS) popup first when ready.
+      if ((preferGisOnRetry || (isMobileOrPartitionedContext() && gisReady)) && (location.protocol === "https:" || location.protocol === "http:")) {
+        try {
+          const token = await gisSignIn();
+          preferGisOnRetry = true;
+          return await finishGisToken(token);
+        } catch (gisErr) {
+          const gMsg = gisErr && gisErr.message ? String(gisErr.message) : "";
+          // Only fall back to Firebase popup if GIS library itself wasn't usable;
+          // do not swallow explicit user cancellation or popup-blocked errors.
+          if (gMsg !== "gis-unavailable") {
+            throw gisErr;
+          }
+        }
+      }
+      if (isMobileOrPartitionedContext() && !gisReady) {
+        // Attempt loading GIS before touching firebaseapp.com popup handler on mobile/partitioned contexts
+        try {
+          const token = await gisSignIn();
+          preferGisOnRetry = true;
+          return await finishGisToken(token);
+        } catch (gisErr) {
+          const gMsg = gisErr && gisErr.message ? String(gisErr.message) : "";
+          if (gMsg !== "gis-unavailable") {
+            throw gisErr;
+          }
+        }
       }
       try {
         const result = await signInWithPopup(auth, provider, browserPopupRedirectResolver);
@@ -3604,7 +3651,7 @@ window.__gcalAuth = {
           code === "auth/bad-request" ||
           code === "auth/internal-error" ||
           code === "auth/unauthorized-domain" ||
-          /internal assertion/i.test(msg);
+          /internal assertion|missing initial state|sessionStorage/i.test(msg);
         if (!canTryGis) {
           throw formatFbErr(err);
         }
@@ -7109,10 +7156,11 @@ window.__gcalAuth = {
     if (!NATIVE || !LN) return Promise.resolve();
     if (androidChannelsReady) return Promise.resolve();
     return Promise.all([
-      LN.createChannel({ id: "events", name: "Event reminders", description: "Reminders for your events", importance: 4, visibility: 1, vibration: true }).catch(function () {}),
-      LN.createChannel({ id: "missions", name: "Mission alerts", description: "Mission time limits and hourly routines", importance: 4, visibility: 1, vibration: true }).catch(function () {}),
-      LN.createChannel({ id: "productivity", name: "Mission check-ins", description: "Productive-hour mission check-ins", importance: 4, visibility: 1, vibration: true }).catch(function () {}),
-      LN.createChannel({ id: "geofence", name: "Geofence alerts", description: "Alerts when arriving near a fenced place", importance: 4, visibility: 1, vibration: true }).catch(function () {})
+      LN.createChannel({ id: "events", name: "Event reminders", description: "Reminders for your events", importance: 4, visibility: 1, vibration: true, lights: true }).catch(function () {}),
+      LN.createChannel({ id: "missions", name: "Mission alerts", description: "Mission time limits and recurring reminders", importance: 4, visibility: 1, vibration: true, lights: true }).catch(function () {}),
+      LN.createChannel({ id: "pomodoro", name: "Focus & break timers", description: "Alerts when Pomodoro focus or break blocks finish", importance: 4, visibility: 1, vibration: true, lights: true }).catch(function () {}),
+      LN.createChannel({ id: "productivity", name: "Mission check-ins", description: "Productive-hour and evening mission check-ins", importance: 4, visibility: 1, vibration: true, lights: true }).catch(function () {}),
+      LN.createChannel({ id: "geofence", name: "Geofence alerts", description: "Alerts when arriving near a fenced place", importance: 4, visibility: 1, vibration: true, lights: true }).catch(function () {})
     ]).then(function () { androidChannelsReady = true; });
   }
   function requestAndroidNotifPerm(openSettingsIfBlocked) {
@@ -7133,6 +7181,23 @@ window.__gcalAuth = {
       });
     }).catch(function () { return { display: "denied" }; });
   }
+  function requestAndroidExactAlarmPerm() {
+    if (!NATIVE) return Promise.resolve({ exact_alarm: "denied" });
+    var req = (LN && typeof LN.changeExactNotificationSetting === "function")
+      ? LN.changeExactNotificationSetting()
+      : (AP && typeof AP.requestExactAlarms === "function")
+        ? AP.requestExactAlarms()
+        : Promise.resolve({ exact_alarm: "denied" });
+    return Promise.resolve(req).catch(function () {
+      if (AP && typeof AP.requestExactAlarms === "function") return AP.requestExactAlarms().catch(function () { return { exact_alarm: "denied" }; });
+      return { exact_alarm: "denied" };
+    }).then(function () {
+      if (LN && typeof LN.checkExactNotificationSetting === "function") {
+        return LN.checkExactNotificationSetting().catch(function () { return { exact_alarm: "denied" }; });
+      }
+      return { exact_alarm: "denied" };
+    });
+  }
   function fireAndroidNotif(title, body, channelId, cfg) {
     if (!NATIVE || !LN) return Promise.resolve(false);
     cfg = cfg || {};
@@ -7150,6 +7215,8 @@ window.__gcalAuth = {
             body: body || "",
             channelId: channelId || "missions",
             smallIcon: "ic_stat_mission",
+            foreground: true,
+            autoCancel: true,
             isExactNotification: false
           }]
         }).then(function () { return true; });
@@ -7288,6 +7355,7 @@ window.__gcalAuth = {
     };
     clearInterval(raceTimer); raceTimer = setInterval(raceTick, 250);
     syncPomoHud();
+    if (typeof schedulePhone === "function") schedulePhone(true);
   }
   function startRace() {
     $("raceMsg").textContent = "";
@@ -7303,7 +7371,7 @@ window.__gcalAuth = {
         persist(); render();
         fx("chime");
         toast("Focus block done! +$10");
-        fireDesktopNotif("Pomodoro Watch", "Focus block complete (+$10). Time for a break!", "");
+        fireDesktopNotif("Pomodoro Watch", "Focus block complete (+$10). Time for a break!", "", { channelId: "pomodoro" });
       } else { fx("click"); }
       if (race.maxRounds === 1) {
         endRace(false, manualSkip ? "Focus stopped." : "Focus session complete! +$10.");
@@ -7314,13 +7382,13 @@ window.__gcalAuth = {
     } else {
       fx(manualSkip ? "click" : "chime");
       if (race.maxRounds > 0 && race.round >= race.maxRounds) {
-        if (!manualSkip) fireDesktopNotif("Pomodoro Watch", "All " + race.maxRounds + " Pomodoro rounds complete!", "");
+        if (!manualSkip) fireDesktopNotif("Pomodoro Watch", "All " + race.maxRounds + " Pomodoro rounds complete!", "", { channelId: "pomodoro" });
         endRace(false, "All " + race.maxRounds + " Pomodoro rounds complete!");
         return;
       }
       race.round++;
       $("raceMsg").textContent = "Break over — Focus round " + race.round + "!";
-      if (!manualSkip) fireDesktopNotif("Pomodoro Watch", "Break is over — Focus round " + race.round + " started.", "");
+      if (!manualSkip) fireDesktopNotif("Pomodoro Watch", "Break is over — Focus round " + race.round + " started.", "", { channelId: "pomodoro" });
       beginPomoPhase("focus");
     }
   }
@@ -7340,7 +7408,7 @@ window.__gcalAuth = {
       stats.races++; stats.cash += 25;
       var winMsg = "Cleared " + race.total + " in " + fmt(secs) + (nb ? ". New best!" : ". Best: " + fmt(prev) + ".") + " +$25.";
       $("raceMsg").textContent = winMsg;
-      fireDesktopNotif("Mission Sweep!", winMsg, "");
+      fireDesktopNotif("Mission Sweep!", winMsg, "", { channelId: "pomodoro" });
       fx("chime"); persist(); render(); checkAch();
     }
     syncPomoHud();
@@ -7349,6 +7417,7 @@ window.__gcalAuth = {
     race = null; clearInterval(raceTimer); raceTimer = null;
     if (msg) $("raceMsg").textContent = msg;
     syncPomoHud();
+    if (typeof schedulePhone === "function") schedulePhone(true);
     if (won) fx("chime"); else if (msg && /reset|stopped/i.test(msg)) fx("del");
   }
   $("raceGo").addEventListener("click", startRace);
@@ -7362,6 +7431,7 @@ window.__gcalAuth = {
       race.paused = true;
     }
     syncPomoHud(); fx("click");
+    if (typeof schedulePhone === "function") schedulePhone(true);
   });
   $("raceSkip").addEventListener("click", function () { advancePomoPhase(true); });
   $("raceStop").addEventListener("click", function () { endRace(false, "Watch reset."); });
@@ -8325,6 +8395,8 @@ window.__gcalAuth = {
             body: openHere ? openHere + " open mission" + (openHere === 1 ? "" : "s") + " here" : "Inside geofence",
             channelId: "geofence",
             smallIcon: "ic_stat_mission",
+            foreground: true,
+            autoCancel: true,
             isExactNotification: false
           };
         });
@@ -9531,8 +9603,10 @@ window.__gcalAuth = {
   setInterval(limitTick, 15000);
   setInterval(function () { checkRecurrences(true); }, 20000);
   function notifState() {
-    var m = $("notifMsg"), b = $("notifBtn");
+    var m = $("notifMsg"), b = $("notifBtn"), exB = $("exactAlarmBtn"), taB = $("remTestAlarmBtn");
     if (!m || !b) return;
+    if (exB) exB.hidden = true;
+    if (taB) taB.hidden = !(NATIVE && LN);
     if (!opts.reminders) {
       m.textContent = "Reminders are switched off. Enable reminders above to get event and productive-hour check-ins.";
       b.hidden = true;
@@ -9544,14 +9618,23 @@ window.__gcalAuth = {
       return;
     }
     if (NATIVE && LN) {
-      LN.checkPermissions().then(function (r) {
-        var ok = r && r.display === "granted";
-        m.textContent = ok
-          ? "Android reminders are on (events, limits, and detected productive-hour check-ins)."
-          : "Notification permission is off on Android. Tap Allow notifications to get alerts even when the app is closed.";
+      Promise.all([
+        LN.checkPermissions().catch(function () { return { display: "denied" }; }),
+        LN.checkExactNotificationSetting ? LN.checkExactNotificationSetting().catch(function () { return { exact_alarm: "denied" }; }) : Promise.resolve({ exact_alarm: "granted" })
+      ]).then(function (r) {
+        var ok = r[0] && r[0].display === "granted";
+        var ex = r[1] && r[1].exact_alarm === "granted";
         b.hidden = ok;
+        if (exB) exB.hidden = !(ok && !ex);
+        if (!ok) {
+          m.textContent = "Notifications are off on Android. Tap Allow notifications so scheduled alarms & reminders appear in your status bar.";
+        } else if (!ex) {
+          m.textContent = "Android notifications are on, but Alarms & reminders permission is off — tap Allow alarms so scheduled alerts fire on time even when the app is closed.";
+        } else {
+          m.textContent = "Android notifications & Alarms permission active (" + lastArmedCount + " OS alarm" + (lastArmedCount === 1 ? "" : "s") + " armed — fire at exact time even when app is closed).";
+        }
       }).catch(function () {
-        m.textContent = "Allow notifications so Mission Map can alert you for events and productive hours.";
+        m.textContent = "Allow notifications & alarms so Mission Map can alert you even when closed.";
         b.hidden = false;
       });
       return;
@@ -9563,10 +9646,20 @@ window.__gcalAuth = {
   }
   $("notifBtn").addEventListener("click", function () {
     if (NATIVE && LN) {
-      requestAndroidNotifPerm(true).then(function () { notifState(); reminderStatus(); syncProductiveScheduler(); schedulePhone(); });
+      requestAndroidNotifPerm(true).then(function () {
+        if (typeof doSchedule === "function") doSchedule();
+        notifState(); reminderStatus(); syncProductiveScheduler();
+      });
       return;
     }
     try { var r = Notification.requestPermission(function () { notifState(); syncProductiveScheduler(); }); if (r && r.then) r.then(function () { notifState(); syncProductiveScheduler(); }); } catch (e) {}
+  });
+  if ($("exactAlarmBtn")) $("exactAlarmBtn").addEventListener("click", function () {
+    if (!NATIVE) return;
+    requestAndroidExactAlarmPerm().then(function () {
+      if (typeof doSchedule === "function") doSchedule();
+      notifState(); reminderStatus();
+    });
   });
   if ($("remTestBtn")) $("remTestBtn").addEventListener("click", function () {
     if (!opts.reminders) {
@@ -9607,6 +9700,50 @@ window.__gcalAuth = {
       try { Notification.requestPermission(function (s) { notifState(); if (s === "granted") fireDesktopNotif(copy.title, body, ""); }); } catch (e) {}
     }
   });
+  if ($("remTestAlarmBtn")) $("remTestAlarmBtn").addEventListener("click", function () {
+    if (!NATIVE || !LN) return;
+    if (!opts.reminders) {
+      opts.reminders = true;
+      if ($("remOn")) $("remOn").checked = true;
+      saveOpts(); applyOpts();
+    }
+    if (typeof phone !== "undefined" && !phone.remind) {
+      phone.remind = true;
+      if ($("phRem")) $("phRem").checked = true;
+      if (typeof saveP === "function") saveP();
+    }
+    requestAndroidNotifPerm(true).then(function (pm) {
+      if (!pm || pm.display !== "granted") {
+        notifState(); reminderStatus();
+        return;
+      }
+      return ensureAndroidChannels().then(checkExact).then(function () {
+        if (!exactOK) {
+          toast("Allow Alarms & reminders in Android settings so timed notifications fire when closed.");
+          return requestAndroidExactAlarmPerm().then(checkExact);
+        }
+      }).then(function () {
+        var at = new Date(Date.now() + 5000);
+        return LN.schedule({
+          notifications: [{
+            id: 989105,
+            title: "Mission Map Alarm Test",
+            body: "5-second system alarm fired via Android AlarmManager.",
+            channelId: "missions",
+            smallIcon: "ic_stat_mission",
+            foreground: true,
+            autoCancel: true,
+            schedule: { at: at, allowWhileIdle: true },
+            isExactNotification: !!exactOK
+          }]
+        }).then(function () {
+          toast("5s Android alarm armed — close or lock screen now to test.");
+          fx("chime", 0.25);
+          notifState(); reminderStatus();
+        });
+      });
+    }).catch(function (e) { toast("Alarm test failed: " + errText(e)); });
+  });
   notifState(); syncProdRemUi();
 
   /* ---------- phone features: permissions, reminders and calendar sync, inside the Android app ---------- */
@@ -9625,26 +9762,35 @@ window.__gcalAuth = {
   function pMsg(t) { var m = $("phMsg"); if (m) m.textContent = t; }
   function errText(e) { return (e && (e.message || e.errorMessage)) ? String(e.message || e.errorMessage) : String(e || "unknown error"); }
 
-  /* reminders: the phone's own alarm clock fires them, even when the app is closed */
+  /* reminders: Android's AlarmManager fires them at exact scheduled times, even when the app is closed */
   function hash32(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 1) || 1; }
-  var exactOK = false, schedT = null, schedBusy = false, schedAgain = false;
+  var exactOK = false, schedT = null, schedBusy = false, schedAgain = false, lastArmedCount = 0;
   function checkExact() {
+    if (!LN || typeof LN.checkExactNotificationSetting !== "function") { exactOK = false; return Promise.resolve(); }
     return LN.checkExactNotificationSetting().then(function (r) { exactOK = !!r && r.exact_alarm === "granted"; }).catch(function () { exactOK = false; });
   }
-  function schedulePhone() { if (!NATIVE || !LN) return; clearTimeout(schedT); schedT = setTimeout(doSchedule, 1200); }
+  function schedulePhone(immediate) {
+    if (!NATIVE || !LN) return;
+    clearTimeout(schedT);
+    if (immediate) { schedT = null; doSchedule(); return; }
+    schedT = setTimeout(doSchedule, 500);
+  }
   function doSchedule() {
+    if (!NATIVE || !LN) return;
     if (schedBusy) { schedAgain = true; return; }
     schedBusy = true;
-    var now = Date.now(), itemsList = [], missionList = [], prodList = [];
+    var now = Date.now(), tk = todayKey();
+    var evAlarms = [], missionAlarms = [], pomoAlarms = [], prodAlarms = [];
     if (opts.reminders && phone.remind) {
       events.forEach(function (e) {
         if (e.remind < 0 || e.src === "device") return;
         var at = evStartMs(e) - e.remind * 60000;
-        if (at > now + 3000 && at < now + 120 * 86400000) itemsList.push({ e: e, at: at });
+        if (at > now + 2000 && at < now + 120 * 86400000) evAlarms.push({ e: e, at: at });
       });
+      var datedScheduled = 0;
       items.forEach(function (it) {
-        if (!it.done && it.limitMin > 0 && it.limitAt > now + 3000 && !it.limitAlerted) {
-          missionList.push({
+        if (!it.done && it.limitMin > 0 && it.limitAt > now + 2000 && !it.limitAlerted) {
+          missionAlarms.push({
             id: hash32("lim:" + it.id + ":" + it.limitAt),
             title: "Mission time limit",
             body: it.text + " (" + placeInfo(it.place).n + ")",
@@ -9653,60 +9799,121 @@ window.__gcalAuth = {
           });
         }
         var rep = cleanRepeat(it.repeat);
-        if (rep.unit === "hour" && rep.nextDueAt > now + 3000 && rep.nextDueAt < now + 14 * 86400000) {
-          missionList.push({
-            id: hash32("rep:" + it.id + ":" + rep.nextDueAt),
-            title: "Recurring mission due",
-            body: it.text + " (" + placeInfo(it.place).n + ")",
-            at: rep.nextDueAt,
-            extra: { itemId: it.id }
-          });
+        if (rep.unit === "hour" && rep.nextDueAt > now + 2000) {
+          for (var k = 0; k < 3; k++) {
+            var occAt = rep.nextDueAt + k * rep.every * 3600000;
+            if (occAt > now + 2000 && occAt < now + 24 * 3600000) {
+              missionAlarms.push({
+                id: hash32("rep:" + it.id + ":" + occAt),
+                title: "Recurring mission due",
+                body: it.text + " (" + placeInfo(it.place).n + ")",
+                at: occAt,
+                extra: { itemId: it.id }
+              });
+            }
+          }
+        } else if (!it.done && !(it.limitMin > 0 && it.limitAt > now) && it.date >= tk && datedScheduled < 10) {
+          var pDate = parseKey(it.date);
+          pDate.setHours(9, 0, 0, 0);
+          var dueAt = pDate.getTime();
+          if (dueAt > now + 2000 && dueAt < now + 7 * 86400000) {
+            datedScheduled++;
+            missionAlarms.push({
+              id: hash32("due:" + it.id + ":" + it.date),
+              title: rep.unit ? "Recurring mission today" : "Mission due today",
+              body: it.text + " (" + placeInfo(it.place).n + ")",
+              at: dueAt,
+              extra: { itemId: it.id }
+            });
+          }
         }
       });
+      if (race && !race.paused && race.end > now + 1500) {
+        pomoAlarms.push({
+          id: hash32("pomo:" + race.phase + ":" + race.round + ":" + Math.round(race.end / 1000)),
+          title: "Pomodoro Watch",
+          body: race.phase === "focus"
+            ? "Focus block complete (+$10). Time for a break!"
+            : (race.maxRounds > 0 && race.round >= race.maxRounds
+                ? ("All " + race.maxRounds + " Pomodoro rounds complete!")
+                : ("Break is over — ready for focus round " + (race.round + 1) + ".")),
+          at: race.end,
+          extra: { pomo: true }
+        });
+      }
       if (opts.prodReminders) {
         var jobs = buildPeakScheduleJobs(getDetectedProductiveReminderPlan(), now);
         jobs.forEach(function (j) {
-          if (j.triggerAt > now + 3000) {
-            prodList.push({ id: hash32(j.id), title: j.title, body: j.body, at: j.triggerAt });
+          if (j.triggerAt > now + 2000) {
+            prodAlarms.push({ id: hash32(j.id), title: j.title, body: j.body, at: j.triggerAt });
           }
         });
       }
+      if (!evil && wrapMeta.lastWrapDate !== tk) {
+        var hasOpenToday = norm().some(function (i) { return !i.done && i.date <= tk; });
+        if (hasOpenToday) {
+          var eve = new Date(); eve.setHours(19, 0, 0, 0);
+          var eveAt = eve.getTime();
+          if (eveAt > now + 2000) {
+            prodAlarms.push({
+              id: hash32("wrap:" + tk),
+              title: "Evening mission check-in",
+              body: "Review open missions for today & log a quick daily reflection.",
+              at: eveAt,
+              extra: { wrap: true }
+            });
+          }
+        }
+      }
     }
-    itemsList.sort(function (a, b) { return a.at - b.at; }); itemsList = itemsList.slice(0, 40);
-    missionList.sort(function (a, b) { return a.at - b.at; }); missionList = missionList.slice(0, 16);
-    LN.getPending().then(function (p) {
-      var ids = (p.notifications || []).map(function (n) { return { id: n.id }; });
-      return ids.length ? LN.cancel({ notifications: ids }) : null;
-    }).then(function () {
-      if (!itemsList.length && !missionList.length && !prodList.length) return;
+    evAlarms.sort(function (a, b) { return a.at - b.at; }); evAlarms = evAlarms.slice(0, 32);
+    missionAlarms.sort(function (a, b) { return a.at - b.at; }); missionAlarms = missionAlarms.slice(0, 18);
+    var cancelP = typeof LN.cancelAll === "function"
+      ? LN.cancelAll()
+      : LN.getPending().then(function (p) {
+          var ids = (p.notifications || []).map(function (n) { return { id: n.id }; });
+          return ids.length ? LN.cancel({ notifications: ids }) : null;
+        });
+    cancelP.then(function () {
+      var totalCount = evAlarms.length + missionAlarms.length + pomoAlarms.length + prodAlarms.length;
+      if (!totalCount) { lastArmedCount = 0; notifState(); return; }
       return LN.checkPermissions().then(function (p) {
-        if (!p || p.display !== "granted") { pMsg("Notifications are blocked. Tap Allow notifications to get reminders."); return; }
+        if (!p || p.display !== "granted") {
+          lastArmedCount = 0;
+          pMsg("Notifications are blocked. Tap Allow notifications to get reminders.");
+          notifState();
+          return;
+        }
         return ensureAndroidChannels().then(checkExact).then(function () {
-          var notifs = itemsList.map(function (o) {
+          var notifs = evAlarms.map(function (o) {
             var e = o.e, bits = [e.allDay || !e.start ? "Today" : "At " + e.start];
             if (e.place) bits.push(placeInfo(e.place).n);
             if (e.where) bits.push(e.where);
             return { id: hash32(e.id + ":" + o.at), title: e.title, body: bits.join(" · "), channelId: "events", smallIcon: "ic_stat_mission",
-              schedule: { at: new Date(o.at), allowWhileIdle: true }, isExactNotification: !!exactOK, extra: { evId: e.id } };
-          }).concat(missionList.map(function (mo) {
+              foreground: true, autoCancel: true, schedule: { at: new Date(o.at), allowWhileIdle: true }, isExactNotification: !!exactOK, extra: { evId: e.id } };
+          }).concat(missionAlarms.map(function (mo) {
             return { id: mo.id, title: mo.title, body: mo.body, channelId: "missions", smallIcon: "ic_stat_mission",
-              schedule: { at: new Date(mo.at), allowWhileIdle: true }, isExactNotification: !!exactOK, extra: mo.extra };
-          })).concat(prodList.map(function (po) {
+              foreground: true, autoCancel: true, schedule: { at: new Date(mo.at), allowWhileIdle: true }, isExactNotification: !!exactOK, extra: mo.extra };
+          })).concat(pomoAlarms.map(function (pm) {
+            return { id: pm.id, title: pm.title, body: pm.body, channelId: "pomodoro", smallIcon: "ic_stat_mission",
+              foreground: true, autoCancel: true, schedule: { at: new Date(pm.at), allowWhileIdle: true }, isExactNotification: !!exactOK, extra: pm.extra };
+          })).concat(prodAlarms.map(function (po) {
             return { id: po.id, title: po.title, body: po.body, channelId: "productivity", smallIcon: "ic_stat_mission",
-              schedule: { at: new Date(po.at), allowWhileIdle: true }, isExactNotification: !!exactOK };
+              foreground: true, autoCancel: true, schedule: { at: new Date(po.at), allowWhileIdle: true }, isExactNotification: !!exactOK, extra: po.extra };
           }));
-          return LN.schedule({ notifications: notifs });
+          lastArmedCount = notifs.length;
+          return LN.schedule({ notifications: notifs }).then(function () { notifState(); });
         });
       });
     }).catch(function (e) { pMsg("Could not set reminders: " + errText(e)); }).then(function () {
-      schedBusy = false; if (schedAgain) { schedAgain = false; schedulePhone(); }
+      schedBusy = false; if (schedAgain) { schedAgain = false; schedulePhone(true); }
     });
   }
   function reminderStatus() {
     if (!LN) return;
     Promise.all([LN.checkPermissions(), LN.checkExactNotificationSetting().catch(function () { return { exact_alarm: "denied" }; })]).then(function (r) {
       var ok = r[0].display === "granted", ex = r[1].exact_alarm === "granted";
-      $("phNotifMsg").textContent = (ok ? "Notifications are allowed. " : "Notifications are not allowed yet. ") + (ex ? "Exact timing is allowed." : "Exact timing is off, so reminders may arrive a few minutes late.");
+      $("phNotifMsg").textContent = (ok ? "Notifications are allowed. " : "Notifications are not allowed yet. ") + (ex ? ("Alarms & reminders allowed (" + lastArmedCount + " OS alarm" + (lastArmedCount === 1 ? "" : "s") + " armed).") : "Exact alarms permission is off — tap Allow exact timing so alerts fire at exact times when the app is closed.");
       $("phNotif").textContent = ok && ex ? "Check again" : ok ? "Allow exact timing" : "Allow notifications";
       $("phNotif").setAttribute("data-step", !ok ? "perm" : !ex ? "exact" : "ok");
     }).catch(function (e) { $("phNotifMsg").textContent = "Could not check: " + errText(e); });
@@ -9858,10 +10065,10 @@ window.__gcalAuth = {
     });
     $("phNotif").addEventListener("click", function () {
       var step = this.getAttribute("data-step");
-      var p = step === "exact" ? LN.changeExactNotificationSetting()
+      var p = step === "exact" ? requestAndroidExactAlarmPerm()
         : step === "perm" ? requestAndroidNotifPerm(true)
         : Promise.resolve();
-      Promise.resolve(p).catch(function () {}).then(function () { reminderStatus(); notifState(); schedulePhone(); });
+      Promise.resolve(p).catch(function () {}).then(function () { reminderStatus(); notifState(); schedulePhone(true); });
     });
     if ($("phGeo")) $("phGeo").addEventListener("click", function () {
       ensureAndroidGeoPerm(false).then(function (r) {
@@ -9886,7 +10093,28 @@ window.__gcalAuth = {
     });
     $("phWrite").addEventListener("change", function () { phone.writeCal = this.value; saveP(); phoneSync(); });
     $("phSync").addEventListener("click", phoneSync);
-    document.addEventListener("visibilitychange", function () { if (!document.hidden) { phoneSync(); schedulePhone(); reminderStatus(); notifState(); geoPermissionStatus(); if (typeof gcalAutoSync === "function") gcalAutoSync(); } });
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) {
+        schedulePhone(true);
+      } else {
+        phoneSync(); schedulePhone(true); reminderStatus(); notifState(); geoPermissionStatus();
+        if (typeof gcalAutoSync === "function") gcalAutoSync();
+      }
+    });
+    window.addEventListener("pagehide", function () { schedulePhone(true); });
+    if (LN && typeof LN.addListener === "function") {
+      LN.addListener("localNotificationActionPerformed", function (ev) {
+        var extra = ev && ev.notification && ev.notification.extra ? ev.notification.extra : null;
+        if (!extra) return;
+        if (extra.wrap && typeof openWrapDayModal === "function") {
+          openWrapDayModal();
+        } else if (extra.evId) {
+          calOpen = true;
+          try { localStorage.setItem("mission-map-cal", "1"); } catch (e) {}
+          render();
+        }
+      }).catch(function () {});
+    }
     if (LN && typeof LN.checkPermissions === "function" && opts.reminders && phone.remind) {
       LN.checkPermissions().then(function (pm) {
         if (pm && (pm.display === "prompt" || pm.display === "prompt-with-rationale")) {
@@ -9894,11 +10122,11 @@ window.__gcalAuth = {
         }
       }).catch(function () {}).then(function () {
         ensureAndroidChannels();
-        reminderStatus(); notifState(); schedulePhone();
+        reminderStatus(); notifState(); schedulePhone(true);
       });
     } else {
       ensureAndroidChannels();
-      reminderStatus(); geoPermissionStatus(); schedulePhone();
+      reminderStatus(); geoPermissionStatus(); schedulePhone(true);
     }
     geoPermissionStatus();
     if (phone.calOn) loadCals().then(phoneSync).catch(function (e) { pMsg("Calendar: " + errText(e)); });
@@ -10445,8 +10673,9 @@ window.__gcalAuth = {
   function gcalInitUI() {
     var user = gcalUser(), hasTok = gcalHasAuth(), hasIcal = !!gcal.icalUrl;
     var needsAuth = !hasTok;
-    var gBtn = $("gcalGoogleBtn"), syncBtn = $("gcalSyncBtn"), discBtn = $("gcalDisconnect"), uBox = $("gcalUser");
-    if (gBtn) gBtn.hidden = !needsAuth;
+    var gBtn = $("gcalGoogleBtn"), pBtn = $("gcalPhoneSyncBtn"), syncBtn = $("gcalSyncBtn"), discBtn = $("gcalDisconnect"), uBox = $("gcalUser");
+    if (gBtn) gBtn.hidden = !needsAuth || !!NATIVE;
+    if (pBtn) pBtn.hidden = !(NATIVE && !hasTok);
     if (syncBtn) syncBtn.hidden = !(hasTok || hasIcal);
     if (discBtn) discBtn.hidden = !(user || hasTok || hasIcal);
     if (uBox) {
@@ -10471,7 +10700,9 @@ window.__gcalAuth = {
       window.__gcalAuth.onChange(function () { gcalInitUI(); });
     }
     gcalInitUI();
-    if (gcal.enabled && !gcalHasAuth() && !gcal.icalUrl) {
+    if (NATIVE && !gcalHasAuth() && !gcal.icalUrl) {
+      gcalMsg("In the Android app, tap Connect phone calendar to sync your phone's Google Calendar directly, or paste a Secret iCal (.ics) URL below.");
+    } else if (gcal.enabled && !gcalHasAuth() && !gcal.icalUrl) {
       gcalMsg("Session needs Google sign-in. Click Sign in with Google to sync.");
     } else if (gcalHasAuth() || gcal.icalUrl) {
       if (gcal.last) {
@@ -10483,6 +10714,13 @@ window.__gcalAuth = {
     } else {
       gcalMsg("Not connected.");
     }
+    if ($("gcalPhoneSyncBtn")) $("gcalPhoneSyncBtn").addEventListener("click", function () {
+      var phSec = $("phoneSec"), phConn = $("phConnect");
+      if (phSec && phSec.scrollIntoView) {
+        try { phSec.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {}
+      }
+      if (phConn) phConn.click();
+    });
     $("gcalGoogleBtn").addEventListener("click", function () {
       var btn = this;
       if (btn.disabled) return;

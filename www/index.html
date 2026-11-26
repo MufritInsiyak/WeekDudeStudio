@@ -847,6 +847,11 @@ body[data-view="papers"] .paper .item.done::after { content: "APPROVED"; positio
 body[data-view="papers"] .btn:not(.fab) { background: #4a4a38; color: #e4dfc2; border-color: #1d1c15; border-radius: 0; font-family: "VT323", monospace; font-size: 21px; letter-spacing: .08em; text-transform: uppercase; --wob: #1d1c15; }
 body[data-view="papers"] .btn.ghost:not(.fab) { background: #e4dfc2; color: #27251c; }
 body[data-view="papers"] .btn.fab { background: #a8262b; color: #f1ecd2; border-color: #1d1c15; --wob: #1d1c15; }
+body[data-view="papers"] .mapcard { border: 2px solid #1d1c15; border-radius: 2px; box-shadow: 0 6px 0 #1d1c15, 0 14px 18px rgba(0, 0, 0, .35); background: #e4dfc2; }
+body[data-view="papers"] .map-stage::before { content: "SECTOR PLAN  /  FORM M-7B"; display: block; padding: 3px 8px; background: #27251c; color: #e4dfc2; font-family: "VT323", monospace; font-size: 15px; letter-spacing: .14em; text-align: center; }
+body[data-view="papers"] .map-stage .hint { top: 30px; font-family: "VT323", monospace; font-size: 14px; color: #5d5a47; }
+body[data-view="papers"] .mapcard svg#map { background-image: linear-gradient(rgba(39, 37, 28, .14) 1px, transparent 1px), linear-gradient(90deg, rgba(39, 37, 28, .14) 1px, transparent 1px); background-size: 6.25% 8.3333%; }
+body[data-view="papers"] .map-stage { border-bottom: 3px double #5d5a47; }
 body[data-view="papers"] .foot { color: #b9b394; }
 body[data-view="papers"] .opts-overlay .pola-card,
 body[data-view="papers"] .opts-overlay .opts-util { border-color: #1d1c15; }
@@ -6258,7 +6263,7 @@ window.__gcalAuth = {
     $("day").textContent = dayName + (evil ? "" : "");
     var tb = document.querySelectorAll("#themeGrid .tbtn");
     for (var q = 0; q < tb.length; q++) tb[q].setAttribute("aria-pressed", tb[q].getAttribute("data-v") === view ? "true" : "false");
-    var showMap = view === "map" || view === "mine" || opts.mapAll, grid = !!GRID[view];
+    var showMap = view === "map" || view === "mine" || view === "papers" || opts.mapAll, grid = !!GRID[view];
     $("mapcard").hidden = !showMap;
     $("paper").hidden = grid;
     $("notesList").hidden = !grid;

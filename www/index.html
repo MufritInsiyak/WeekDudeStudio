@@ -844,16 +844,23 @@ body[data-view="papers"] .t::after { background: none; height: 0; border-top: 3p
 body[data-view="papers"] .box { border: 3px solid #27251c; border-radius: 0; background: #f1ecd2; }
 body[data-view="papers"] .paper .item.done .t { opacity: .5; }
 body[data-view="papers"] .paper .item.done::after { content: "APPROVED"; position: absolute; right: 112px; top: 76%; transform: translateY(-50%) rotate(-7deg); padding: 0 6px; border: 3px solid #3f6b3d; color: #3f6b3d; font-family: "VT323", monospace; font-size: 23px; letter-spacing: .12em; opacity: .85; mix-blend-mode: multiply; pointer-events: none; }
-@keyframes apStamp {
-  0% { transform: translateY(-50%) rotate(-16deg) scale(3); opacity: 0; }
-  55% { transform: translateY(-50%) rotate(-7deg) scale(.9); opacity: 1; }
-  75% { transform: translateY(-50%) rotate(-7deg) scale(1.06); }
-  100% { transform: translateY(-50%) rotate(-7deg) scale(1); opacity: .85; }
+@keyframes apStamp { 0% { transform: translateY(-50%) rotate(-7deg) scale(1.22); opacity: 0; } 100% { transform: translateY(-50%) rotate(-7deg) scale(1); opacity: .85; } }
+@keyframes apThud { 0%, 24% { transform: none; } 28% { transform: translateY(3px); } 36% { transform: translateY(-1px); } 44%, 100% { transform: none; } }
+@keyframes apStamper {
+  0% { transform: translateY(-170px) rotate(9deg); opacity: 0; }
+  7% { opacity: 1; }
+  23% { transform: translateY(-4px) rotate(0); }
+  27% { transform: translateY(4px) scaleY(.95); }
+  33%, 56% { transform: translateY(0) rotate(0); opacity: 1; }
+  100% { transform: translateY(-170px) rotate(-6deg); opacity: 0; }
 }
-@keyframes apThud { 0%, 52% { transform: none; } 58% { transform: translateY(3px); } 72% { transform: translateY(-1px); } 100% { transform: none; } }
-body[data-view="papers"] .item.stamping::after { animation: apStamp .5s cubic-bezier(.2, .8, .3, 1) both; }
-body[data-view="papers"] .item.stamping { animation: apThud .5s ease-out; }
+.stamper { display: none; }
+body[data-view="papers"] .item.stamping .stamper { display: block; position: absolute; right: 112px; top: 76%; width: 118px; height: 32px; transform: translateY(-50%) rotate(-7deg); pointer-events: none; z-index: 6; }
+body[data-view="papers"] .stamper-in { position: absolute; left: 0; bottom: 0; overflow: visible; transform-origin: 50% 100%; animation: apStamper 1.1s cubic-bezier(.4, 0, .6, 1) both; filter: drop-shadow(0 4px 3px rgba(0, 0, 0, .3)); }
+body[data-view="papers"] .item.stamping::after { animation: apStamp .16s ease-out .25s both; }
+body[data-view="papers"] .item.stamping { animation: apThud 1.1s ease-out; }
 body.calm[data-view="papers"] .item.stamping, body.calm[data-view="papers"] .item.stamping::after { animation: none; }
+body.calm[data-view="papers"] .stamper-in { animation: none; display: none; }
 body[data-view="papers"] .btn:not(.fab) { background: #4a4a38; color: #e4dfc2; border-color: #1d1c15; border-radius: 0; font-family: "VT323", monospace; font-size: 21px; letter-spacing: .08em; text-transform: uppercase; --wob: #1d1c15; }
 body[data-view="papers"] .btn.ghost:not(.fab) { background: #e4dfc2; color: #27251c; }
 body[data-view="papers"] .btn.fab { background: #a8262b; color: #f1ecd2; border-color: #1d1c15; --wob: #1d1c15; }
@@ -3835,6 +3842,7 @@ window.__gcalAuth = {
     if (["custom", "route", "prio-desc", "prio-asc", "date-asc", "date-desc", "limit-asc"].indexOf(sm0) >= 0) sortMode = sm0;
   } catch (e) {}
   try { mapBarCollapsed = localStorage.getItem(MBKEY) === "1"; } catch (e) {}
+  var STAMPER_SVG = '<svg class="stamper-in" viewBox="0 -96 118 128" width="118" height="128" aria-hidden="true"><rect x="3" y="14" width="112" height="18" fill="#2b1d14"/><rect x="3" y="14" width="112" height="4" fill="#4a3322"/><rect x="26" y="4" width="66" height="10" fill="#8d8768" stroke="#1d1c15" stroke-width="2"/><path d="M34 4 L40 -46 L78 -46 L84 4 Z" fill="#7a5230" stroke="#1d1c15" stroke-width="2.5"/><path d="M44 -40 L46 0" stroke="#9a6c40" stroke-width="3"/><rect x="50" y="-62" width="18" height="18" fill="#5e3f22" stroke="#1d1c15" stroke-width="2.5"/><ellipse cx="59" cy="-70" rx="26" ry="15" fill="#7a5230" stroke="#1d1c15" stroke-width="2.5"/><path d="M42 -74 Q59 -86 76 -74" fill="none" stroke="#9a6c40" stroke-width="3" stroke-linecap="round"/></svg>';
   var lastToggled = null, lastAdded = null, ref = null, queue = Promise.resolve();
   var dropping = false, tempPin = null, hoverPin = null, race = null, raceTimer = null, nbEditId = null, editingId = null, editMode = false;
   var geoPos = null, geoWatchId = null, geoInside = {}, geoNearest = null, geoErr = "";
@@ -4638,7 +4646,7 @@ window.__gcalAuth = {
     var prio = cleanPriority(it.priority);
     var li = el("li", "item" + (it.done ? " done" : "") + (it.evil ? " evil" : ""));
     li.dataset.id = it.id;
-    if (it.done && lastToggled === it.id && view === "papers" && !isReduced()) { li.classList.add("stamping"); setTimeout(function () { li.classList.remove("stamping"); }, 900); }
+    if (it.done && lastToggled === it.id && view === "papers" && !isReduced()) { li.classList.add("stamping"); var stp = el("span", "stamper"); stp.setAttribute("aria-hidden", "true"); stp.innerHTML = STAMPER_SVG; li.appendChild(stp); setTimeout(function () { li.classList.remove("stamping"); if (stp.parentNode) stp.parentNode.removeChild(stp); }, 1250); }
     li.dataset.prio = prio;
     var main = el("div", "item-main");
     var row = el("button", "row"); row.type = "button";

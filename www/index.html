@@ -844,6 +844,16 @@ body[data-view="papers"] .t::after { background: none; height: 0; border-top: 3p
 body[data-view="papers"] .box { border: 3px solid #27251c; border-radius: 0; background: #f1ecd2; }
 body[data-view="papers"] .paper .item.done .t { opacity: .5; }
 body[data-view="papers"] .paper .item.done::after { content: "APPROVED"; position: absolute; right: 112px; top: 76%; transform: translateY(-50%) rotate(-7deg); padding: 0 6px; border: 3px solid #3f6b3d; color: #3f6b3d; font-family: "VT323", monospace; font-size: 23px; letter-spacing: .12em; opacity: .85; mix-blend-mode: multiply; pointer-events: none; }
+@keyframes apStamp {
+  0% { transform: translateY(-50%) rotate(-16deg) scale(3); opacity: 0; }
+  55% { transform: translateY(-50%) rotate(-7deg) scale(.9); opacity: 1; }
+  75% { transform: translateY(-50%) rotate(-7deg) scale(1.06); }
+  100% { transform: translateY(-50%) rotate(-7deg) scale(1); opacity: .85; }
+}
+@keyframes apThud { 0%, 52% { transform: none; } 58% { transform: translateY(3px); } 72% { transform: translateY(-1px); } 100% { transform: none; } }
+body[data-view="papers"] .item.stamping::after { animation: apStamp .5s cubic-bezier(.2, .8, .3, 1) both; }
+body[data-view="papers"] .item.stamping { animation: apThud .5s ease-out; }
+body.calm[data-view="papers"] .item.stamping, body.calm[data-view="papers"] .item.stamping::after { animation: none; }
 body[data-view="papers"] .btn:not(.fab) { background: #4a4a38; color: #e4dfc2; border-color: #1d1c15; border-radius: 0; font-family: "VT323", monospace; font-size: 21px; letter-spacing: .08em; text-transform: uppercase; --wob: #1d1c15; }
 body[data-view="papers"] .btn.ghost:not(.fab) { background: #e4dfc2; color: #27251c; }
 body[data-view="papers"] .btn.fab { background: #a8262b; color: #f1ecd2; border-color: #1d1c15; --wob: #1d1c15; }
@@ -4628,6 +4638,7 @@ window.__gcalAuth = {
     var prio = cleanPriority(it.priority);
     var li = el("li", "item" + (it.done ? " done" : "") + (it.evil ? " evil" : ""));
     li.dataset.id = it.id;
+    if (it.done && lastToggled === it.id && view === "papers" && !isReduced()) { li.classList.add("stamping"); setTimeout(function () { li.classList.remove("stamping"); }, 900); }
     li.dataset.prio = prio;
     var main = el("div", "item-main");
     var row = el("button", "row"); row.type = "button";

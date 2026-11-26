@@ -239,6 +239,20 @@ public class AndroidPermissionsPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void openNotificationSettings(PluginCall call) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                intent.putExtra(Settings.EXTRA_APP_PACKAGE, getContext().getPackageName());
+                getActivity().startActivity(intent);
+                call.resolve();
+                return;
+            }
+        } catch (Exception ignored) {}
+        openSettings(call);
+    }
+
+    @PluginMethod
     public void setImmersive(PluginCall call) {
         final boolean hide = Boolean.TRUE.equals(call.getBoolean("hide", false));
         final Activity activity = getActivity();

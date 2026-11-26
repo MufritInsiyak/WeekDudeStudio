@@ -180,9 +180,31 @@ ul.missions { list-style: none; margin: 0; padding: 0; }
 .paper .item { border-bottom: 1px solid var(--ink-soft); }
 .row { flex: 1; min-width: 0; display: flex; gap: 12px; align-items: center; text-align: left; background: transparent; border: 0; padding: 9px 0; min-height: 48px; }
 .box { flex: none; width: 24px; height: 24px; border: 2px solid var(--ink); position: relative; }
-.box svg { position: absolute; inset: -3px; width: 28px; height: 28px; opacity: 0; transition: opacity .15s; }
+.box svg { position: absolute; inset: -3px; width: 28px; height: 28px; opacity: 0; transition: opacity .15s; transform-origin: center center; }
 .box path { stroke: var(--red); stroke-width: 3; stroke-linecap: round; fill: none; }
 .done .box svg { opacity: 1; }
+@keyframes boxPop {
+  0% { transform: scale(.86); opacity: 0; }
+  65% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes boxDrawStroke {
+  from { stroke-dashoffset: 1; opacity: .25; }
+  to { stroke-dashoffset: 0; opacity: 1; }
+}
+.done .box svg.box-draw { animation: boxPop .28s cubic-bezier(.22, 1, .36, 1) both; }
+.done .box svg.box-draw path {
+  stroke-dasharray: 1; stroke-dashoffset: 1;
+  animation: boxDrawStroke .22s cubic-bezier(.22, 1, .36, 1) forwards;
+}
+.done .box svg.box-draw path:nth-child(2n) { animation-delay: .09s; }
+.done .box svg.box-draw path:nth-child(n+3) { animation-delay: .14s; }
+body.calm .done .box svg.box-draw,
+body.calm .done .box svg.box-draw path { animation: none !important; stroke-dashoffset: 0 !important; opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .done .box svg.box-draw,
+  .done .box svg.box-draw path { animation: none !important; stroke-dashoffset: 0 !important; opacity: 1; }
+}
 .txtwrap { min-width: 0; }
 .t { display: inline-block; position: relative; font-family: var(--font-hand); font-size: 25px; line-height: 1.1; font-weight: 500; overflow-wrap: anywhere; transition: opacity .3s ease-out; }
 .t::after {
@@ -2132,6 +2154,145 @@ body.is-desktop .pinbtn { -webkit-app-region: no-drag; }
 body.win-mini .win-ctrl-btn { min-width: 28px; min-height: 30px; padding: 0 6px; font-size: 11px; }
 body[data-view="amoled"] .win-ctrls { background: #000000; border-color: #343b47; }
 body[data-view="errands"] .win-ctrls { border-color: #000; background: var(--paper); color: var(--ink); }
+
+/* ===== recurring missions, sub-steps, pin drag/symbol, route grouping & day rollover ===== */
+.add-repeat-row { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.add-repeat-row select { flex: 1 1 180px; }
+.add-repeat-every { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink); }
+.add-repeat-every[hidden] { display: none; }
+.add-repeat-every input { width: 68px; text-align: center; }
+.add-steps-box {
+  grid-column: 1 / -1; display: grid; gap: 6px; padding: 8px 10px;
+  border: 1.5px dashed var(--ink-soft); background: var(--map-bg);
+}
+.add-steps-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 12px; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-soft); }
+.add-steps-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; max-height: 160px; overflow-y: auto; }
+.add-step-item { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border: 1px solid var(--ink-soft); background: var(--paper); font-size: 13px; }
+.add-step-item span { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.add-step-item button { min-width: 32px; min-height: 32px; border: 0; background: transparent; color: var(--ink-soft); font-size: 16px; }
+.add-step-item button:hover { color: var(--red); }
+.add-step-add { display: flex; gap: 6px; align-items: center; }
+.add-step-add input { flex: 1 1 auto; min-width: 0; min-height: 40px; padding: 6px 8px; }
+.add-step-add .btn { min-height: 40px; padding: 6px 12px; flex: none; white-space: nowrap; }
+
+.paper .item { flex-direction: column; align-items: stretch; }
+.item-main { display: flex; align-items: stretch; width: 100%; min-width: 0; }
+.note .item { flex-direction: column; }
+.note .item-main { display: flex; height: 100%; width: 100%; }
+.note .steps-tog, .note .substeps-drawer { display: none; }
+.steps-tog {
+  flex: none; min-width: 44px; min-height: 44px; padding: 0 7px; border: 0; background: transparent;
+  color: var(--ink-soft); font-size: 12px; font-variant-numeric: tabular-nums; letter-spacing: .03em;
+  display: inline-flex; align-items: center; justify-content: center; gap: 3px; white-space: nowrap;
+}
+.steps-tog:hover, .steps-tog[aria-expanded="true"] { color: var(--red); }
+.steps-tog.has-steps { color: var(--ink); }
+.steps-tog.has-steps[aria-expanded="true"] { color: var(--red); }
+.substeps-drawer {
+  padding: 6px 8px 10px 36px; border-top: 1px dashed var(--ink-soft);
+  display: grid; gap: 4px; background: rgba(128, 128, 128, .05);
+}
+.substep-row { display: flex; align-items: center; gap: 6px; min-height: 40px; }
+.substep-chk {
+  flex: 1 1 auto; min-width: 0; min-height: 40px; padding: 4px 2px; border: 0; background: transparent;
+  color: var(--ink); text-align: left; display: flex; align-items: center; gap: 8px; font-size: 14px;
+}
+.substep-box {
+  width: 18px; height: 18px; flex: none; border: 1.5px solid var(--ink); background: var(--paper);
+  display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--red);
+}
+.substep-row.done .substep-txt { text-decoration: line-through; opacity: .65; }
+.substep-txt { overflow-wrap: anywhere; line-height: 1.3; }
+.substep-del { flex: none; min-width: 36px; min-height: 36px; border: 0; background: transparent; color: var(--ink-soft); font-size: 17px; }
+.substep-del:hover { color: var(--red); }
+.substep-add { display: flex; gap: 6px; align-items: center; margin-top: 2px; }
+.substep-add input {
+  flex: 1 1 auto; min-width: 0; min-height: 38px; padding: 4px 8px;
+  border: 1.5px solid var(--ink-soft); border-radius: 0; background: var(--paper); color: var(--ink); font-size: 13px;
+}
+.substep-add .btn { min-height: 38px; padding: 4px 10px; font-size: 12px; flex: none; white-space: nowrap; }
+.repeat-meta, .steps-meta, .sched-meta {
+  font-size: 11.5px; color: var(--ink-soft); letter-spacing: .03em; font-variant-numeric: tabular-nums;
+}
+.repeat-meta strong { color: var(--red); font-weight: 700; }
+
+.route-stop-hdr {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+  padding: 8px 4px 4px; margin-top: 6px; border-bottom: 1.5px solid var(--ink);
+  font-size: 11.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--red); font-weight: 700;
+}
+.route-stop-hdr:first-child { margin-top: 0; }
+.route-stop-hdr span:last-child { color: var(--ink-soft); font-weight: 400; font-variant-numeric: tabular-nums; }
+
+.evening-prompt {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px;
+  margin: 6px 0 8px; padding: 9px 11px; border: 1.5px solid var(--red); background: var(--map-bg); color: var(--ink);
+}
+.evening-prompt[hidden] { display: none; }
+.evening-prompt-txt { font-size: 13px; line-height: 1.35; flex: 1 1 200px; min-width: 0; }
+.evening-prompt-txt strong { color: var(--red); }
+.evening-prompt-acts { display: flex; gap: 6px; flex-wrap: wrap; flex: none; }
+.evening-prompt-acts .btn { min-height: 40px; padding: 6px 11px; font-size: 12px; white-space: nowrap; }
+
+.wrap-summary { font-size: 13.5px; color: var(--ink); line-height: 1.4; }
+.wrap-roll-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.wrap-roll-lbl { font-size: 11.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-soft); }
+.wrap-roll-quick { display: flex; gap: 6px; flex-wrap: wrap; }
+.wrap-roll-quick .btn { min-height: 32px; padding: 2px 8px; font-size: 11px; }
+.wrap-roll-list {
+  list-style: none; margin: 0; padding: 6px 0; display: grid; gap: 4px; max-height: 190px; overflow-y: auto;
+  border-top: 1px dashed var(--ink-soft); border-bottom: 1px dashed var(--ink-soft);
+}
+.wrap-roll-item label { display: flex; align-items: center; gap: 8px; min-height: 38px; font-size: 13.5px; cursor: pointer; }
+.wrap-roll-meta { font-size: 11px; color: var(--ink-soft); margin-left: auto; white-space: nowrap; }
+.wrap-mood-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.wrap-mood-btn {
+  flex: 1 1 56px; min-height: 40px; padding: 4px 6px; border: 1.5px solid var(--ink-soft);
+  background: var(--map-bg); color: var(--ink); font-size: 12px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+}
+.wrap-mood-btn[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); font-weight: 700; }
+.wrap-refl-inp {
+  width: 100%; min-height: 68px; resize: vertical; padding: 8px;
+  border: 2px solid var(--ink); border-radius: 0; background: var(--map-bg); color: var(--ink); font: inherit; font-size: 14px;
+}
+
+.mapcard.moving-pins .place.pin { cursor: grab; touch-action: none; }
+.mapcard.moving-pins .place.pin .ring { opacity: .65; stroke-dasharray: 2 3; }
+.place.pin.pin-dragging { cursor: grabbing !important; }
+.place.pin.pin-dragging .ring { opacity: 1; stroke: var(--red); stroke-width: 2.6; stroke-dasharray: none; }
+.mapbar .btn[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+.pin-ctx-rename { display: flex; gap: 6px; align-items: center; }
+.pin-ctx-rename input {
+  flex: 1 1 auto; min-width: 0; min-height: 36px; padding: 4px 8px;
+  border: 1.5px solid var(--ink); border-radius: 0; background: var(--map-bg); color: var(--ink); font-size: 13px;
+}
+.pin-ctx-rename .btn { min-height: 36px; padding: 4px 10px; font-size: 11.5px; flex: none; }
+.pin-ctx-syms { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
+.pin-sym-btn {
+  min-height: 34px; padding: 4px; border: 1.5px solid var(--ink-soft); background: var(--paper); color: var(--ink);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.pin-sym-btn:hover { border-color: var(--ink); }
+.pin-sym-btn[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.pin-sym-btn svg { width: 18px; height: 18px; display: block; }
+.pinset-row { grid-template-columns: auto minmax(80px, 1fr) auto auto auto; }
+.pinset-name-inp {
+  min-width: 0; width: 100%; min-height: 34px; padding: 2px 6px;
+  border: 1.5px solid var(--ink-soft); border-radius: 0; background: var(--paper); color: var(--ink); font-size: 13px;
+}
+.pinset-sym { min-height: 34px; padding: 2px 6px; border: 1.5px solid var(--ink); background: var(--paper); color: var(--ink); font-size: 12px; max-width: 105px; }
+@media (max-width: 560px) {
+  .pinset-row { grid-template-columns: auto minmax(0, 1fr) auto; }
+}
+body[data-view="amoled"] .substeps-drawer { background: #10141c; border-top-color: #262b34; }
+body[data-view="amoled"] .evening-prompt { background: #11151e; }
+body[data-view="errands"] .substeps-drawer { background: rgba(0, 0, 0, .03); }
+body.sheet-open .tape-dock { opacity: 0; pointer-events: none; transform: translateY(14px); transition: opacity .15s ease, transform .15s ease; }
+@media (pointer: coarse) {
+  body.kb-typing:not(.win-mini) .tape-dock:not(.open) { opacity: 0; pointer-events: none; }
+  body.kb-typing:not(.win-mini):not(.sheet-open) .btn.fab { opacity: 0; pointer-events: none; }
+}
 </style>
 </head>
 <body>
@@ -2230,6 +2391,20 @@ body[data-view="errands"] .win-ctrls { border-color: #000; background: var(--pap
       </select>
       <input id="newLimitMins" type="number" min="1" max="1440" step="1" placeholder="Minutes" aria-label="Custom time limit in minutes" hidden>
     </div>
+    <div class="add-repeat-row">
+      <select id="newRepeatUnit" aria-label="Repeat schedule">
+        <option value="">Does not repeat</option>
+        <option value="hour">Repeat hourly</option>
+        <option value="day">Repeat daily</option>
+        <option value="weekday">Repeat weekdays (Mon–Fri)</option>
+        <option value="week">Repeat weekly</option>
+      </select>
+      <label class="add-repeat-every" id="newRepeatEveryWrap" hidden>
+        <span>Every</span>
+        <input id="newRepeatEvery" type="number" min="1" max="99" step="1" value="1" aria-label="Repeat interval">
+        <span id="newRepeatUnitLbl">day(s)</span>
+      </label>
+    </div>
     <button class="btn" type="submit" id="addBtn">Add</button>
     <input class="where" id="newWhere" maxlength="120" placeholder="Real place or address (optional, for Maps)" aria-label="Real place or address">
     <div class="add-pic-row">
@@ -2237,6 +2412,17 @@ body[data-view="errands"] .win-ctrls { border-color: #000; background: var(--pap
       <button class="btn ghost" type="button" id="newPicClear" hidden>Remove photo</button>
     </div>
     <input class="bring" id="newBring" maxlength="80" placeholder="Bring (optional): bag, ID, the parcel" aria-label="Things to bring" hidden>
+    <div class="add-steps-box">
+      <div class="add-steps-head">
+        <span>Sub-steps (optional)</span>
+        <span id="newStepsCount">0 steps</span>
+      </div>
+      <ul class="add-steps-list" id="newStepsList"></ul>
+      <div class="add-step-add">
+        <input id="newStepInp" maxlength="80" placeholder="Add a checklist sub-step..." aria-label="New sub-step">
+        <button class="btn ghost" type="button" id="newStepAddBtn">Add step</button>
+      </div>
+    </div>
   </form>
 
   <section class="week" id="week" hidden aria-label="Week">
@@ -2326,6 +2512,7 @@ body[data-view="errands"] .win-ctrls { border-color: #000; background: var(--pap
         <div class="mapbar-body" id="mapBarBody">
           <div class="mapbar">
             <button class="btn ghost" id="dropBtn" type="button">Drop a pin</button>
+            <button class="btn ghost" id="movePinsBtn" type="button" aria-pressed="false">Move pins</button>
             <button class="btn ghost" id="geoToggleBtn" type="button" aria-pressed="false">Geofence: Off</button>
             <button class="btn ghost" id="geoEditBtn" type="button">Fence icon</button>
             <select id="mapVariantBar" class="mapvar-sel" aria-label="Map variant"></select>
@@ -2335,6 +2522,20 @@ body[data-view="errands"] .win-ctrls { border-color: #000; background: var(--pap
           </div>
           <form class="pinform" id="pinForm" hidden autocomplete="off">
             <input id="pinName" maxlength="24" placeholder="Name this pin" aria-label="Pin name">
+            <select id="pinDropSymbol" aria-label="Pin symbol">
+              <option value="">Symbol: Smiley</option>
+              <option value="home">Symbol: Home</option>
+              <option value="star">Symbol: Star</option>
+              <option value="cart">Symbol: Errand / Cart</option>
+              <option value="book">Symbol: Study / Book</option>
+              <option value="work">Symbol: Work / Case</option>
+              <option value="heart">Symbol: Health / Heart</option>
+              <option value="coffee">Symbol: Cafe / Mug</option>
+              <option value="bolt">Symbol: Energy / Bolt</option>
+              <option value="flag">Symbol: Goal / Flag</option>
+              <option value="wrench">Symbol: Fix / Wrench</option>
+              <option value="music">Symbol: Music</option>
+            </select>
             <select id="pinDropStyle" aria-label="Pin priority or category">
               <option value="">Color: Default</option>
               <option value="auto">Auto (mission priority)</option>
@@ -2392,6 +2593,7 @@ body[data-view="errands"] .win-ctrls { border-color: #000; background: var(--pap
           <h2 id="listTitle">Missions</h2>
           <select id="listSort" class="list-sort-sel" aria-label="Sort missions">
             <option value="custom">Sort: Default</option>
+            <option value="route">Smart route (nearest stops)</option>
             <option value="prio-desc">Priority: High–Low</option>
             <option value="prio-asc">Priority: Low–High</option>
             <option value="date-asc">Date: Soonest</option>
@@ -2399,8 +2601,10 @@ body[data-view="errands"] .win-ctrls { border-color: #000; background: var(--pap
             <option value="limit-asc">Time limit</option>
           </select>
           <span class="edit-mode-hint" id="editModeHint" hidden>Tap a mission to edit</span>
+          <button class="edit-mode-btn" id="wrapDayBtn" type="button" aria-label="End-of-day rollover and reflection">Wrap day</button>
           <button class="edit-mode-btn" id="editModeBtn" type="button" aria-pressed="false" aria-label="Select a mission to edit">Edit</button>
         </div>
+        <div class="evening-prompt" id="eveningPrompt" hidden></div>
         <div class="filter" id="filter" hidden></div>
         <ul class="missions" id="list"></ul>
         <div class="rc-foot" aria-hidden="true"><div class="dash"></div><div class="rc-sum"><span id="rcItems"></span><span id="rcDone"></span></div><div class="rc-bar"></div><div>Thank you. Come again.</div></div>
@@ -3055,6 +3259,35 @@ body[data-view="errands"] .win-ctrls { border-color: #000; background: var(--pap
     </div>
   </div>
 </div>
+<div class="gcal-modal-backdrop" id="wrapDayModal" hidden role="dialog" aria-modal="true" aria-labelledby="wrapDayTitle">
+  <div class="gcal-modal">
+    <h3 id="wrapDayTitle">End-of-Day Wrap &amp; Reflection</h3>
+    <div class="wrap-summary" id="wrapDaySummary"></div>
+    <div class="wrap-roll-head" id="wrapRollHead">
+      <span class="wrap-roll-lbl">Move unfinished to tomorrow</span>
+      <div class="wrap-roll-quick">
+        <button class="btn ghost" id="wrapRollAllBtn" type="button">All</button>
+        <button class="btn ghost" id="wrapRollTodayBtn" type="button">Today only</button>
+        <button class="btn ghost" id="wrapRollNoneBtn" type="button">None</button>
+      </div>
+    </div>
+    <ul class="wrap-roll-list" id="wrapRollList"></ul>
+    <div class="wrap-roll-lbl">How did today feel?</div>
+    <div class="wrap-mood-row" id="wrapMoodRow" role="group" aria-label="Day mood rating">
+      <button class="wrap-mood-btn" type="button" data-mood="1" aria-pressed="false"><strong>1</strong><span>Drained</span></button>
+      <button class="wrap-mood-btn" type="button" data-mood="2" aria-pressed="false"><strong>2</strong><span>Heavy</span></button>
+      <button class="wrap-mood-btn" type="button" data-mood="3" aria-pressed="false"><strong>3</strong><span>Steady</span></button>
+      <button class="wrap-mood-btn" type="button" data-mood="4" aria-pressed="false"><strong>4</strong><span>Focused</span></button>
+      <button class="wrap-mood-btn" type="button" data-mood="5" aria-pressed="false"><strong>5</strong><span>Great</span></button>
+    </div>
+    <label class="wrap-roll-lbl" for="wrapReflInput">Daily reflection (feeds Patterns &amp; Productivity Score)</label>
+    <textarea class="wrap-refl-inp" id="wrapReflInput" maxlength="400" placeholder="What worked today? Any quick note for tomorrow..."></textarea>
+    <div class="row-actions">
+      <button class="btn" id="wrapSaveBtn" type="button">Save &amp; roll over</button>
+      <button class="btn ghost" id="wrapCancelBtn" type="button">Close</button>
+    </div>
+  </div>
+</div>
 <div class="pin-ctx" id="pinCtxMenu" hidden role="dialog" aria-label="Pin color and options"></div>
 
 <script type="module">
@@ -3076,45 +3309,10 @@ const GCAL_SCOPES = [
   "https://www.googleapis.com/auth/calendar.calendarlist.readonly"
 ];
 
-const activeOp = { done: true, rejected: false, win: null };
-
-class SafePopupRedirectResolver extends browserPopupRedirectResolver {
-  async _openPopup(a, p, t, ev) {
-    const w = await super._openPopup(a, p, t, ev);
-    activeOp.win = w;
-    if (w && typeof w.close === "function") {
-      const origClose = w.close.bind(w);
-      w.close = () => {
-        activeOp.done = true;
-        return origClose();
-      };
-    }
-    return w;
-  }
-  _originValidation(a) {
-    return Promise.resolve(super._originValidation(a)).catch((err) => {
-      if (activeOp.done || activeOp.rejected || !activeOp.win || !activeOp.win.window || activeOp.win.window.closed) return;
-      activeOp.rejected = true;
-      throw err;
-    });
-  }
-  _isIframeWebStorageSupported(a, cb) {
-    try {
-      return super._isIframeWebStorageSupported(a, (ok) => {
-        if (activeOp.done || (!ok && activeOp.rejected)) return;
-        if (!ok) activeOp.rejected = true;
-        cb(ok);
-      });
-    } catch (_err) {
-      // Guard against Firebase 11.6.1 throwing internal-error after webStorageSupport callback
-    }
-  }
-}
-
 const app = initializeApp(firebaseConfig);
 const auth = initializeAuth(app, {
   persistence: inMemoryPersistence,
-  popupRedirectResolver: SafePopupRedirectResolver
+  popupRedirectResolver: browserPopupRedirectResolver
 });
 const provider = new GoogleAuthProvider();
 GCAL_SCOPES.forEach((s) => provider.addScope(s));
@@ -3126,47 +3324,11 @@ let tokenSource = null; // "firebase" | "gis" | null
 let currentUser = null;
 let gisLoadPromise = null;
 let inFlightSignIn = null;
-let cachedAuthorizedDomains = null;
-let authDomainsPromise = null;
 let preferGisOnRetry = false;
 const listeners = [];
 
 function notifyListeners() {
   listeners.forEach((fn) => { try { fn(currentUser); } catch (e) {} });
-}
-
-function loadAuthorizedDomains() {
-  if (Array.isArray(cachedAuthorizedDomains)) return Promise.resolve(cachedAuthorizedDomains);
-  if (authDomainsPromise) return authDomainsPromise;
-  authDomainsPromise = fetch("https://identitytoolkit.googleapis.com/v1/projects?key=" + encodeURIComponent(firebaseConfig.apiKey))
-    .then((r) => (r.ok ? r.json() : null))
-    .then((d) => {
-      if (d && Array.isArray(d.authorizedDomains)) {
-        cachedAuthorizedDomains = d.authorizedDomains;
-        return cachedAuthorizedDomains;
-      }
-      return null;
-    })
-    .catch(() => null);
-  return authDomainsPromise;
-}
-
-function isOriginMatchingDomainList(domains) {
-  if (location.protocol !== "http:" && location.protocol !== "https:") return false;
-  if (!Array.isArray(domains)) return null;
-  const host = (location.hostname || "").toLowerCase();
-  if (!host) return false;
-  const ipv4Re = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
-  for (const raw of domains) {
-    const dom = String(raw || "").trim().toLowerCase();
-    if (!dom) continue;
-    if (ipv4Re.test(dom)) {
-      if (host === dom) return true;
-    } else if (host === dom || host.endsWith("." + dom)) {
-      return true;
-    }
-  }
-  return false;
 }
 
 function validateOAuthConfigAndRedirect() {
@@ -3189,9 +3351,6 @@ function validateOAuthConfigAndRedirect() {
   }
   return redirectUrl;
 }
-
-// Prefetch authorized domains silently so domain validation runs synchronously at click time
-loadAuthorizedDomains();
 
 function loadGis() {
   if (window.google && window.google.accounts && window.google.accounts.oauth2) {
@@ -3240,7 +3399,7 @@ function loadGis() {
   return gisLoadPromise;
 }
 
-// Preload GIS script silently so fallback/GIS token requests stay synchronous inside user gestures
+// Preload GIS script silently so fallback token requests work inside user gestures
 loadGis().catch(() => {});
 
 async function resolveCalendarEmail(token) {
@@ -3341,17 +3500,6 @@ function gisSignIn() {
   return loadGis().then((oauth2) => runGisTokenRequest(oauth2));
 }
 
-async function safeFirebasePopupSignIn() {
-  activeOp.done = false;
-  activeOp.rejected = false;
-  activeOp.win = null;
-  try {
-    return await signInWithPopup(auth, provider, SafePopupRedirectResolver);
-  } finally {
-    activeOp.done = true;
-  }
-}
-
 onAuthStateChanged(auth, (user) => {
   if (user) {
     currentUser = { uid: user.uid, email: user.email || "", displayName: user.displayName || "" };
@@ -3383,23 +3531,21 @@ window.__gcalAuth = {
   signIn() {
     if (inFlightSignIn) return inFlightSignIn;
     validateOAuthConfigAndRedirect();
-    const initialDomainAllowed = isOriginMatchingDomainList(cachedAuthorizedDomains);
-    const isLocalHost = location.hostname === "localhost" || location.hostname === "127.0.0.1";
     const buildUnauthorizedError = () => {
       if (location.hostname === "127.0.0.1") {
-        return new Error("This local address (127.0.0.1) is not in Firebase Authorized Domains. Add \"localhost\" to Firebase Authentication Authorized Domains and open http://localhost:" + (location.port || "3000") + ", use the hosted web URL, or paste your Secret iCal (.ics) URL below.");
+        return new Error("This local address (127.0.0.1) is not in Firebase Authorized Domains. Add \"localhost\" to Firebase Authentication Authorized Domains and open http://localhost:" + (location.port || "3000") + ", or paste your Secret iCal (.ics) URL below.");
       }
       if (location.hostname === "localhost" || window.missionDesktop) {
-        return new Error("This local domain (" + location.hostname + ") is not listed under Firebase Authorized Domains for project " + firebaseConfig.projectId + ". Add \"localhost\" in Firebase Console -> Authentication -> Settings -> Authorized domains, or paste your Secret iCal (.ics) URL below.");
+        return new Error("This domain (" + location.hostname + ") is not listed under Firebase Authorized Domains for project " + firebaseConfig.projectId + ". Add it in Firebase Console -> Authentication -> Settings -> Authorized domains, or paste your Secret iCal (.ics) URL below.");
       }
-      return new Error("This origin (" + location.origin + ") is not listed under Firebase Authorized Domains. Open in an authorized browser tab or paste your Google Calendar Secret iCal address below.");
+      return new Error("This origin (" + location.origin + ") is not listed under Firebase Authorized Domains. Add \"" + location.hostname + "\" in Firebase Console -> Authentication -> Settings -> Authorized domains, open in an authorized browser tab, or paste your Google Calendar Secret iCal address below.");
     };
     const formatFbErr = (err) => {
       const code = err && err.code ? String(err.code) : "";
       if (code === "auth/popup-blocked") return new Error("Sign-in popup was blocked by the browser. Allow popups for this site and try again.");
       if (code === "auth/popup-closed-by-user") return new Error("Sign-in window was closed before finishing.");
       if (code === "auth/cancelled-popup-request") return new Error("Previous sign-in was cancelled. Please try again.");
-      if (code === "auth/web-storage-unsupported") return new Error("Browser storage is blocked in this embedded frame. Open in a normal browser tab or paste your Google Calendar Secret iCal address below.");
+      if (code === "auth/web-storage-unsupported" || code === "auth/operation-not-supported-in-this-environment") return new Error("Browser storage is blocked in this embedded frame. Open in a normal browser tab or paste your Google Calendar Secret iCal address below.");
       if (code === "auth/bad-request") return new Error("Google sign-in request was rejected for this window (" + location.origin + "). Open in a normal browser tab or paste your Google Calendar Secret iCal address below.");
       if (code === "auth/unauthorized-domain") return buildUnauthorizedError();
       return err;
@@ -3432,60 +3578,37 @@ window.__gcalAuth = {
       return { token: cachedAccessToken, user: currentUser };
     };
     const runGisFallback = async (fbErr) => {
-      preferGisOnRetry = true;
       try {
         const token = await gisSignIn();
+        preferGisOnRetry = true;
         return await finishGisToken(token);
       } catch (gisErr) {
         const gMsg = gisErr && gisErr.message ? String(gisErr.message) : "";
         if (gMsg === "gis-unavailable" && fbErr) throw formatFbErr(fbErr);
+        if (fbErr && fbErr.code === "auth/unauthorized-domain") throw formatFbErr(fbErr);
         throw gisErr;
       }
     };
     inFlightSignIn = (async () => {
-      let domainAllowed = initialDomainAllowed;
-      if (domainAllowed === null && isLocalHost) {
-        const domains = await Promise.race([
-          loadAuthorizedDomains(),
-          new Promise((resolve) => setTimeout(() => resolve(null), 1500))
-        ]);
-        domainAllowed = isOriginMatchingDomainList(domains);
-      }
-      if (domainAllowed === false) {
-        if (!isLocalHost && location.protocol === "https:" && window.google && window.google.accounts && window.google.accounts.oauth2) {
-          try {
-            const token = await gisSignIn();
-            return await finishGisToken(token);
-          } catch (_gisErr) {
-            throw buildUnauthorizedError();
-          }
-        }
-        throw buildUnauthorizedError();
-      }
-      if (domainAllowed === null && isLocalHost) {
-        throw buildUnauthorizedError();
-      }
-      if (location.protocol === "https:") {
-        if (preferGisOnRetry) {
-          return await runGisFallback(null);
-        }
-        try {
-          const result = await safeFirebasePopupSignIn();
-          return await finishFirebaseResult(result);
-        } catch (err) {
-          const code = err && err.code ? String(err.code) : "";
-          const canTryGis = code === "auth/web-storage-unsupported" || code === "auth/bad-request" || code === "auth/internal-error";
-          if (!canTryGis) {
-            throw formatFbErr(err);
-          }
-          return await runGisFallback(err);
-        }
+      if (preferGisOnRetry && (location.protocol === "https:" || location.protocol === "http:")) {
+        return await runGisFallback(null);
       }
       try {
-        const result = await safeFirebasePopupSignIn();
+        const result = await signInWithPopup(auth, provider, browserPopupRedirectResolver);
         return await finishFirebaseResult(result);
       } catch (err) {
-        throw formatFbErr(err);
+        const code = err && err.code ? String(err.code) : "";
+        const msg = err && err.message ? String(err.message) : "";
+        const canTryGis = code === "auth/web-storage-unsupported" ||
+          code === "auth/operation-not-supported-in-this-environment" ||
+          code === "auth/bad-request" ||
+          code === "auth/internal-error" ||
+          code === "auth/unauthorized-domain" ||
+          /internal assertion/i.test(msg);
+        if (!canTryGis) {
+          throw formatFbErr(err);
+        }
+        return await runGisFallback(err);
       }
     })().finally(() => {
       inFlightSignIn = null;
@@ -3497,6 +3620,7 @@ window.__gcalAuth = {
     cachedAccessToken = null;
     tokenSource = null;
     currentUser = null;
+    preferGisOnRetry = false;
     try {
       if (prevTok && window.google && window.google.accounts && window.google.accounts.oauth2 && typeof window.google.accounts.oauth2.revoke === "function") {
         window.google.accounts.oauth2.revoke(prevTok, () => {});
@@ -3668,11 +3792,13 @@ window.__gcalAuth = {
   var KEY = "mission-map-v1", XKEY = "mission-map-extra", VKEY = "mission-map-view", EKEY = "mission-map-evil";
   var SKEY = "mission-map-sort", MBKEY = "mission-map-bar-collapsed";
   var items = [], pins = [], notes = [], visited = {}, geofences = {}, stats = { cash: 0, races: 0, best: {}, unlocked: {} };
+  var reflections = [], wrapMeta = { lastPromptDismissDate: "", lastWrapDate: "" };
   var events = [], view = "map", evil = false, filter = null, dayFilter = null, wrapOpen = false, patOpen = false, prodOpen = false, daysMobOpen = false;
-  var sortMode = "custom", toolsMenuOpen = false, mapBarCollapsed = false;
+  var sortMode = "custom", toolsMenuOpen = false, mapBarCollapsed = false, movePinsMode = false;
+  var expandedSteps = {}, draftSteps = [];
   try {
     var sm0 = localStorage.getItem(SKEY);
-    if (["custom", "prio-desc", "prio-asc", "date-asc", "date-desc", "limit-asc"].indexOf(sm0) >= 0) sortMode = sm0;
+    if (["custom", "route", "prio-desc", "prio-asc", "date-asc", "date-desc", "limit-asc"].indexOf(sm0) >= 0) sortMode = sm0;
   } catch (e) {}
   try { mapBarCollapsed = localStorage.getItem(MBKEY) === "1"; } catch (e) {}
   var lastToggled = null, lastAdded = null, ref = null, queue = Promise.resolve();
@@ -3684,6 +3810,8 @@ window.__gcalAuth = {
   function pad(n) { return ("0" + n).slice(-2); }
   function dkey(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
   function todayKey() { return dkey(new Date()); }
+  function tomorrowKey() { var d = new Date(); d.setDate(d.getDate() + 1); return dkey(d); }
+  function parseKey(k) { var p = String(k || "").split("-"); return p.length === 3 ? new Date(+p[0], +p[1] - 1, +p[2]) : new Date(); }
   function weekDays() {
     var d = new Date(), dow = (d.getDay() + 6) % 7, a = [];
     for (var i = 0; i < 7; i++) a.push(dkey(new Date(d.getFullYear(), d.getMonth(), d.getDate() - dow + i)));
@@ -3757,6 +3885,26 @@ window.__gcalAuth = {
     }
     return { stroke: "", fill: "", active: false, label: "Default" };
   }
+  var PIN_SYMBOLS = {
+    "": { label: "Smiley", svg: '<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9.2" cy="10" r="1.1" fill="currentColor"/><circle cx="14.8" cy="10" r="1.1" fill="currentColor"/><path d="M8.8 14a4.2 4.2 0 0 0 6.4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>' },
+    home: { label: "Home", svg: '<path d="M4 11.5L12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>' },
+    star: { label: "Star", svg: '<path d="M12 3.8l2.5 5.1 5.6.8-4 3.9.9 5.6L12 16.5l-5 2.7.9-5.6-4-3.9 5.6-.8z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>' },
+    cart: { label: "Errand / Cart", svg: '<path d="M3.5 5.5h2.5l2 8.5h9.5l2-6H7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="17.5" r="1.4" fill="currentColor"/><circle cx="16.5" cy="17.5" r="1.4" fill="currentColor"/>' },
+    book: { label: "Study / Book", svg: '<path d="M4.5 5.5h5.5a2.5 2.5 0 0 1 2 1v12a2.5 2.5 0 0 0-2-1H4.5zM19.5 5.5H14a2.5 2.5 0 0 0-2 1v12a2.5 2.5 0 0 1 2-1h5.5z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>' },
+    work: { label: "Work / Case", svg: '<rect x="4" y="7.5" width="16" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 7.5V5.5h6v2M4 12h16" fill="none" stroke="currentColor" stroke-width="1.8"/>' },
+    heart: { label: "Health / Heart", svg: '<path d="M12 19.2s-6.8-4.4-8.2-8.4A4.5 4.5 0 0 1 12 7.1a4.5 4.5 0 0 1 8.2 3.7c-1.4 4-8.2 8.4-8.2 8.4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>' },
+    coffee: { label: "Cafe / Mug", svg: '<path d="M5 9h10v6a4.5 4.5 0 0 1-4.5 4.5h-1A4.5 4.5 0 0 1 5 15zM15 10.5h2.2a2.3 2.3 0 0 1 0 4.6H15M8 4.5c0 1.3 1 1.5 1 2.7M12 4.5c0 1.3 1 1.5 1 2.7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>' },
+    bolt: { label: "Energy / Bolt", svg: '<path d="M13.2 3.5L6.2 13h5.1l-.8 7.5 7.3-9.5h-5z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>' },
+    flag: { label: "Goal / Flag", svg: '<path d="M6 20V4.5m0 1h10l-1.8 3.2L16 12H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' },
+    wrench: { label: "Fix / Wrench", svg: '<path d="M14.7 6.3a4.3 4.3 0 0 0-5.4 5.4l-4.6 4.6a1.4 1.4 0 0 0 2 2l4.6-4.6a4.3 4.3 0 0 0 5.4-5.4l-2.3 2.3-2-2z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>' },
+    music: { label: "Music", svg: '<path d="M9.5 16.5V6.5l8.5-1.5v10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7.5" cy="17" r="2.3" fill="none" stroke="currentColor" stroke-width="1.9"/><circle cx="16" cy="15.5" r="2.3" fill="none" stroke="currentColor" stroke-width="1.9"/>' }
+  };
+  var PIN_SYMBOL_ORDER = ["", "home", "star", "cart", "book", "work", "heart", "coffee", "bolt", "flag", "wrench", "music"];
+  function cleanPinSymbol(s) { return (typeof s === "string" && Object.prototype.hasOwnProperty.call(PIN_SYMBOLS, s)) ? s : ""; }
+  function pinSymbolSvg(sym, cls) {
+    var k = cleanPinSymbol(sym);
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"' + (cls ? ' class="' + cls + '"' : '') + '>' + PIN_SYMBOLS[k].svg + '</svg>';
+  }
   function cleanPins(a) {
     var out = [];
     if (!Array.isArray(a)) return out;
@@ -3766,7 +3914,7 @@ window.__gcalAuth = {
       if (!isFinite(x) || !isFinite(y)) return;
       var mode = (typeof p.mode === "string" && Object.prototype.hasOwnProperty.call(PIN_STYLES, p.mode)) ? p.mode : "";
       var color = (typeof p.color === "string" && /^#[0-9a-f]{6}$/i.test(p.color)) ? p.color.toLowerCase() : "";
-      out.push({ id: p.id.slice(0, 20), name: str(p.name, 24) || "Pin", x: Math.max(8, Math.min(392, x)), y: Math.max(14, Math.min(286, y)), mode: mode, color: color });
+      out.push({ id: p.id.slice(0, 20), name: str(p.name, 24) || "Pin", x: Math.max(8, Math.min(392, x)), y: Math.max(14, Math.min(286, y)), mode: mode, color: color, symbol: cleanPinSymbol(p.symbol) });
     });
     return out;
   }
@@ -3873,8 +4021,60 @@ window.__gcalAuth = {
       inp.value = String(m);
     }
   }
+  function placeCoords(k) {
+    if (PLACES[k]) return { x: PLACES[k].x, y: PLACES[k].y };
+    if (isPinKey(k)) {
+      var p = pinById(k.slice(2));
+      if (p) return { x: p.x, y: p.y };
+    }
+    return { x: PLACES.home.x, y: PLACES.home.y };
+  }
+  function computeSmartRouteOrder(arr) {
+    if (!Array.isArray(arr) || arr.length <= 1) return arr ? arr.slice() : [];
+    var groups = {}, placeKeys = [], idx = {};
+    arr.forEach(function (it, i) {
+      idx[it.id] = i;
+      var k = it.place || "home";
+      if (!groups[k]) { groups[k] = []; placeKeys.push(k); }
+      groups[k].push(it);
+    });
+    placeKeys.forEach(function (k) {
+      groups[k].sort(function (a, b) {
+        if (!!a.done !== !!b.done) return a.done ? 1 : -1;
+        var pa = PRIO_RANK[cleanPriority(b.priority)] || 2;
+        var pb = PRIO_RANK[cleanPriority(a.priority)] || 2;
+        if (pa !== pb) return pa - pb;
+        return (idx[a.id] || 0) - (idx[b.id] || 0);
+      });
+    });
+    var orderedKeys = [], remaining = {};
+    placeKeys.forEach(function (k) { remaining[k] = true; });
+    var curPt = placeCoords("home");
+    if (remaining.home) {
+      orderedKeys.push("home");
+      delete remaining.home;
+    }
+    var remList = Object.keys(remaining);
+    while (remList.length) {
+      var bestIdx = 0, bestDist = Infinity;
+      for (var j = 0; j < remList.length; j++) {
+        var pt = placeCoords(remList[j]);
+        var dist = Math.hypot(pt.x - curPt.x, pt.y - curPt.y);
+        if (dist < bestDist) { bestDist = dist; bestIdx = j; }
+      }
+      var picked = remList.splice(bestIdx, 1)[0];
+      orderedKeys.push(picked);
+      curPt = placeCoords(picked);
+    }
+    var out = [];
+    orderedKeys.forEach(function (k) {
+      groups[k].forEach(function (it) { out.push(it); });
+    });
+    return out;
+  }
   function sortShownItems(arr) {
     if (sortMode === "custom") return arr;
+    if (sortMode === "route") return computeSmartRouteOrder(arr);
     var copy = arr.slice(), idx = {};
     copy.forEach(function (it, i) { idx[it.id] = i; });
     copy.sort(function (a, b) {
@@ -3896,6 +4096,53 @@ window.__gcalAuth = {
       return cmp || ((idx[a.id] || 0) - (idx[b.id] || 0));
     });
     return copy;
+  }
+  function cleanRepeat(rep) {
+    if (!rep || typeof rep !== "object") return { unit: "", every: 1, nextDueAt: 0 };
+    var u = ["hour", "day", "weekday", "week"].indexOf(rep.unit) >= 0 ? rep.unit : "";
+    if (!u) return { unit: "", every: 1, nextDueAt: 0 };
+    var ev = u === "weekday" ? 1 : (isFinite(rep.every) ? Math.max(1, Math.min(99, Math.round(Number(rep.every)))) : 1);
+    var nd = isFinite(rep.nextDueAt) && Number(rep.nextDueAt) > 0 ? Number(rep.nextDueAt) : 0;
+    return { unit: u, every: ev, nextDueAt: nd };
+  }
+  function cleanSteps(arr) {
+    var out = [];
+    if (!Array.isArray(arr)) return out;
+    arr.slice(0, 30).forEach(function (s) {
+      if (!s || typeof s !== "object") return;
+      var txt = str(s.text, 80);
+      if (!txt) return;
+      out.push({ id: typeof s.id === "string" && s.id ? s.id.slice(0, 24) : uid().slice(0, 8), text: txt, done: !!s.done });
+    });
+    return out;
+  }
+  function cleanReflections(arr) {
+    var out = [], seen = {};
+    if (!Array.isArray(arr)) return out;
+    arr.slice(0, 120).forEach(function (r) {
+      if (!r || typeof r !== "object") return;
+      var dk = typeof r.date === "string" && DRE.test(r.date) ? r.date : "";
+      if (!dk || seen[dk]) return;
+      seen[dk] = true;
+      var m = parseInt(r.mood, 10);
+      out.push({
+        date: dk,
+        mood: (m >= 1 && m <= 5) ? m : 0,
+        note: str(r.note, 400),
+        doneCount: isFinite(r.doneCount) ? Math.max(0, Math.round(Number(r.doneCount))) : 0,
+        rolledCount: isFinite(r.rolledCount) ? Math.max(0, Math.round(Number(r.rolledCount))) : 0,
+        updatedAt: isFinite(r.updatedAt) ? Number(r.updatedAt) : Date.now()
+      });
+    });
+    out.sort(function (a, b) { return b.date.localeCompare(a.date); });
+    return out;
+  }
+  function cleanWrapMeta(obj) {
+    var o = { lastPromptDismissDate: "", lastWrapDate: "" };
+    if (!obj || typeof obj !== "object") return o;
+    if (typeof obj.lastPromptDismissDate === "string" && DRE.test(obj.lastPromptDismissDate)) o.lastPromptDismissDate = obj.lastPromptDismissDate;
+    if (typeof obj.lastWrapDate === "string" && DRE.test(obj.lastWrapDate)) o.lastWrapDate = obj.lastWrapDate;
+    return o;
   }
   function cleanNotes(a) {
     var out = [];
@@ -3924,6 +4171,8 @@ window.__gcalAuth = {
       date: (typeof r.date === "string" && /^\d{4}-\d\d-\d\d$/.test(r.date)) ? r.date : todayKey(),
       doneAt: isFinite(r.doneAt) ? Number(r.doneAt) : 0,
       limitMin: lm, limitAt: la, limitAlerted: !!r.limitAlerted,
+      repeat: cleanRepeat(r.repeat),
+      steps: cleanSteps(r.steps),
       gcalId: str(r.gcalId, 128), gcalCal: str(r.gcalCal, 128), gcalSig: str(r.gcalSig, 64)
     };
   }
@@ -3942,6 +4191,7 @@ window.__gcalAuth = {
   var ex = {};
   try { ex = JSON.parse(localStorage.getItem(XKEY) || "{}") || {}; } catch (e) { ex = {}; }
   events = cleanEvents(ex.events); pins = cleanPins(ex.pins); notes = cleanNotes(ex.notes); visited = cleanVisited(ex.visited); geofences = cleanGeofences(ex.geofences); stats = cleanStats(ex.stats);
+  reflections = cleanReflections(ex.reflections); wrapMeta = cleanWrapMeta(ex.wrapMeta);
   var haveSaved = false;
   try {
     var saved = JSON.parse(localStorage.getItem(KEY) || "null");
@@ -4222,7 +4472,44 @@ window.__gcalAuth = {
       if (app.active) ringAttrs.stroke = app.stroke;
       g.appendChild(svgEl("circle", ringAttrs));
       var hit = svgEl("circle", { r: 24, fill: "transparent" }); g.appendChild(hit);
-      if (hasCustomPin) {
+      var sym = cleanPinSymbol(p.symbol);
+      if (sym) {
+        var ndlSym = svgEl("g", { "class": "pin-needle", transform: "translate(-10 -25.8) scale(.4167)" });
+        ndlSym.appendChild(svgEl("ellipse", { cx: 31, cy: 61.5, rx: 11, ry: 2.6, fill: "#000", opacity: ".3", filter: "url(#pinBlur)" }));
+        var shaftSymAttrs = { d: "M22.4 38 L25.6 38 L24.5 62 L23.5 62 Z", fill: "url(#gMetal)" };
+        if (app.active) { shaftSymAttrs.stroke = app.stroke; shaftSymAttrs["stroke-width"] = 0.9; }
+        ndlSym.appendChild(svgEl("path", shaftSymAttrs));
+        var colSymAttrs = { "class": "pin-collar", cx: 24, cy: 38, rx: 6.4, ry: 2.3, fill: app.active ? app.stroke : "url(#gMetal)" };
+        if (app.active) { colSymAttrs.stroke = "#111"; colSymAttrs["stroke-width"] = 0.9; }
+        ndlSym.appendChild(svgEl("ellipse", colSymAttrs));
+        g.appendChild(ndlSym);
+
+        var anchSym = svgEl("g", { "class": "pin-sprite-anchor", transform: "translate(0 -16.63)" });
+        var spinSym = svgEl("g", { "class": "pin-sprite-spin" });
+        var fgCol = app.active ? app.stroke : "#2a2c25";
+        var bgFill = app.active ? app.fill : "#f4eed8";
+        var symMarkup = PIN_SYMBOLS[sym].svg;
+
+        var fFace = svgEl("g", { "class": "pin-face front" });
+        fFace.appendChild(svgEl("circle", { cx: 0, cy: 0, r: 9.4, fill: "#f7f3e4" }));
+        fFace.appendChild(svgEl("circle", { "class": "pin-color-disc", cx: 0, cy: 0, r: 9.4, fill: bgFill, stroke: fgCol, "stroke-width": app.active ? 2.1 : 1.7 }));
+        var fIcon = svgEl("g", { transform: "translate(-5.8 -5.8) scale(0.483)", color: fgCol });
+        fIcon.style.color = fgCol;
+        fIcon.innerHTML = symMarkup;
+        fFace.appendChild(fIcon);
+        spinSym.appendChild(fFace);
+
+        var bFace = svgEl("g", { "class": "pin-face back", visibility: "hidden" });
+        bFace.appendChild(svgEl("circle", { cx: 0, cy: 0, r: 9.4, fill: "#2a2c25", stroke: app.active ? app.stroke : "#c4382b", "stroke-width": 2 }));
+        var bIcon = svgEl("g", { transform: "translate(-5.8 -5.8) scale(0.483)", color: "#fff8f0" });
+        bIcon.style.color = "#fff8f0";
+        bIcon.innerHTML = symMarkup;
+        bFace.appendChild(bIcon);
+        spinSym.appendChild(bFace);
+
+        anchSym.appendChild(spinSym);
+        g.appendChild(anchSym);
+      } else if (hasCustomPin) {
         var anch = svgEl("g", { "class": "pin-sprite-anchor", transform: "translate(0 -13)" });
         var spinG = svgEl("g", { "class": "pin-sprite-spin" });
         spinG.appendChild(svgEl("rect", {
@@ -4276,7 +4563,31 @@ window.__gcalAuth = {
     else pinMapAnim.triggerKey = null;
   }
 
-  /* ---------- rows ---------- */
+  /* ---------- rows & sub-steps ---------- */
+  function toggleSubstep(itemId, stepId) {
+    var it = findItem(itemId);
+    if (!it || !Array.isArray(it.steps)) return;
+    var hit = null;
+    it.steps.forEach(function (s) { if (s.id === stepId) { s.done = !s.done; hit = s; } });
+    if (!hit) return;
+    render(); persist();
+    fx(hit.done ? "scribble" : "untick");
+  }
+  function addInlineSubstep(itemId, text) {
+    var it = findItem(itemId), txt = str(text, 80);
+    if (!it || !txt) return;
+    if (!Array.isArray(it.steps)) it.steps = [];
+    if (it.steps.length >= 30) { toast("Sub-step limit reached (30)."); return; }
+    it.steps.push({ id: uid().slice(0, 8), text: txt, done: false });
+    expandedSteps[itemId] = true;
+    render(); persist(); fx("add");
+  }
+  function removeSubstep(itemId, stepId) {
+    var it = findItem(itemId);
+    if (!it || !Array.isArray(it.steps)) return;
+    it.steps = it.steps.filter(function (s) { return s.id !== stepId; });
+    render(); persist(); fx("del");
+  }
   function ransom(t, text) {
     t.textContent = "";
     var n = 0;
@@ -4294,10 +4605,19 @@ window.__gcalAuth = {
     var li = el("li", "item" + (it.done ? " done" : "") + (it.evil ? " evil" : ""));
     li.dataset.id = it.id;
     li.dataset.prio = prio;
+    var main = el("div", "item-main");
     var row = el("button", "row"); row.type = "button";
     row.setAttribute("aria-pressed", it.done ? "true" : "false");
     var box = el("span", "box");
-    box.innerHTML = '<svg viewBox="0 0 28 28" aria-hidden="true"></svg>'; if (it.done) drawBox(box.firstChild);
+    box.innerHTML = '<svg viewBox="0 0 28 28" aria-hidden="true"></svg>';
+    if (it.done) {
+      drawBox(box.firstChild);
+      if (lastToggled === it.id && !isReduced()) {
+        var bsvg = box.firstChild;
+        bsvg.classList.add("box-draw");
+        setTimeout(function () { if (bsvg) bsvg.classList.remove("box-draw"); }, 460);
+      }
+    }
     var wrap = el("span", "txtwrap");
     var animateStrike = lastToggled === it.id && opts.strike && !isReduced();
     var t = el("span", "t" + ((animateStrike ? !it.done : it.done) ? " struck" : ""));
@@ -4324,6 +4644,25 @@ window.__gcalAuth = {
       }
       badges.appendChild(lb);
     }
+    var rep = cleanRepeat(it.repeat);
+    if (rep.unit) {
+      var repTxt = "↻ " + fmtRepeatLabel(rep);
+      if (it.done && rep.unit === "hour" && rep.nextDueAt > Date.now()) {
+        var leftM = Math.max(1, Math.ceil((rep.nextDueAt - Date.now()) / 60000));
+        repTxt += " · next in " + (leftM >= 60 ? fmtLimitMin(leftM) : (leftM + "m"));
+      }
+      badges.appendChild(el("span", "repeat-meta", repTxt));
+    }
+    var steps = Array.isArray(it.steps) ? it.steps : [];
+    var doneSteps = steps.filter(function (s) { return s.done; }).length;
+    if (steps.length) {
+      badges.appendChild(el("span", "steps-meta", doneSteps + "/" + steps.length + " steps"));
+    }
+    var tk = todayKey();
+    if (it.date && it.date !== tk && !it.done) {
+      var schedTxt = it.date < tk ? ("Overdue · " + it.date.slice(5)) : (it.date === tomorrowKey() ? "Tomorrow" : it.date.slice(5));
+      badges.appendChild(el("span", "sched-meta", schedTxt));
+    }
     wrap.appendChild(t); wrap.appendChild(tag); wrap.appendChild(badges);
     if (it.where) wrap.appendChild(el("span", "wh xtra", it.where));
     if (it.hassle) wrap.appendChild(el("span", "xtra hs", "Hassle: " + it.hassle));
@@ -4340,18 +4679,62 @@ window.__gcalAuth = {
       }
       toggle(it.id);
     });
-    li.appendChild(row);
+    main.appendChild(row);
+    var isOpenSteps = !!expandedSteps[it.id];
+    var stepsBtn = el("button", "steps-tog" + (steps.length ? " has-steps" : ""));
+    stepsBtn.type = "button";
+    stepsBtn.setAttribute("aria-expanded", isOpenSteps ? "true" : "false");
+    stepsBtn.setAttribute("aria-label", "Toggle sub-steps for " + it.text);
+    stepsBtn.textContent = steps.length ? (doneSteps + "/" + steps.length + (isOpenSteps ? " ▴" : " ▾")) : (isOpenSteps ? "Steps ▴" : "+ Steps");
+    stepsBtn.addEventListener("click", function () {
+      expandedSteps[it.id] = !expandedSteps[it.id];
+      render(); fx("click");
+    });
+    main.appendChild(stepsBtn);
     if (it.where) {
       var go = el("a", "go", "Maps ↗");
       go.target = "_blank"; go.rel = "noopener noreferrer";
       go.href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(it.where);
       go.setAttribute("aria-label", "Open " + it.where + " in Maps");
-      li.appendChild(go);
+      main.appendChild(go);
     }
     var del = el("button", "del", "×"); del.type = "button";
     del.setAttribute("aria-label", "Delete mission");
     del.addEventListener("click", function () { remove(it.id); });
-    li.appendChild(del);
+    main.appendChild(del);
+    li.appendChild(main);
+
+    if (isOpenSteps) {
+      var drawer = el("div", "substeps-drawer");
+      steps.forEach(function (st) {
+        var sRow = el("div", "substep-row" + (st.done ? " done" : ""));
+        var chk = el("button", "substep-chk"); chk.type = "button";
+        chk.setAttribute("aria-pressed", st.done ? "true" : "false");
+        chk.appendChild(el("span", "substep-box", st.done ? "✓" : ""));
+        chk.appendChild(el("span", "substep-txt", st.text));
+        chk.addEventListener("click", function () { toggleSubstep(it.id, st.id); });
+        var sDel = el("button", "substep-del", "×"); sDel.type = "button";
+        sDel.setAttribute("aria-label", "Remove sub-step " + st.text);
+        sDel.addEventListener("click", function () { removeSubstep(it.id, st.id); });
+        sRow.appendChild(chk); sRow.appendChild(sDel);
+        drawer.appendChild(sRow);
+      });
+      var addRow = el("form", "substep-add");
+      var sInp = document.createElement("input");
+      sInp.maxLength = 80;
+      sInp.placeholder = "Add a sub-step...";
+      sInp.setAttribute("aria-label", "Add sub-step to " + it.text);
+      var sBtn = el("button", "btn ghost", "Add"); sBtn.type = "submit";
+      addRow.appendChild(sInp); addRow.appendChild(sBtn);
+      addRow.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var v = sInp.value.trim();
+        if (!v) return;
+        addInlineSubstep(it.id, v);
+      });
+      drawer.appendChild(addRow);
+      li.appendChild(drawer);
+    }
     return li;
   }
 
@@ -4774,7 +5157,7 @@ window.__gcalAuth = {
       var x0 = x + pad - ov * (m % 3 === 2 ? 1.5 : 0.6), y0 = y + pad - ov * 0.5, x1 = x + z - pad + ov, y1 = y + z - pad + ov * 0.7;
       var d = m % 2 ? "M" + (x1 + j(xa)).toFixed(1) + " " + (y0 + j(xa)).toFixed(1) + " L" + (x0 + j(xa)).toFixed(1) + " " + (y1 + j(xa)).toFixed(1)
                     : "M" + (x0 + j(xa)).toFixed(1) + " " + (y0 + j(xa)).toFixed(1) + " L" + (x1 + j(xa)).toFixed(1) + " " + (y1 + j(xa)).toFixed(1);
-      var xs = document.createElementNS(NS, "path"); xs.setAttribute("d", d); xs.setAttribute("fill", "none");
+      var xs = document.createElementNS(NS, "path"); xs.setAttribute("d", d); xs.setAttribute("pathLength", "1"); xs.setAttribute("fill", "none");
       xs.style.stroke = xc; xs.style.strokeWidth = String((2 + i * 0.15) * (z > 22 ? 1.1 : 1)); xs.setAttribute("stroke-linecap", "round"); g.appendChild(xs);
     }
   }
@@ -4784,7 +5167,12 @@ window.__gcalAuth = {
     var g = document.createElementNS("http://www.w3.org/2000/svg", "g"); svg.appendChild(g);
     drawCross(g, crossIdx(), 2, 2, 24);
   }
-  function drawBoxes() { var l = document.querySelectorAll(".item.done .box svg"); for (var q = 0; q < l.length; q++) drawBox(l[q]); }
+  function drawBoxes() {
+    var l = document.querySelectorAll(".item.done .box svg");
+    for (var q = 0; q < l.length; q++) {
+      if (!l[q].classList.contains("box-draw")) drawBox(l[q]);
+    }
+  }
   /* every red in the page drifts towards dark red as stress rises (switch: Options > Errand life) */
   function parseCol(s) {
     s = (s || "").trim(); var m;
@@ -4908,7 +5296,6 @@ window.__gcalAuth = {
   var calOpen = false, calM = null, calMode = "month", calFocus = todayKey();
   try { calOpen = localStorage.getItem("mission-map-cal") === "1"; } catch (e) {}
   try { var cm0 = localStorage.getItem("mission-map-cal-mode"); if (cm0 === "month" || cm0 === "week" || cm0 === "day") calMode = cm0; } catch (e) {}
-  function parseKey(k) { var p = String(k || "").split("-"); return p.length === 3 ? new Date(+p[0], +p[1] - 1, +p[2]) : new Date(); }
   function shiftKey(k, deltaDays) { var d = parseKey(k); d.setDate(d.getDate() + deltaDays); return dkey(d); }
   function weekDaysOf(k) {
     var d = parseKey(k), dow = (d.getDay() + 6) % 7, a = [];
@@ -5118,10 +5505,20 @@ window.__gcalAuth = {
   }
   function renderWrap(days) {
     var box = $("wrap"); box.hidden = !wrapOpen; if (box.hidden) return;
-    var counts = days.map(function () { return 0; }), total = 0, openLeft = 0;
+    var counts = days.map(function () { return 0; }), total = 0, openLeft = 0, seenTs = {};
     norm().forEach(function (i) {
-      if (i.done && i.doneAt) { var idx = days.indexOf(dkey(new Date(i.doneAt))); if (idx >= 0) { counts[idx]++; total++; } }
+      if (i.done && i.doneAt) {
+        seenTs[i.doneAt] = true;
+        var idx = days.indexOf(dkey(new Date(i.doneAt)));
+        if (idx >= 0) { counts[idx]++; total++; }
+      }
       if (!i.done && days.indexOf(i.date) >= 0) openLeft++;
+    });
+    logGet().forEach(function (r) {
+      if (r[1] !== "d" || r[2] === "!" || seenTs[r[0]]) return;
+      seenTs[r[0]] = true;
+      var idx = days.indexOf(dkey(new Date(r[0])));
+      if (idx >= 0) { counts[idx]++; total++; }
     });
     var max = Math.max.apply(null, counts.concat([1])), best = counts.indexOf(Math.max.apply(null, counts));
     box.innerHTML = "";
@@ -5424,9 +5821,7 @@ window.__gcalAuth = {
       var freshCopy = plan.ready ? buildProdNotifCopy(plan) : { title: job.title, body: job.body };
       toast(freshCopy.body);
       fx("chime");
-      if (!(typeof NATIVE !== "undefined" && NATIVE)) {
-        fireDesktopNotif(freshCopy.title, freshCopy.body, "");
-      }
+      fireDesktopNotif(freshCopy.title, freshCopy.body, "", { channelId: "productivity" });
     }
     syncProductiveScheduler({ skipPhone: true });
     return true;
@@ -5775,6 +6170,28 @@ window.__gcalAuth = {
       box.appendChild(el("div", "wrapline", "Play radio/music, listen to a voice tape, or log a song from the cassette deck to track how often you listen."));
     }
 
+    /* daily reflections & mood */
+    box.appendChild(el("div", "pat-h", "Daily reflections & mood"));
+    if (reflections.length) {
+      var MOOD_WORDS = ["", "Drained", "Heavy", "Steady", "Focused", "Great"];
+      var moodEntries = reflections.filter(function (r) { return r.mood > 0; });
+      if (moodEntries.length) {
+        var avgMood = (moodEntries.reduce(function (s, r) { return s + r.mood; }, 0) / moodEntries.length).toFixed(1).replace(/\.0$/, "");
+        box.appendChild(el("div", "wrapline", "Average mood across " + moodEntries.length + " logged day" + (moodEntries.length === 1 ? "" : "s") + ": " + avgMood + "/5."));
+      }
+      var rGrid = el("div", "pat-grid");
+      reflections.slice(0, 4).forEach(function (rf) {
+        var rr = el("div", "pat-row");
+        var headLbl = (rf.date === todayKey() ? "Today" : rf.date) + (rf.mood ? (" · " + rf.mood + "/5 " + MOOD_WORDS[rf.mood]) : "");
+        rr.appendChild(el("b", null, headLbl));
+        rr.appendChild(el("span", null, rf.note || (rf.doneCount + " done" + (rf.rolledCount ? (", " + rf.rolledCount + " rolled") : ""))));
+        rGrid.appendChild(rr);
+      });
+      box.appendChild(rGrid);
+    } else {
+      box.appendChild(el("div", "wrapline", "No reflections logged yet. Use Wrap day at the top of your mission list to roll over unfinished tasks and record how today felt."));
+    }
+
     var cl = el("button", "btn ghost", "Close"); cl.type = "button"; cl.addEventListener("click", function () { patOpen = false; render(); });
     var cr = el("button", "btn ghost", "Clear history"); cr.type = "button";
     cr.addEventListener("click", function () { if (window.confirm("Clear the habit history on this phone? Missions are not touched.")) { try { localStorage.removeItem("mission-map-log"); } catch (e) {} render(); } });
@@ -5840,8 +6257,13 @@ window.__gcalAuth = {
     renderPins(mine);
     renderGeoUi();
     $("pinCount").textContent = pins.length ? pins.length + (pins.length === 1 ? " pin" : " pins") : "No pins yet";
-    $("mapHint").textContent = dropping ? "tap the map to place your pin" : "tap a place to filter";
+    $("mapHint").textContent = dropping ? "tap the map to place your pin" : (movePinsMode ? "drag any custom pin to move it" : "tap a place · hold pin to move");
     $("mapcard").classList.toggle("dropping", dropping);
+    $("mapcard").classList.toggle("moving-pins", movePinsMode);
+    if ($("movePinsBtn")) {
+      $("movePinsBtn").setAttribute("aria-pressed", movePinsMode ? "true" : "false");
+      $("movePinsBtn").textContent = movePinsMode ? "Done moving" : "Move pins";
+    }
     $("dropBtn").textContent = dropping ? "Cancel pin" : "Drop a pin";
     if (filter && isPinKey(filter) && !pinById(filter.slice(2))) filter = null;
 
@@ -5860,8 +6282,8 @@ window.__gcalAuth = {
         var colDot = el("span", "pin-dot");
         if (pinApp.active) { colDot.style.borderColor = pinApp.stroke; colDot.style.background = pinApp.fill; }
         colBtn.appendChild(colDot);
-        colBtn.appendChild(document.createTextNode("Color" + (pinObj && pinObj.mode ? ": " + pinApp.label : "")));
-        colBtn.setAttribute("aria-label", "Customize color for " + placeInfo(filter).n);
+        colBtn.appendChild(document.createTextNode("Edit pin" + (pinObj && pinObj.mode ? ": " + pinApp.label : "")));
+        colBtn.setAttribute("aria-label", "Customize pin " + placeInfo(filter).n);
         colBtn.addEventListener("click", function () {
           var r = colBtn.getBoundingClientRect();
           openPinCtxMenu(pinId, r.left, r.bottom + 6);
@@ -5893,25 +6315,56 @@ window.__gcalAuth = {
       var e = el("li", "empty", mine.length ? "Nothing here. Pick another place or day." : (evil ? "Nothing to resist. Write down a temptation." : "Nothing to do. Add a mission or tap Suggest."));
       (grid ? notes : list).appendChild(e);
     }
-    if (!grid) shown.forEach(function (it) { list.appendChild(rowEl(it)); });
-    else shown.forEach(function (it) {
-      var n = rowEl(it); n.className = "note" + (it.done ? " done" : "");
-      var wrapper = el("div", "item");
-      while (n.firstChild) wrapper.appendChild(n.firstChild);
-      n.appendChild(wrapper); notes.appendChild(n);
-    });
+    if (!grid) {
+      var useRouteHdr = sortMode === "route" && shown.length > 0;
+      var lastStopPlace = null, stopNum = 0;
+      shown.forEach(function (it) {
+        if (useRouteHdr && it.place !== lastStopPlace) {
+          lastStopPlace = it.place;
+          var placeOpen = shown.filter(function (x) { return x.place === it.place && !x.done; }).length;
+          var hdr = el("li", "route-stop-hdr");
+          var stopLabel;
+          if (it.place === "home" && stopNum === 0) {
+            stopLabel = "Start · " + placeInfo(it.place).n;
+          } else {
+            stopNum++;
+            stopLabel = "Stop " + stopNum + " · " + placeInfo(it.place).n;
+          }
+          hdr.appendChild(el("span", null, stopLabel));
+          hdr.appendChild(el("span", null, placeOpen ? (placeOpen + " open") : "All done"));
+          list.appendChild(hdr);
+        }
+        list.appendChild(rowEl(it));
+      });
+    } else {
+      shown.forEach(function (it) {
+        var n = rowEl(it); n.className = "note" + (it.done ? " done" : "");
+        var wrapper = el("div", "item");
+        while (n.firstChild) wrapper.appendChild(n.firstChild);
+        n.appendChild(wrapper); notes.appendChild(n);
+      });
+    }
     $("rcDate").textContent = new Date().toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
     $("rcItems").textContent = "ITEMS " + mine.length; $("rcDone").textContent = "DONE " + done;
 
-    var stops = norm().filter(function (i) { return !i.done && i.where; }).slice(0, 10).map(function (i) { return encodeURIComponent(i.where); });
+    var openAddrs = computeSmartRouteOrder(norm().filter(function (i) { return !i.done && i.where; }));
+    var stops = [], seenStops = {};
+    openAddrs.forEach(function (i) {
+      var key = i.where.trim().toLowerCase();
+      if (!key || seenStops[key]) return;
+      seenStops[key] = true;
+      stops.push(encodeURIComponent(i.where.trim()));
+    });
+    stops = stops.slice(0, 10);
     var rb = $("routeBtn");
     if (stops.length) {
       rb.hidden = false;
-      rb.textContent = "Plan route (" + stops.length + (stops.length === 1 ? " stop)" : " stops)");
+      rb.textContent = "Plan smart route (" + stops.length + (stops.length === 1 ? " stop)" : " stops)");
       rb.href = "https://www.google.com/maps/dir/?api=1&destination=" + stops[stops.length - 1] + (stops.length > 1 ? "&waypoints=" + stops.slice(0, -1).join("%7C") : "");
     } else { rb.hidden = true; rb.removeAttribute("href"); }
     $("sample").hidden = !(!grid && items.some(function (i) { return i.sample; }));
 
+    renderEveningPrompt(grid);
     var patData = collectPatternStats(), days = weekDays();
     renderMeters(); renderWeek(mine); renderWrap(days); renderCal(mine); renderPatterns(patData); renderProductivityWidget(patData); renderSubmenu(patData); syncMapBarUi(); renderRoad(); renderNext(); renderNotebook(); renderPractice();
     if (typeof syncProdRemUi === "function") syncProdRemUi();
@@ -5947,7 +6400,65 @@ window.__gcalAuth = {
   var dayName = "Today";
   try { dayName = new Date().toLocaleDateString("en-US", { weekday: "long" }); } catch (e) {}
 
-  /* ---------- actions ---------- */
+  /* ---------- recurrences & actions ---------- */
+  function fmtRepeatLabel(rep) {
+    var r = cleanRepeat(rep);
+    if (!r.unit) return "";
+    if (r.unit === "weekday") return "Weekdays";
+    if (r.every === 1) return r.unit === "hour" ? "Hourly" : r.unit === "day" ? "Daily" : "Weekly";
+    return "Every " + r.every + " " + r.unit + (r.every > 1 ? "s" : "");
+  }
+  function nextRepeatDate(fromDateStr, unit, every) {
+    var d = DRE.test(fromDateStr || "") ? parseKey(fromDateStr) : new Date();
+    var t = todayKey(), n = Math.max(1, Math.round(Number(every) || 1));
+    if (unit === "day") {
+      d.setDate(d.getDate() + n);
+      while (dkey(d) <= t) d.setDate(d.getDate() + n);
+    } else if (unit === "week") {
+      d.setDate(d.getDate() + n * 7);
+      while (dkey(d) <= t) d.setDate(d.getDate() + n * 7);
+    } else if (unit === "weekday") {
+      do { d.setDate(d.getDate() + 1); } while (d.getDay() === 0 || d.getDay() === 6 || dkey(d) <= t);
+    }
+    return dkey(d);
+  }
+  function checkRecurrences(fromTimer) {
+    var now = Date.now(), tk = todayKey(), changed = false, reopened = [];
+    items.forEach(function (it) {
+      var rep = cleanRepeat(it.repeat);
+      it.repeat = rep;
+      if (!rep.unit) return;
+      if (rep.unit === "hour") {
+        if (it.done && rep.nextDueAt > 0 && now >= rep.nextDueAt) {
+          it.done = false;
+          it.doneAt = 0;
+          it.paid = false;
+          it.date = tk;
+          if (Array.isArray(it.steps)) it.steps.forEach(function (s) { s.done = false; });
+          if (it.limitMin > 0) { it.limitAt = now + it.limitMin * 60000; it.limitAlerted = false; }
+          it.repeat.nextDueAt = now + rep.every * 3600000;
+          changed = true;
+          reopened.push(it.text);
+        }
+      } else if (it.done && it.date <= tk && (!it.doneAt || dkey(new Date(it.doneAt)) < tk)) {
+        it.date = nextRepeatDate(it.date || tk, rep.unit, rep.every);
+        it.done = false;
+        it.doneAt = 0;
+        it.paid = false;
+        if (Array.isArray(it.steps)) it.steps.forEach(function (s) { s.done = false; });
+        it.limitAt = 0; it.limitAlerted = false;
+        changed = true;
+      }
+    });
+    if (changed && fromTimer) {
+      render(); persist();
+      if (reopened.length) {
+        fx("chime", 0.18);
+        toast("Recurring ready: " + reopened[0] + (reopened.length > 1 ? " (+" + (reopened.length - 1) + " more)" : ""));
+      }
+    }
+    return changed;
+  }
   function payFor(it) { return it.evil ? 5 : 10 + (it.date === todayKey() ? 5 : 0); }
   function toggle(id) {
     var it = null;
@@ -5956,15 +6467,37 @@ window.__gcalAuth = {
     var nowT = Date.now(); it.done = !it.done; it.doneAt = it.done ? nowT : 0; lastToggled = id;
     var listeningNow = typeof currentListeningInfo === "function" && currentListeningInfo().on ? 1 : 0;
     if (it.done) logEv("d", it.evil ? "!" : it.place, nowT, listeningNow);
-    var gained = 0;
+    var gained = 0, rep = cleanRepeat(it.repeat), advancedDate = "";
     if (it.done) {
       if (!it.evil) visited[it.place] = true;
       if (!it.paid) { it.paid = true; gained = payFor(it); stats.cash += gained; }
+      if (rep.unit === "hour") {
+        it.repeat = { unit: "hour", every: rep.every, nextDueAt: nowT + rep.every * 3600000 };
+      } else if (rep.unit) {
+        advancedDate = nextRepeatDate(it.date || todayKey(), rep.unit, rep.every);
+        it.date = advancedDate;
+        it.done = false;
+        it.doneAt = 0;
+        it.paid = false;
+        if (Array.isArray(it.steps)) it.steps.forEach(function (s) { s.done = false; });
+        it.limitAt = 0;
+        it.limitAlerted = false;
+        it.repeat = { unit: rep.unit, every: rep.every, nextDueAt: parseKey(advancedDate).getTime() };
+        lastToggled = null;
+      }
     }
     render(); persist();
-    if (it.done) {
+    if (advancedDate) {
       fx("scribble");
-      if (gained && opts.rank) toast("+$" + gained);
+      var nxtLbl = advancedDate === tomorrowKey() ? "Tomorrow" : dateLabel(advancedDate);
+      toast((gained && opts.rank ? ("+$" + gained + " · ") : "") + "Scheduled next: " + nxtLbl);
+    } else if (it.done) {
+      fx("scribble");
+      if (rep.unit === "hour") {
+        toast((gained && opts.rank ? ("+$" + gained + " · ") : "") + "Next in " + rep.every + (rep.every === 1 ? " hour" : " hours"));
+      } else if (gained && opts.rank) {
+        toast("+$" + gained);
+      }
       var mine = cur();
       if (mine.length > 1 && mine.every(function (i) { return i.done; })) fx("chime", 0.4);
     } else fx("untick");
@@ -5977,14 +6510,17 @@ window.__gcalAuth = {
         if (typeof saveGcal === "function") saveGcal();
       }
     });
+    delete expandedSteps[id];
     items = items.filter(function (i) { return i.id !== id; }); dropPic(id); render(); persist(); fx("del");
   }
-  function add(text, place, where, bring, priority, dateStr, limitMin) {
+  function add(text, place, where, bring, priority, dateStr, limitMin, repeatCfg, stepsArr) {
     text = (text || "").trim(); if (!text) return null;
     var chosenDate = /^\d{4}-\d{2}-\d{2}$/.test(dateStr || "") ? dateStr : ((opts.week && dayFilter) || todayKey());
     var lm = isFinite(limitMin) && limitMin > 0 ? Math.min(1440, Math.round(limitMin)) : 0;
     var la = lm > 0 ? (Date.now() + lm * 60000) : 0;
-    var it = cleanItem({ id: uid(), text: text, place: place, priority: priority, where: where, bring: bring, evil: evil, date: chosenDate, limitMin: lm, limitAt: la, limitAlerted: false }, false);
+    var rep = cleanRepeat(repeatCfg);
+    if (rep.unit === "hour" && !rep.nextDueAt) rep.nextDueAt = Date.now() + rep.every * 3600000;
+    var it = cleanItem({ id: uid(), text: text, place: place, priority: priority, where: where, bring: bring, evil: evil, date: chosenDate, limitMin: lm, limitAt: la, limitAlerted: false, repeat: rep, steps: cleanSteps(stepsArr) }, false);
     if (!it) return null;
     if (!evil && opts.hassles && Math.random() < 0.35) it.hassle = HASSLES[Math.floor(Math.random() * HASSLES.length)];
     items.unshift(it); lastAdded = it.id; logEv("a", it.evil ? "!" : it.place);
@@ -6016,6 +6552,158 @@ window.__gcalAuth = {
     if (hint) hint.hidden = !editMode;
     if (opts.wobble && typeof wobTick === "function") wobTick();
   }
+  function syncRepeatInputs(rep) {
+    var r = cleanRepeat(rep);
+    var uSel = $("newRepeatUnit"), w = $("newRepeatEveryWrap"), eInp = $("newRepeatEvery"), lbl = $("newRepeatUnitLbl");
+    if (!uSel) return;
+    uSel.value = r.unit || "";
+    if (eInp) eInp.value = String(r.every || 1);
+    var showEvery = r.unit === "hour" || r.unit === "day" || r.unit === "week";
+    if (w) w.hidden = !showEvery;
+    if (lbl) lbl.textContent = r.unit === "hour" ? "hour(s)" : r.unit === "week" ? "week(s)" : "day(s)";
+  }
+  function selectedRepeat(existingRep) {
+    var uSel = $("newRepeatUnit"), eInp = $("newRepeatEvery");
+    var unit = uSel ? uSel.value : "";
+    if (!unit) return { unit: "", every: 1, nextDueAt: 0 };
+    var every = unit === "weekday" ? 1 : Math.max(1, Math.min(99, parseInt(eInp ? eInp.value : "1", 10) || 1));
+    var prev = cleanRepeat(existingRep);
+    var nd = (prev.unit === unit && prev.every === every && prev.nextDueAt > 0) ? prev.nextDueAt : 0;
+    return { unit: unit, every: every, nextDueAt: nd };
+  }
+  function renderDraftSteps() {
+    var ul = $("newStepsList"), cnt = $("newStepsCount");
+    if (cnt) cnt.textContent = draftSteps.length + (draftSteps.length === 1 ? " step" : " steps");
+    if (!ul) return;
+    ul.innerHTML = "";
+    draftSteps.forEach(function (st, idx) {
+      var li = el("li", "add-step-item");
+      li.appendChild(el("span", null, (st.done ? "✓ " : "") + st.text));
+      var rm = el("button", null, "×"); rm.type = "button";
+      rm.setAttribute("aria-label", "Remove sub-step " + st.text);
+      rm.addEventListener("click", function () {
+        draftSteps.splice(idx, 1);
+        renderDraftSteps();
+        fx("del");
+      });
+      li.appendChild(rm);
+      ul.appendChild(li);
+    });
+  }
+  function addDraftStep() {
+    var inp = $("newStepInp");
+    if (!inp) return;
+    var txt = str(inp.value, 80);
+    if (!txt) return;
+    if (draftSteps.length >= 30) { toast("Sub-step limit reached (30)."); return; }
+    draftSteps.push({ id: uid().slice(0, 8), text: txt, done: false });
+    inp.value = "";
+    renderDraftSteps();
+    fx("click");
+    try { inp.focus(); } catch (e) {}
+  }
+
+  /* ---------- end-of-day rollover & daily reflection ---------- */
+  var wrapReturnFocus = null, wrapSelectedMood = 0;
+  function todayCompletedStats() {
+    var tk = todayKey(), seen = {}, count = 0;
+    norm().forEach(function (i) {
+      if (i.done && i.doneAt && dkey(new Date(i.doneAt)) === tk) {
+        seen[i.doneAt] = true;
+        count++;
+      }
+    });
+    logGet().forEach(function (r) {
+      if (r[1] === "d" && r[2] !== "!" && !seen[r[0]] && dkey(new Date(r[0])) === tk) {
+        seen[r[0]] = true;
+        count++;
+      }
+    });
+    return count;
+  }
+  function renderEveningPrompt(grid) {
+    var box = $("eveningPrompt"); if (!box) return;
+    var tk = todayKey(), hr = new Date().getHours();
+    var unfinished = norm().filter(function (i) { return !i.done && i.date <= tk; });
+    var shouldShow = !evil && !grid && hr >= 18 && unfinished.length > 0 && wrapMeta.lastWrapDate !== tk && wrapMeta.lastPromptDismissDate !== tk;
+    box.hidden = !shouldShow;
+    if (!shouldShow) { box.innerHTML = ""; return; }
+    box.innerHTML = "";
+    var txt = el("div", "evening-prompt-txt");
+    txt.appendChild(el("strong", null, "Evening check-in: "));
+    txt.appendChild(document.createTextNode(unfinished.length + " open mission" + (unfinished.length === 1 ? "" : "s") + " remaining today. Move unfinished items to tomorrow & log a quick reflection?"));
+    box.appendChild(txt);
+    var acts = el("div", "evening-prompt-acts");
+    var go = el("button", "btn", "Wrap day"); go.type = "button";
+    go.addEventListener("click", function () { openWrapDayModal(); fx("click"); });
+    var dis = el("button", "btn ghost", "Dismiss"); dis.type = "button";
+    dis.addEventListener("click", function () {
+      wrapMeta.lastPromptDismissDate = tk;
+      persist(); render(); fx("click");
+    });
+    acts.appendChild(go); acts.appendChild(dis);
+    box.appendChild(acts);
+  }
+  function setWrapMood(m) {
+    wrapSelectedMood = (m >= 1 && m <= 5) ? m : 0;
+    var row = $("wrapMoodRow");
+    if (!row) return;
+    var btns = row.querySelectorAll(".wrap-mood-btn");
+    for (var i = 0; i < btns.length; i++) {
+      var val = parseInt(btns[i].getAttribute("data-mood"), 10);
+      btns[i].setAttribute("aria-pressed", val === wrapSelectedMood ? "true" : "false");
+    }
+  }
+  function closeWrapDayModal(restoreFocus) {
+    var m = $("wrapDayModal");
+    if (m) m.hidden = true;
+    var ret = wrapReturnFocus;
+    wrapReturnFocus = null;
+    if (restoreFocus && ret && ret.isConnected && ret.focus) {
+      try { ret.focus(); } catch (e) {}
+    }
+  }
+  function openWrapDayModal() {
+    var m = $("wrapDayModal"); if (!m) return;
+    var tk = todayKey();
+    var doneToday = todayCompletedStats();
+    var candidates = norm().filter(function (i) { return !i.done && i.date <= tk; });
+    if ($("wrapDaySummary")) {
+      $("wrapDaySummary").textContent = "Finished " + doneToday + " mission" + (doneToday === 1 ? "" : "s") + " today · " +
+        (candidates.length ? (candidates.length + " unfinished mission" + (candidates.length === 1 ? "" : "s") + " ready to review.") : "All of today's missions are clear!");
+    }
+    var ul = $("wrapRollList");
+    if (ul) {
+      ul.innerHTML = "";
+      if (!candidates.length) {
+        ul.appendChild(el("li", "msg", "Nothing unfinished from today or earlier."));
+      } else {
+        candidates.forEach(function (it) {
+          var li = el("li", "wrap-roll-item");
+          var lbl = document.createElement("label");
+          var chk = document.createElement("input");
+          chk.type = "checkbox";
+          chk.checked = true;
+          chk.value = it.id;
+          chk.setAttribute("data-date", it.date || tk);
+          lbl.appendChild(chk);
+          lbl.appendChild(el("span", null, it.text));
+          lbl.appendChild(el("span", "wrap-roll-meta", (it.date < tk ? "Overdue" : "Today") + " · " + placeInfo(it.place).n));
+          li.appendChild(lbl);
+          ul.appendChild(li);
+        });
+      }
+    }
+    if ($("wrapRollHead")) $("wrapRollHead").hidden = !candidates.length;
+    var existing = null;
+    for (var i = 0; i < reflections.length; i++) if (reflections[i].date === tk) { existing = reflections[i]; break; }
+    setWrapMood(existing ? existing.mood : 0);
+    if ($("wrapReflInput")) $("wrapReflInput").value = existing ? (existing.note || "") : "";
+    wrapReturnFocus = document.activeElement;
+    m.hidden = false;
+    if ($("wrapSaveBtn") && $("wrapSaveBtn").focus) { try { $("wrapSaveBtn").focus(); } catch (e) {} }
+  }
+
   function openEditMission(id) {
     var it = findItem(id); if (!it) return;
     editingId = id; pendingPic = null; clearEditPic = false;
@@ -6024,6 +6712,10 @@ window.__gcalAuth = {
     $("newPriority").value = cleanPriority(it.priority);
     $("newDate").value = it.date || todayKey();
     syncLimitInput(it.limitMin || 0);
+    syncRepeatInputs(it.repeat);
+    draftSteps = cleanSteps(it.steps || []);
+    renderDraftSteps();
+    if ($("newStepInp")) $("newStepInp").value = "";
     $("newWhere").value = it.where || "";
     $("newBring").value = it.bring || "";
     if ($("addTitle")) $("addTitle").textContent = it.evil ? "Edit shouldn't-do" : "Edit mission";
@@ -6070,6 +6762,34 @@ window.__gcalAuth = {
   if ($("pinDeleteModal")) $("pinDeleteModal").addEventListener("click", function (e) {
     if (e.target === $("pinDeleteModal")) closePinDeleteModal(true);
   });
+  function renamePin(id, nextName) {
+    var p = pinById(id); if (!p) return;
+    var clean = str(nextName, 24);
+    if (!clean || clean === p.name) return;
+    p.name = clean;
+    fillSelect();
+    if ($("geoForm") && !$("geoForm").hidden) { fillGeoTargets("p:" + id); syncGeoFormFields(); }
+    render(); persist(); fx("click");
+    if (typeof renderPinColorSettings === "function") renderPinColorSettings(true);
+    if (pinCtxId === id && $("pinCtxMenu") && !$("pinCtxMenu").hidden) {
+      var ttl = $("pinCtxMenu").querySelector(".pin-ctx-ttl");
+      if (ttl) ttl.textContent = p.name;
+    }
+    toast('Renamed pin to "' + p.name + '".');
+  }
+  function setPinSymbol(id, sym) {
+    var p = pinById(id); if (!p) return;
+    p.symbol = cleanPinSymbol(sym);
+    pinMapAnim.triggerKey = "p:" + id;
+    render(); persist(); fx("click");
+    if (typeof renderPinColorSettings === "function") renderPinColorSettings(true);
+    if (pinCtxId === id && $("pinCtxMenu") && !$("pinCtxMenu").hidden) {
+      var sBtns = $("pinCtxMenu").querySelectorAll(".pin-sym-btn");
+      for (var i = 0; i < sBtns.length; i++) {
+        sBtns[i].setAttribute("aria-pressed", sBtns[i].getAttribute("data-sym") === (p.symbol || "") ? "true" : "false");
+      }
+    }
+  }
   function setPinStyle(id, mode, color, keepInputs) {
     var p = pinById(id); if (!p) return;
     p.mode = (typeof mode === "string" && Object.prototype.hasOwnProperty.call(PIN_STYLES, mode)) ? mode : "";
@@ -6105,6 +6825,10 @@ window.__gcalAuth = {
           dot0.style.borderColor = app0.active ? app0.stroke : "";
           dot0.style.background = app0.active ? app0.fill : "";
         }
+        var nm0 = rows[ri].querySelector(".pinset-name-inp");
+        if (nm0 && document.activeElement !== nm0) nm0.value = p0.name;
+        var sym0 = rows[ri].querySelector(".pinset-sym");
+        if (sym0) sym0.value = p0.symbol || "";
         var sel0 = rows[ri].querySelector(".pinset-sel");
         if (sel0) sel0.value = p0.mode || "";
       }
@@ -6122,7 +6846,32 @@ window.__gcalAuth = {
       var dot = el("span", "pin-dot");
       if (app.active) { dot.style.borderColor = app.stroke; dot.style.background = app.fill; }
       row.appendChild(dot);
-      row.appendChild(el("span", "pinset-name", p.name));
+
+      var nmInp = document.createElement("input");
+      nmInp.className = "pinset-name-inp";
+      nmInp.maxLength = 24;
+      nmInp.value = p.name;
+      nmInp.setAttribute("aria-label", "Rename pin " + p.name);
+      nmInp.addEventListener("change", function () {
+        if (!str(this.value, 24)) { this.value = p.name; return; }
+        renamePin(p.id, this.value);
+      });
+      nmInp.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter") { ev.preventDefault(); this.blur(); }
+      });
+      row.appendChild(nmInp);
+
+      var symSel = el("select", "pinset-sym");
+      symSel.setAttribute("aria-label", "Pin symbol for " + p.name);
+      PIN_SYMBOL_ORDER.forEach(function (sk) {
+        var sop = el("option", null, PIN_SYMBOLS[sk].label);
+        sop.value = sk;
+        symSel.appendChild(sop);
+      });
+      symSel.value = p.symbol || "";
+      symSel.addEventListener("change", function () { setPinSymbol(p.id, this.value); });
+      row.appendChild(symSel);
+
       var sel = el("select", "pinset-sel");
       sel.setAttribute("aria-label", "Pin color style for " + p.name);
       Object.keys(PIN_STYLES).forEach(function (sk) {
@@ -6163,6 +6912,36 @@ window.__gcalAuth = {
     hd.appendChild(el("span", "pin-ctx-ttl", p.name));
     hd.appendChild(el("span", "pin-ctx-sub", app.label));
     m.appendChild(hd);
+
+    var renRow = el("form", "pin-ctx-rename");
+    var renInp = document.createElement("input");
+    renInp.maxLength = 24;
+    renInp.value = p.name;
+    renInp.placeholder = "Pin name";
+    renInp.setAttribute("aria-label", "Rename custom pin");
+    var renBtn = el("button", "btn ghost", "Rename"); renBtn.type = "submit";
+    renRow.appendChild(renInp); renRow.appendChild(renBtn);
+    renRow.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var val = str(renInp.value, 24);
+      if (!val) return;
+      renamePin(id, val);
+    });
+    m.appendChild(renRow);
+
+    m.appendChild(el("div", "pin-ctx-lbl", "Symbol"));
+    var symGrid = el("div", "pin-ctx-syms");
+    PIN_SYMBOL_ORDER.forEach(function (sk) {
+      var sb = el("button", "pin-sym-btn"); sb.type = "button";
+      sb.setAttribute("data-sym", sk);
+      sb.title = PIN_SYMBOLS[sk].label;
+      sb.setAttribute("aria-label", "Symbol: " + PIN_SYMBOLS[sk].label);
+      sb.setAttribute("aria-pressed", (p.symbol || "") === sk ? "true" : "false");
+      sb.innerHTML = pinSymbolSvg(sk);
+      sb.addEventListener("click", function () { setPinSymbol(id, sk); });
+      symGrid.appendChild(sb);
+    });
+    m.appendChild(symGrid);
 
     m.appendChild(el("div", "pin-ctx-lbl", "Priority or Category"));
     var grid = el("div", "pin-ctx-modes");
@@ -6316,10 +7095,78 @@ window.__gcalAuth = {
     clearTimeout(toast.t); toast.t = setTimeout(function () { t.hidden = true; }, 3200);
   }
   var DESKTOP = window.desktopAPI && window.desktopAPI.isDesktop ? window.desktopAPI : null;
-  function fireDesktopNotif(title, body, action) {
+  var NATIVE = false, LN = null, CAL = null, AP = null;
+  try {
+    NATIVE = !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
+    if (NATIVE) {
+      LN = Capacitor.registerPlugin("LocalNotifications");
+      CAL = Capacitor.registerPlugin("CapacitorCalendar");
+      AP = Capacitor.registerPlugin("AndroidPermissions");
+    }
+  } catch (e) { NATIVE = false; }
+  var androidChannelsReady = false;
+  function ensureAndroidChannels() {
+    if (!NATIVE || !LN) return Promise.resolve();
+    if (androidChannelsReady) return Promise.resolve();
+    return Promise.all([
+      LN.createChannel({ id: "events", name: "Event reminders", description: "Reminders for your events", importance: 4, visibility: 1, vibration: true }).catch(function () {}),
+      LN.createChannel({ id: "missions", name: "Mission alerts", description: "Mission time limits and hourly routines", importance: 4, visibility: 1, vibration: true }).catch(function () {}),
+      LN.createChannel({ id: "productivity", name: "Mission check-ins", description: "Productive-hour mission check-ins", importance: 4, visibility: 1, vibration: true }).catch(function () {}),
+      LN.createChannel({ id: "geofence", name: "Geofence alerts", description: "Alerts when arriving near a fenced place", importance: 4, visibility: 1, vibration: true }).catch(function () {})
+    ]).then(function () { androidChannelsReady = true; });
+  }
+  function requestAndroidNotifPerm(openSettingsIfBlocked) {
+    if (!NATIVE || !LN) return Promise.resolve({ display: "denied" });
+    return LN.checkPermissions().then(function (r) {
+      if (r && r.display === "granted") return r;
+      var req = AP && typeof AP.requestNotifications === "function"
+        ? AP.requestNotifications().then(function () { return LN.requestPermissions(); }).catch(function () { return LN.requestPermissions(); })
+        : LN.requestPermissions();
+      return req.then(function (r2) {
+        if (r2 && r2.display === "granted") return r2;
+        if (openSettingsIfBlocked) {
+          toast("Notifications are blocked in Android settings — opening notification settings.");
+          if (AP && typeof AP.openNotificationSettings === "function") AP.openNotificationSettings().catch(function () {});
+          else if (AP && typeof AP.openSettings === "function") AP.openSettings().catch(function () {});
+        }
+        return r2 || { display: "denied" };
+      });
+    }).catch(function () { return { display: "denied" }; });
+  }
+  function fireAndroidNotif(title, body, channelId, cfg) {
+    if (!NATIVE || !LN) return Promise.resolve(false);
+    cfg = cfg || {};
+    var allow = cfg.force || (opts.reminders && (typeof phone === "undefined" || phone.remind));
+    if (!allow) return Promise.resolve(false);
+    var permP = cfg.promptIfNeeded ? requestAndroidNotifPerm(true) : LN.checkPermissions().catch(function () { return { display: "denied" }; });
+    return permP.then(function (pm) {
+      if (!pm || pm.display !== "granted") return false;
+      return ensureAndroidChannels().then(function () {
+        var nid = isFinite(cfg.id) ? Math.floor(cfg.id) : ((Date.now() % 1000000000) + Math.floor(Math.random() * 1000) + 1000);
+        return LN.schedule({
+          notifications: [{
+            id: nid,
+            title: title || "Mission Map",
+            body: body || "",
+            channelId: channelId || "missions",
+            smallIcon: "ic_stat_mission",
+            isExactNotification: false
+          }]
+        }).then(function () { return true; });
+      });
+    }).catch(function () { return false; });
+  }
+  function fireDesktopNotif(title, body, action, extra) {
     if (DESKTOP && typeof DESKTOP.notify === "function") {
       DESKTOP.notify({ title: title || "Mission Map", body: body || "", action: action || "" }).catch(function () {});
       return true;
+    }
+    if (NATIVE && LN && !(extra && extra.skipAndroid)) {
+      if (opts.reminders && (typeof phone === "undefined" || phone.remind)) {
+        fireAndroidNotif(title || "Mission Map", body || "", (extra && extra.channelId) || "missions", extra);
+        return true;
+      }
+      return false;
     }
     try {
       if (!NATIVE && window.Notification && Notification.permission === "granted") {
@@ -6534,6 +7381,67 @@ window.__gcalAuth = {
     }
     if (opts.wobble && typeof wobTick === "function") wobTick();
   });
+  if ($("newRepeatUnit")) $("newRepeatUnit").addEventListener("change", function () {
+    syncRepeatInputs({ unit: this.value, every: parseInt($("newRepeatEvery") ? $("newRepeatEvery").value : "1", 10) || 1 });
+    if (opts.wobble && typeof wobTick === "function") wobTick();
+  });
+  if ($("newStepAddBtn")) $("newStepAddBtn").addEventListener("click", addDraftStep);
+  if ($("newStepInp")) $("newStepInp").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); addDraftStep(); }
+  });
+  if ($("wrapDayBtn")) $("wrapDayBtn").addEventListener("click", function () { openWrapDayModal(); fx("click"); });
+  if ($("wrapCancelBtn")) $("wrapCancelBtn").addEventListener("click", function () { closeWrapDayModal(true); fx("click"); });
+  if ($("wrapDayModal")) $("wrapDayModal").addEventListener("click", function (e) { if (e.target === this) closeWrapDayModal(true); });
+  if ($("wrapMoodRow")) $("wrapMoodRow").addEventListener("click", function (e) {
+    var btn = e.target && e.target.closest ? e.target.closest(".wrap-mood-btn") : null;
+    if (!btn) return;
+    var val = parseInt(btn.getAttribute("data-mood"), 10) || 0;
+    setWrapMood(wrapSelectedMood === val ? 0 : val);
+    fx("click");
+  });
+  function setWrapChecks(mode) {
+    var ul = $("wrapRollList"); if (!ul) return;
+    var chks = ul.querySelectorAll('input[type="checkbox"]'), tk = todayKey();
+    for (var i = 0; i < chks.length; i++) {
+      if (mode === "all") chks[i].checked = true;
+      else if (mode === "none") chks[i].checked = false;
+      else if (mode === "today") chks[i].checked = (chks[i].getAttribute("data-date") === tk);
+    }
+    fx("click");
+  }
+  if ($("wrapRollAllBtn")) $("wrapRollAllBtn").addEventListener("click", function () { setWrapChecks("all"); });
+  if ($("wrapRollTodayBtn")) $("wrapRollTodayBtn").addEventListener("click", function () { setWrapChecks("today"); });
+  if ($("wrapRollNoneBtn")) $("wrapRollNoneBtn").addEventListener("click", function () { setWrapChecks("none"); });
+  if ($("wrapSaveBtn")) $("wrapSaveBtn").addEventListener("click", function () {
+    var tk = todayKey(), tom = tomorrowKey(), rolled = 0;
+    var ul = $("wrapRollList");
+    if (ul) {
+      var chks = ul.querySelectorAll('input[type="checkbox"]:checked');
+      for (var i = 0; i < chks.length; i++) {
+        var it = findItem(chks[i].value);
+        if (it && !it.done) {
+          it.date = tom;
+          if (it.limitMin > 0) { it.limitAt = 0; it.limitAlerted = false; }
+          rolled++;
+        }
+      }
+    }
+    var note = $("wrapReflInput") ? str($("wrapReflInput").value, 400) : "";
+    var doneToday = todayCompletedStats();
+    var rec = { date: tk, mood: wrapSelectedMood, note: note, doneCount: doneToday, rolledCount: rolled, updatedAt: Date.now() };
+    var idx = -1;
+    for (var r = 0; r < reflections.length; r++) if (reflections[r].date === tk) { idx = r; break; }
+    if (idx >= 0) reflections[idx] = rec; else reflections.unshift(rec);
+    reflections = cleanReflections(reflections);
+    wrapMeta.lastWrapDate = tk;
+    closeWrapDayModal(false);
+    render(); persist(); fx("chime", 0.25);
+    var msgParts = [];
+    if (rolled > 0) msgParts.push("Moved " + rolled + " mission" + (rolled === 1 ? "" : "s") + " to tomorrow");
+    if (wrapSelectedMood || note) msgParts.push("reflection saved");
+    toast(msgParts.length ? msgParts.join(" · ") + "." : "Day wrapped up!");
+  });
+
   if ($("listSort")) $("listSort").addEventListener("change", function () {
     sortMode = this.value;
     try { localStorage.setItem(SKEY, sortMode); } catch (e) {}
@@ -6576,6 +7484,7 @@ window.__gcalAuth = {
   $("addForm").addEventListener("submit", function (e) {
     e.preventDefault();
     var txt = $("newText").value.trim(); if (!txt) return;
+    if ($("newStepInp") && $("newStepInp").value.trim()) addDraftStep();
     var lm = selectedLimitMins();
     if (editingId) {
       var it = findItem(editingId);
@@ -6591,6 +7500,10 @@ window.__gcalAuth = {
         } else if (lm !== (it.limitMin || 0) || !(it.limitAt > 0)) {
           it.limitMin = lm; it.limitAt = Date.now() + lm * 60000; it.limitAlerted = false;
         }
+        var nextRep = selectedRepeat(it.repeat);
+        if (nextRep.unit === "hour" && !nextRep.nextDueAt) nextRep.nextDueAt = Date.now() + nextRep.every * 3600000;
+        it.repeat = nextRep;
+        it.steps = cleanSteps(draftSteps);
         var saveId = it.id;
         var picToPut = pendingPic;
         var doClear = clearEditPic;
@@ -6603,21 +7516,51 @@ window.__gcalAuth = {
       addSheet(false);
       return;
     }
-    var addedId = add(txt, $("newPlace").value, $("newWhere").value, $("newBring").value, $("newPriority").value, $("newDate").value, lm);
+    var newRep = selectedRepeat(null);
+    var addedId = add(txt, $("newPlace").value, $("newWhere").value, $("newBring").value, $("newPriority").value, $("newDate").value, lm, newRep, draftSteps);
     if (addedId && pendingPic) {
       var b = pendingPic; pendingPic = null;
       putImg("m:" + addedId, b).then(function () { render(); });
     }
     addSheet(false);
   });
+  function isTextTypingEl(el0) {
+    if (!el0 || !el0.tagName) return false;
+    var tag = el0.tagName.toUpperCase();
+    if (tag === "TEXTAREA") return true;
+    if (tag !== "INPUT") return false;
+    var tp = (el0.type || "text").toLowerCase();
+    return tp !== "checkbox" && tp !== "radio" && tp !== "range" && tp !== "file" && tp !== "button" && tp !== "submit" && tp !== "reset" && tp !== "color";
+  }
+  var kbBlurTimer = 0;
+  document.addEventListener("focusin", function (e) {
+    if (kbBlurTimer) { clearTimeout(kbBlurTimer); kbBlurTimer = 0; }
+    var tgt = e.target;
+    var insideTape = tgt && tgt.closest && tgt.closest("#tapeDock");
+    document.body.classList.toggle("kb-typing", !!(isTextTypingEl(tgt) && !insideTape));
+  });
+  document.addEventListener("focusout", function () {
+    if (kbBlurTimer) clearTimeout(kbBlurTimer);
+    kbBlurTimer = setTimeout(function () {
+      kbBlurTimer = 0;
+      var act = document.activeElement;
+      var insideTape = act && act.closest && act.closest("#tapeDock");
+      document.body.classList.toggle("kb-typing", !!(isTextTypingEl(act) && !insideTape));
+    }, 120);
+  });
   function addSheet(on) {
     $("addForm").hidden = !on; $("scrim").hidden = !on; $("fab").setAttribute("aria-expanded", String(on));
+    document.body.classList.toggle("sheet-open", !!on);
     $("fab").textContent = on ? "Close" : "Add";
     if (on) {
       if (!editingId) {
         $("newText").value = ""; $("newWhere").value = ""; $("newBring").value = ""; $("newPriority").value = "medium";
         $("newDate").value = (opts.week && dayFilter) || todayKey();
         syncLimitInput(0);
+        syncRepeatInputs(null);
+        draftSteps = [];
+        renderDraftSteps();
+        if ($("newStepInp")) $("newStepInp").value = "";
         if ($("addTitle")) $("addTitle").textContent = evil ? "New shouldn't-do" : "New mission";
         $("addBtn").textContent = evil ? "Jot down" : "Add";
         $("newPicLbl").firstChild.nodeValue = "Add a photo";
@@ -6629,6 +7572,10 @@ window.__gcalAuth = {
       editingId = null; pendingPic = null; clearEditPic = false;
       $("newText").value = ""; $("newWhere").value = ""; $("newBring").value = ""; $("newPriority").value = "medium";
       syncLimitInput(0);
+      syncRepeatInputs(null);
+      draftSteps = [];
+      renderDraftSteps();
+      if ($("newStepInp")) $("newStepInp").value = "";
       $("newPicLbl").firstChild.nodeValue = "Add a photo";
       $("newPicClear").hidden = true;
       try { $("fab").focus({ preventScroll: true }); } catch (e) {}
@@ -6657,46 +7604,117 @@ window.__gcalAuth = {
     if (e.key !== "Escape") return;
     if ($("pinCtxMenu") && !$("pinCtxMenu").hidden) { closePinCtxMenu(); }
     else if ($("pinDeleteModal") && !$("pinDeleteModal").hidden) { closePinDeleteModal(true); }
+    else if ($("wrapDayModal") && !$("wrapDayModal").hidden) { closeWrapDayModal(true); }
     else if ($("shortcutsModal") && !$("shortcutsModal").hidden) { if (typeof openShortcutsModal === "function") openShortcutsModal(false); }
     else if ($("options") && !$("options").hidden) { if (typeof openOptions === "function") openOptions(false); }
     else if (toolsMenuOpen) { setToolsMenu(false); if ($("toolsMenuBtn")) $("toolsMenuBtn").focus(); }
     else if (!$("addForm").hidden) addSheet(false);
+    else if (movePinsMode) { movePinsMode = false; render(); }
     else if (editMode) { editMode = false; syncEditModeUi(); }
   });
   $("pinBtn").addEventListener("click", flipEvil);
   $("clearSamples").addEventListener("click", function () { items = items.filter(function (i) { return !i.sample; }); render(); persist(); });
   function toggleFilter(k) { filter = filter === k ? null : k; render(); }
-  var pinLongTimer = 0, pinLongStart = null, suppressMapPinClick = false;
-  function cancelPinLongPress() { if (pinLongTimer) { clearTimeout(pinLongTimer); pinLongTimer = 0; } pinLongStart = null; }
+  var pinDrag = null, suppressMapPinClick = false;
+  function clearPinTimers(st) {
+    if (!st) return;
+    if (st.holdTimer) { clearTimeout(st.holdTimer); st.holdTimer = 0; }
+    if (st.longTimer) { clearTimeout(st.longTimer); st.longTimer = 0; }
+  }
+  function finishPinDrag(commit) {
+    if (!pinDrag) return;
+    var st = pinDrag;
+    pinDrag = null;
+    clearPinTimers(st);
+    window.removeEventListener("pointermove", onWinPinMove);
+    window.removeEventListener("pointerup", onWinPinUp);
+    window.removeEventListener("pointercancel", onWinPinCancel);
+    if (st.g) st.g.classList.remove("pin-dragging");
+    if (commit && st.active) {
+      var p = pinById(st.id);
+      if (p) {
+        p.x = Math.max(8, Math.min(392, Math.round(st.curX)));
+        p.y = Math.max(14, Math.min(286, Math.round(st.curY)));
+        suppressMapPinClick = true;
+        render(); persist(); fx("pin");
+      }
+    } else if (st.active) {
+      render();
+    }
+  }
+  function onWinPinMove(ev) {
+    if (!pinDrag || ev.pointerId !== pinDrag.pointerId) return;
+    var distPx = Math.hypot(ev.clientX - pinDrag.startClientX, ev.clientY - pinDrag.startClientY);
+    if (!pinDrag.readyToDrag) {
+      if (distPx > 8) finishPinDrag(false);
+      return;
+    }
+    if (!pinDrag.active) {
+      if (distPx < (movePinsMode ? 3 : 6)) return;
+      pinDrag.active = true;
+      if (pinDrag.longTimer) { clearTimeout(pinDrag.longTimer); pinDrag.longTimer = 0; }
+      if (pinDrag.g) pinDrag.g.classList.add("pin-dragging");
+      closePinCtxMenu();
+    }
+    if (ev.cancelable) ev.preventDefault();
+    var r = $("map").getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    var dx = (ev.clientX - pinDrag.startClientX) * (400 / r.width);
+    var dy = (ev.clientY - pinDrag.startClientY) * (300 / r.height);
+    pinDrag.curX = Math.max(8, Math.min(392, pinDrag.origX + dx));
+    pinDrag.curY = Math.max(14, Math.min(286, pinDrag.origY + dy));
+    if (pinDrag.g) pinDrag.g.setAttribute("transform", "translate(" + pinDrag.curX.toFixed(1) + " " + pinDrag.curY.toFixed(1) + ")");
+  }
+  function onWinPinUp(ev) {
+    if (!pinDrag || ev.pointerId !== pinDrag.pointerId) return;
+    finishPinDrag(true);
+  }
+  function onWinPinCancel(ev) {
+    if (!pinDrag || ev.pointerId !== pinDrag.pointerId) return;
+    finishPinDrag(false);
+  }
   $("map").addEventListener("pointerdown", function (e) {
-    cancelPinLongPress();
+    finishPinDrag(false);
     if (dropping || e.button === 2) return;
     var g = e.target.closest ? e.target.closest(".place.pin") : null;
     if (!g) return;
     var gk = g.getAttribute("data-p");
     if (!isPinKey(gk)) return;
+    var p = pinById(gk.slice(2));
+    if (!p) return;
     var cx = e.clientX, cy = e.clientY;
-    pinLongStart = { x: cx, y: cy };
-    pinLongTimer = setTimeout(function () {
-      pinLongTimer = 0;
-      pinLongStart = null;
-      suppressMapPinClick = true;
-      openPinCtxMenu(gk.slice(2), cx, cy);
-    }, 520);
+    var st = {
+      id: p.id, key: gk, g: g, pointerId: e.pointerId,
+      startClientX: cx, startClientY: cy,
+      origX: p.x, origY: p.y, curX: p.x, curY: p.y,
+      readyToDrag: !!movePinsMode, active: false, holdTimer: 0, longTimer: 0
+    };
+    if (!movePinsMode) {
+      st.holdTimer = setTimeout(function () {
+        if (pinDrag !== st) return;
+        st.holdTimer = 0;
+        st.readyToDrag = true;
+        if (st.g) st.g.classList.add("pin-dragging");
+      }, 260);
+      st.longTimer = setTimeout(function () {
+        if (pinDrag !== st || st.active) return;
+        finishPinDrag(false);
+        suppressMapPinClick = true;
+        openPinCtxMenu(p.id, cx, cy);
+      }, 580);
+    }
+    pinDrag = st;
+    window.addEventListener("pointermove", onWinPinMove);
+    window.addEventListener("pointerup", onWinPinUp);
+    window.addEventListener("pointercancel", onWinPinCancel);
   });
-  $("map").addEventListener("pointermove", function (e) {
-    if (!pinLongStart) return;
-    if (Math.hypot(e.clientX - pinLongStart.x, e.clientY - pinLongStart.y) > 8) cancelPinLongPress();
-  });
-  $("map").addEventListener("pointerup", cancelPinLongPress);
-  $("map").addEventListener("pointercancel", cancelPinLongPress);
   $("map").addEventListener("contextmenu", function (e) {
     var g = e.target.closest ? e.target.closest(".place.pin") : null;
     if (!g || dropping) return;
     var gk = g.getAttribute("data-p");
     if (!isPinKey(gk)) return;
     e.preventDefault();
-    cancelPinLongPress();
+    finishPinDrag(false);
     openPinCtxMenu(gk.slice(2), e.clientX, e.clientY);
   });
   $("map").addEventListener("click", function (e) {
@@ -6706,7 +7724,7 @@ window.__gcalAuth = {
       if (g) return;
       var r = $("map").getBoundingClientRect(); if (!r.width) return;
       tempPin = { x: Math.round((e.clientX - r.left) / r.width * 400), y: Math.round((e.clientY - r.top) / r.height * 300) };
-      $("pinForm").hidden = false; $("pinName").value = ""; if ($("pinDropStyle")) $("pinDropStyle").value = ""; $("pinGeoRad").value = "0"; $("pinUseGps").checked = false; $("pinName").focus(); render();
+      $("pinForm").hidden = false; $("pinName").value = ""; if ($("pinDropSymbol")) $("pinDropSymbol").value = ""; if ($("pinDropStyle")) $("pinDropStyle").value = ""; $("pinGeoRad").value = "0"; $("pinUseGps").checked = false; $("pinName").focus(); render();
       return;
     }
     if (g) {
@@ -6746,7 +7764,14 @@ window.__gcalAuth = {
     if (isPinKey(gk)) pinMapAnim.triggerKey = gk;
     toggleFilter(gk);
   });
-  $("dropBtn").addEventListener("click", function () { dropping = !dropping; tempPin = null; $("pinForm").hidden = true; render(); });
+  if ($("movePinsBtn")) $("movePinsBtn").addEventListener("click", function () {
+    if (!pins.length && !movePinsMode) { toast("Drop a pin on the map first."); return; }
+    movePinsMode = !movePinsMode;
+    if (movePinsMode && dropping) { dropping = false; tempPin = null; $("pinForm").hidden = true; }
+    render(); fx("click");
+    if (movePinsMode) toast("Move mode on: drag any custom pin.");
+  });
+  $("dropBtn").addEventListener("click", function () { dropping = !dropping; if (dropping) movePinsMode = false; tempPin = null; $("pinForm").hidden = true; render(); });
   $("pinCancel").addEventListener("click", function () { dropping = false; tempPin = null; $("pinForm").hidden = true; render(); });
   $("pinForm").addEventListener("submit", function (e) {
     e.preventDefault();
@@ -6754,7 +7779,8 @@ window.__gcalAuth = {
     if (pins.length >= 30) { toast("That is the pin limit."); return; }
     var id = uid().slice(0, 8), name = str($("pinName").value, 24) || "Pin " + (pins.length + 1);
     var dropMode = $("pinDropStyle") ? $("pinDropStyle").value : "";
-    pins.push({ id: id, name: name, x: Math.max(8, Math.min(392, tempPin.x)), y: Math.max(14, Math.min(286, tempPin.y)), mode: dropMode, color: "" });
+    var dropSym = $("pinDropSymbol") ? cleanPinSymbol($("pinDropSymbol").value) : "";
+    pins.push({ id: id, name: name, x: Math.max(8, Math.min(392, tempPin.x)), y: Math.max(14, Math.min(286, tempPin.y)), mode: dropMode, color: "", symbol: dropSym });
     var k = "p:" + id, rad = parseInt($("pinGeoRad").value, 10) || 0, useGps = $("pinUseGps").checked;
     dropping = false; tempPin = null; $("pinForm").hidden = true;
     fillSelect(); $("newPlace").value = k;
@@ -7289,21 +8315,21 @@ window.__gcalAuth = {
     if (!NATIVE || !LN || !enteredKeys.length) return;
     LN.checkPermissions().then(function (p) {
       if (!p || p.display !== "granted") return;
-      return LN.createChannel({ id: "geofence", name: "Geofence alerts", description: "Alerts when arriving near a fenced place", importance: 4, visibility: 1, vibration: true }).catch(function () {})
-        .then(function () {
-          var notifs = enteredKeys.map(function (k, idx) {
-            var openHere = norm().filter(function (i) { return !i.done && i.place === k; }).length;
-            return {
-              id: hash32("gf:" + k + ":" + Math.floor(Date.now() / 1000)) + idx,
-              title: "Arrived: " + placeInfo(k).n,
-              body: openHere ? openHere + " open mission" + (openHere === 1 ? "" : "s") + " here" : "Inside geofence",
-              channelId: "geofence",
-              smallIcon: "ic_stat_mission",
-              schedule: { at: new Date(Date.now() + 250 + idx * 150) }
-            };
-          });
-          return LN.schedule({ notifications: notifs });
+      return ensureAndroidChannels().then(function () {
+        var baseId = Math.floor(Date.now() % 1000000000) + 2000;
+        var notifs = enteredKeys.map(function (k, idx) {
+          var openHere = norm().filter(function (i) { return !i.done && i.place === k; }).length;
+          return {
+            id: baseId + idx,
+            title: "Arrived: " + placeInfo(k).n,
+            body: openHere ? openHere + " open mission" + (openHere === 1 ? "" : "s") + " here" : "Inside geofence",
+            channelId: "geofence",
+            smallIcon: "ic_stat_mission",
+            isExactNotification: false
+          };
         });
+        return LN.schedule({ notifications: notifs });
+      });
     }).catch(function () {});
   }
   function geoEvaluate() {
@@ -7326,7 +8352,7 @@ window.__gcalAuth = {
         var openHere = norm().filter(function (i) { return !i.done && i.place === k; }).length;
         var msg = "Entered geofence: " + placeInfo(k).n + (openHere ? " (" + openHere + " open)" : "");
         toast(msg);
-        fireDesktopNotif("Mission Map", msg, "");
+        fireDesktopNotif("Mission Map", msg, "", { skipAndroid: true });
       });
       notifyGeofenceAndroid(entered);
       fx("pin");
@@ -7502,9 +8528,10 @@ window.__gcalAuth = {
   var dl = null;
   function exportJson() {
     return JSON.stringify({
-      app: "mission-map", version: 3, exported: new Date().toISOString(),
-      items: items.map(function (i) { return { id: i.id, text: i.text, place: i.place, priority: cleanPriority(i.priority), where: i.where, bring: i.bring, hassle: i.hassle, done: i.done, evil: i.evil, paid: i.paid, date: i.date, doneAt: i.doneAt, limitMin: i.limitMin || 0, limitAt: i.limitAt || 0, limitAlerted: !!i.limitAlerted }; }),
+      app: "mission-map", version: 4, exported: new Date().toISOString(),
+      items: items.map(function (i) { return { id: i.id, text: i.text, place: i.place, priority: cleanPriority(i.priority), where: i.where, bring: i.bring, hassle: i.hassle, done: i.done, evil: i.evil, paid: i.paid, date: i.date, doneAt: i.doneAt, limitMin: i.limitMin || 0, limitAt: i.limitAt || 0, limitAlerted: !!i.limitAlerted, repeat: cleanRepeat(i.repeat), steps: cleanSteps(i.steps) }; }),
       pins: pins, notes: notes, visited: visited, geofences: geofences, stats: stats,
+      reflections: reflections, wrapMeta: wrapMeta,
       events: events.filter(function (x) { return x.src !== "device" && x.src !== "gcal"; }).map(function (x) { var c = {}; Object.keys(x).forEach(function (k) { if (k !== "ext" && k !== "src") c[k] = x[k]; }); return c; })
     }, null, 2);
   }
@@ -7533,9 +8560,10 @@ window.__gcalAuth = {
     var rep = $("replace").checked, added;
     var inPins = (!Array.isArray(data) && Array.isArray(data.pins)) ? cleanPins(data.pins) : [];
     var inNotes = (!Array.isArray(data) && Array.isArray(data.notes)) ? cleanNotes(data.notes) : [];
+    var inRefls = (!Array.isArray(data) && Array.isArray(data.reflections)) ? cleanReflections(data.reflections) : [];
     if (rep) {
       items = clean; added = clean.length; events = inEv;
-      if (!Array.isArray(data)) { pins = inPins; notes = inNotes; visited = cleanVisited(data.visited); geofences = cleanGeofences(data.geofences); if (data.stats) stats = cleanStats(data.stats); }
+      if (!Array.isArray(data)) { pins = inPins; notes = inNotes; reflections = inRefls; if (data.wrapMeta) wrapMeta = cleanWrapMeta(data.wrapMeta); visited = cleanVisited(data.visited); geofences = cleanGeofences(data.geofences); if (data.stats) stats = cleanStats(data.stats); }
     } else {
       var have = {}; items.forEach(function (i) { have[i.id] = 1; });
       var fresh = clean.filter(function (i) { return !have[i.id]; });
@@ -7546,6 +8574,9 @@ window.__gcalAuth = {
       inPins.forEach(function (p) { if (!hp[p.id] && pins.length < 30) pins.push(p); });
       var hn = {}; notes.forEach(function (n) { hn[n.id] = 1; });
       inNotes.forEach(function (n) { if (!hn[n.id] && notes.length < 100) notes.push(n); });
+      var hr = {}; reflections.forEach(function (r) { hr[r.date] = 1; });
+      inRefls.forEach(function (r) { if (!hr[r.date]) reflections.push(r); });
+      reflections = cleanReflections(reflections);
       if (!Array.isArray(data) && data.visited) { var iv = cleanVisited(data.visited); Object.keys(iv).forEach(function (k) { visited[k] = true; }); }
       if (!Array.isArray(data) && data.geofences) { var ig = cleanGeofences(data.geofences); Object.keys(ig).forEach(function (k) { if (!geofences[k]) geofences[k] = ig[k]; }); }
     }
@@ -8101,15 +9132,21 @@ window.__gcalAuth = {
       if (b[1] === "aodHideBar" && typeof aodSystemBar === "function" && aodOn) aodSystemBar(true);
       if (b[1] === "tapeFilter" && typeof syncTapeFilterRoute === "function") syncTapeFilterRoute();
       if (b[1] === "reminders") {
+        if (NATIVE && typeof phone !== "undefined") {
+          phone.remind = !!this.checked;
+          if ($("phRem")) $("phRem").checked = !!this.checked;
+          if (typeof saveP === "function") saveP();
+        }
         if (this.checked) {
           if (!NATIVE && !DESKTOP && window.Notification && Notification.permission === "default") {
             try { var pr = Notification.requestPermission(function () { if (typeof notifState === "function") notifState(); }); if (pr && pr.then) pr.then(function () { if (typeof notifState === "function") notifState(); }); } catch (e) {}
           }
-          if (NATIVE && typeof phone !== "undefined") {
-            phone.remind = true;
-            if ($("phRem")) $("phRem").checked = true;
-            if (typeof saveP === "function") saveP();
-            if (LN) LN.checkPermissions().then(function (pm) { if (!pm || pm.display !== "granted") return LN.requestPermissions(); }).catch(function () {}).then(function () { if (typeof reminderStatus === "function") reminderStatus(); });
+          if (NATIVE && LN) {
+            requestAndroidNotifPerm(true).then(function () {
+              if (typeof notifState === "function") notifState();
+              if (typeof reminderStatus === "function") reminderStatus();
+              if (typeof schedulePhone === "function") schedulePhone();
+            });
           }
         }
         if (typeof syncProductiveScheduler === "function") syncProductiveScheduler();
@@ -8486,11 +9523,13 @@ window.__gcalAuth = {
     Object.keys(FIRED).forEach(function (k) { if (now - FIRED[k] > 3 * 86400000) { delete FIRED[k]; changed = true; } });
     if (changed) { try { localStorage.setItem("mission-map-fired", JSON.stringify(FIRED)); } catch (x) {} }
     limitTick();
+    checkRecurrences(true);
     renderNext();
     syncProdRemUi();
   }
   setInterval(remCheck, 30000);
   setInterval(limitTick, 15000);
+  setInterval(function () { checkRecurrences(true); }, 20000);
   function notifState() {
     var m = $("notifMsg"), b = $("notifBtn");
     if (!m || !b) return;
@@ -8524,8 +9563,7 @@ window.__gcalAuth = {
   }
   $("notifBtn").addEventListener("click", function () {
     if (NATIVE && LN) {
-      var p = AP ? AP.requestNotifications().then(function () { return LN.requestPermissions(); }).catch(function () { return LN.requestPermissions(); }) : LN.requestPermissions();
-      Promise.resolve(p).catch(function () {}).then(function () { notifState(); reminderStatus(); syncProductiveScheduler(); schedulePhone(); });
+      requestAndroidNotifPerm(true).then(function () { notifState(); reminderStatus(); syncProductiveScheduler(); schedulePhone(); });
       return;
     }
     try { var r = Notification.requestPermission(function () { notifState(); syncProductiveScheduler(); }); if (r && r.then) r.then(function () { notifState(); syncProductiveScheduler(); }); } catch (e) {}
@@ -8535,6 +9573,11 @@ window.__gcalAuth = {
       opts.reminders = true;
       if ($("remOn")) $("remOn").checked = true;
       saveOpts(); applyOpts();
+    }
+    if (NATIVE && typeof phone !== "undefined" && !phone.remind) {
+      phone.remind = true;
+      if ($("phRem")) $("phRem").checked = true;
+      if (typeof saveP === "function") saveP();
     }
     syncProductiveScheduler({ skipPhone: true });
     var plan = getDetectedProductiveReminderPlan();
@@ -8550,33 +9593,23 @@ window.__gcalAuth = {
     var body = copy.body + (nextJob && !nextJob.catchUp ? (" Next scheduled: " + fmtSchedTime(nextJob.triggerAt) + ".") : "");
     toast(body);
     fx("chime");
+    if (NATIVE && LN) {
+      fireAndroidNotif(copy.title, body, "productivity", { force: true, promptIfNeeded: true, id: 989101 })
+        .then(function (ok) {
+          notifState();
+          if (typeof reminderStatus === "function") reminderStatus();
+          if (!ok) toast("Enable Android notifications for Mission Map to see alerts in your status bar.");
+        });
+      return;
+    }
     var sent = fireDesktopNotif(copy.title, body, "");
-    if (!sent && NATIVE && LN) {
-      LN.checkPermissions().then(function (pm) {
-        return pm && pm.display === "granted" ? pm : LN.requestPermissions();
-      }).then(function (pm) {
-        if (!pm || pm.display !== "granted") { notifState(); return; }
-        return LN.createChannel({ id: "productivity", name: "Mission check-ins", description: "Productive-hour mission check-ins", importance: 3, visibility: 1 }).catch(function () {})
-          .then(function () {
-            return LN.schedule({ notifications: [{ id: 989101, title: copy.title, body: body, channelId: "productivity", smallIcon: "ic_stat_mission", schedule: { at: new Date(Date.now() + 1500), allowWhileIdle: true } }] });
-          });
-      }).catch(function () {});
-    } else if (!sent && !DESKTOP && !NATIVE && window.Notification && Notification.permission === "default") {
+    if (!sent && !DESKTOP && window.Notification && Notification.permission === "default") {
       try { Notification.requestPermission(function (s) { notifState(); if (s === "granted") fireDesktopNotif(copy.title, body, ""); }); } catch (e) {}
     }
   });
   notifState(); syncProdRemUi();
 
   /* ---------- phone features: permissions, reminders and calendar sync, inside the Android app ---------- */
-  var NATIVE = false, LN = null, CAL = null, AP = null;
-  try {
-    NATIVE = !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
-    if (NATIVE) {
-      LN = Capacitor.registerPlugin("LocalNotifications");
-      CAL = Capacitor.registerPlugin("CapacitorCalendar");
-      AP = Capacitor.registerPlugin("AndroidPermissions");
-    }
-  } catch (e) { NATIVE = false; }
   var PKEY = "mission-map-phone";
   var phone = { remind: true, calOn: false, readCals: [], writeCal: "", del: [], last: 0 };
   try {
@@ -8594,7 +9627,7 @@ window.__gcalAuth = {
 
   /* reminders: the phone's own alarm clock fires them, even when the app is closed */
   function hash32(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 1) || 1; }
-  var exactOK = true, schedT = null, schedBusy = false, schedAgain = false;
+  var exactOK = false, schedT = null, schedBusy = false, schedAgain = false;
   function checkExact() {
     return LN.checkExactNotificationSetting().then(function (r) { exactOK = !!r && r.exact_alarm === "granted"; }).catch(function () { exactOK = false; });
   }
@@ -8602,12 +9635,33 @@ window.__gcalAuth = {
   function doSchedule() {
     if (schedBusy) { schedAgain = true; return; }
     schedBusy = true;
-    var now = Date.now(), itemsList = [], prodList = [];
+    var now = Date.now(), itemsList = [], missionList = [], prodList = [];
     if (opts.reminders && phone.remind) {
       events.forEach(function (e) {
         if (e.remind < 0 || e.src === "device") return;
         var at = evStartMs(e) - e.remind * 60000;
         if (at > now + 3000 && at < now + 120 * 86400000) itemsList.push({ e: e, at: at });
+      });
+      items.forEach(function (it) {
+        if (!it.done && it.limitMin > 0 && it.limitAt > now + 3000 && !it.limitAlerted) {
+          missionList.push({
+            id: hash32("lim:" + it.id + ":" + it.limitAt),
+            title: "Mission time limit",
+            body: it.text + " (" + placeInfo(it.place).n + ")",
+            at: it.limitAt,
+            extra: { itemId: it.id }
+          });
+        }
+        var rep = cleanRepeat(it.repeat);
+        if (rep.unit === "hour" && rep.nextDueAt > now + 3000 && rep.nextDueAt < now + 14 * 86400000) {
+          missionList.push({
+            id: hash32("rep:" + it.id + ":" + rep.nextDueAt),
+            title: "Recurring mission due",
+            body: it.text + " (" + placeInfo(it.place).n + ")",
+            at: rep.nextDueAt,
+            extra: { itemId: it.id }
+          });
+        }
       });
       if (opts.prodReminders) {
         var jobs = buildPeakScheduleJobs(getDetectedProductiveReminderPlan(), now);
@@ -8618,27 +9672,28 @@ window.__gcalAuth = {
         });
       }
     }
-    itemsList.sort(function (a, b) { return a.at - b.at; }); itemsList = itemsList.slice(0, 56);
+    itemsList.sort(function (a, b) { return a.at - b.at; }); itemsList = itemsList.slice(0, 40);
+    missionList.sort(function (a, b) { return a.at - b.at; }); missionList = missionList.slice(0, 16);
     LN.getPending().then(function (p) {
       var ids = (p.notifications || []).map(function (n) { return { id: n.id }; });
       return ids.length ? LN.cancel({ notifications: ids }) : null;
     }).then(function () {
-      if (!itemsList.length && !prodList.length) return;
-      return LN.checkPermissions().then(function (p) { return p.display === "granted" ? p : LN.requestPermissions(); }).then(function (p) {
-        if (p.display !== "granted") { pMsg("Notifications are blocked. Allow them for Mission Map in Android settings to get reminders."); return; }
-        return Promise.all([
-          LN.createChannel({ id: "events", name: "Event reminders", description: "Reminders for your events", importance: 4, visibility: 1, vibration: true }).catch(function () {}),
-          LN.createChannel({ id: "productivity", name: "Mission check-ins", description: "Productive-hour mission check-ins", importance: 3, visibility: 1, vibration: true }).catch(function () {})
-        ]).then(checkExact).then(function () {
+      if (!itemsList.length && !missionList.length && !prodList.length) return;
+      return LN.checkPermissions().then(function (p) {
+        if (!p || p.display !== "granted") { pMsg("Notifications are blocked. Tap Allow notifications to get reminders."); return; }
+        return ensureAndroidChannels().then(checkExact).then(function () {
           var notifs = itemsList.map(function (o) {
             var e = o.e, bits = [e.allDay || !e.start ? "Today" : "At " + e.start];
             if (e.place) bits.push(placeInfo(e.place).n);
             if (e.where) bits.push(e.where);
             return { id: hash32(e.id + ":" + o.at), title: e.title, body: bits.join(" · "), channelId: "events", smallIcon: "ic_stat_mission",
-              schedule: { at: new Date(o.at), allowWhileIdle: true }, isExactNotification: exactOK, extra: { evId: e.id } };
-          }).concat(prodList.map(function (po) {
+              schedule: { at: new Date(o.at), allowWhileIdle: true }, isExactNotification: !!exactOK, extra: { evId: e.id } };
+          }).concat(missionList.map(function (mo) {
+            return { id: mo.id, title: mo.title, body: mo.body, channelId: "missions", smallIcon: "ic_stat_mission",
+              schedule: { at: new Date(mo.at), allowWhileIdle: true }, isExactNotification: !!exactOK, extra: mo.extra };
+          })).concat(prodList.map(function (po) {
             return { id: po.id, title: po.title, body: po.body, channelId: "productivity", smallIcon: "ic_stat_mission",
-              schedule: { at: new Date(po.at), allowWhileIdle: true }, isExactNotification: exactOK };
+              schedule: { at: new Date(po.at), allowWhileIdle: true }, isExactNotification: !!exactOK };
           }));
           return LN.schedule({ notifications: notifs });
         });
@@ -8796,9 +9851,7 @@ window.__gcalAuth = {
       phone.remind = this.checked; saveP();
       opts.reminders = this.checked; if ($("remOn")) $("remOn").checked = this.checked; saveOpts();
       if (this.checked && LN) {
-        LN.checkPermissions().then(function (pm) {
-          if (!pm || pm.display !== "granted") return LN.requestPermissions();
-        }).catch(function () {}).then(function () { reminderStatus(); notifState(); syncProdRemUi(); schedulePhone(); });
+        requestAndroidNotifPerm(true).then(function () { reminderStatus(); notifState(); syncProdRemUi(); schedulePhone(); });
       } else {
         notifState(); syncProdRemUi(); schedulePhone();
       }
@@ -8806,9 +9859,9 @@ window.__gcalAuth = {
     $("phNotif").addEventListener("click", function () {
       var step = this.getAttribute("data-step");
       var p = step === "exact" ? LN.changeExactNotificationSetting()
-        : step === "perm" ? (AP ? AP.requestNotifications().then(function () { return LN.requestPermissions(); }).catch(function () { return LN.requestPermissions(); }) : LN.requestPermissions())
+        : step === "perm" ? requestAndroidNotifPerm(true)
         : Promise.resolve();
-      Promise.resolve(p).catch(function () {}).then(function () { reminderStatus(); schedulePhone(); });
+      Promise.resolve(p).catch(function () {}).then(function () { reminderStatus(); notifState(); schedulePhone(); });
     });
     if ($("phGeo")) $("phGeo").addEventListener("click", function () {
       ensureAndroidGeoPerm(false).then(function (r) {
@@ -8833,8 +9886,21 @@ window.__gcalAuth = {
     });
     $("phWrite").addEventListener("change", function () { phone.writeCal = this.value; saveP(); phoneSync(); });
     $("phSync").addEventListener("click", phoneSync);
-    document.addEventListener("visibilitychange", function () { if (!document.hidden) { phoneSync(); schedulePhone(); reminderStatus(); geoPermissionStatus(); if (typeof gcalAutoSync === "function") gcalAutoSync(); } });
-    reminderStatus(); geoPermissionStatus(); schedulePhone();
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) { phoneSync(); schedulePhone(); reminderStatus(); notifState(); geoPermissionStatus(); if (typeof gcalAutoSync === "function") gcalAutoSync(); } });
+    if (LN && typeof LN.checkPermissions === "function" && opts.reminders && phone.remind) {
+      LN.checkPermissions().then(function (pm) {
+        if (pm && (pm.display === "prompt" || pm.display === "prompt-with-rationale")) {
+          return requestAndroidNotifPerm(false);
+        }
+      }).catch(function () {}).then(function () {
+        ensureAndroidChannels();
+        reminderStatus(); notifState(); schedulePhone();
+      });
+    } else {
+      ensureAndroidChannels();
+      reminderStatus(); geoPermissionStatus(); schedulePhone();
+    }
+    geoPermissionStatus();
     if (phone.calOn) loadCals().then(phoneSync).catch(function (e) { pMsg("Calendar: " + errText(e)); });
   }
 
@@ -10104,12 +11170,12 @@ window.__gcalAuth = {
   function persist() {
     try {
       localStorage.setItem(KEY, JSON.stringify(items));
-      localStorage.setItem(XKEY, JSON.stringify({ pins: pins, notes: notes, visited: visited, geofences: geofences, stats: stats, events: events }));
+      localStorage.setItem(XKEY, JSON.stringify({ pins: pins, notes: notes, visited: visited, geofences: geofences, stats: stats, reflections: reflections, wrapMeta: wrapMeta, events: events }));
     } catch (e) {}
     schedulePhone();
     if (typeof syncProductiveScheduler === "function") syncProductiveScheduler({ skipPhone: true });
     if (!ref) return;
-    var copy = JSON.parse(JSON.stringify({ items: items, pins: pins, notes: notes, visited: visited, geofences: geofences, stats: stats, events: events.filter(function (x) { return x.src !== "device"; }) }));
+    var copy = JSON.parse(JSON.stringify({ items: items, pins: pins, notes: notes, visited: visited, geofences: geofences, stats: stats, reflections: reflections, wrapMeta: wrapMeta, events: events.filter(function (x) { return x.src !== "device"; }) }));
     queue = queue.then(function () { return ref.set(copy); }).catch(function () { setStatus("Could not sync just now. Changes are kept on this device."); });
   }
   function initDb() {
@@ -10134,6 +11200,9 @@ window.__gcalAuth = {
               if (d.visited) visited = cleanVisited(d.visited);
               if (d.geofences) geofences = cleanGeofences(d.geofences);
               if (d.stats) stats = cleanStats(d.stats);
+              if (Array.isArray(d.reflections)) reflections = cleanReflections(d.reflections);
+              if (d.wrapMeta) wrapMeta = cleanWrapMeta(d.wrapMeta);
+              checkRecurrences(false);
               markVisitedFromItems(); fillSelect(); render();
             }
           }
@@ -11261,12 +12330,20 @@ window.__gcalAuth = {
   }
 
   /* ---------- start ---------- */
-  buildMap(); fillSelect(); applyOpts(); render(); initDb(); mediaInit(); phoneInit(); gcalInit(); desktopInit();
+  var hadRecUpdate = checkRecurrences(false);
+  buildMap(); fillSelect(); applyOpts(); render(); if (hadRecUpdate) persist(); initDb(); mediaInit(); phoneInit(); gcalInit(); desktopInit();
   if (typeof syncProductiveScheduler === "function") {
     syncProductiveScheduler();
     renderProductivityWidget();
     document.addEventListener("visibilitychange", function () {
-      if (!document.hidden) syncProductiveScheduler({ skipPhone: true, checkDue: true });
+      if (!document.hidden) {
+        checkRecurrences(true);
+        syncProductiveScheduler({ skipPhone: true, checkDue: true });
+      }
+    });
+  } else {
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) checkRecurrences(true);
     });
   }
   setTimeout(remCheck, 2000);

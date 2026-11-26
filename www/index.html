@@ -3078,6 +3078,7 @@ body.sheet-open .tape-dock { opacity: 0; pointer-events: none; transform: transl
                 </div>
               </button>
               <button class="btn" id="gcalPhoneSyncBtn" type="button" hidden>Connect phone calendar</button>
+              <a class="btn ghost" id="gcalOpenTabBtn" href="#" target="_blank" rel="noopener noreferrer" hidden>Open in browser tab</a>
               <button class="btn" id="gcalSyncBtn" type="button" hidden>Sync now</button>
               <button class="btn ghost" id="gcalDisconnect" type="button" hidden>Sign out</button>
             </div>
@@ -3319,7 +3320,7 @@ const auth = initializeAuth(app, {
 });
 const provider = new GoogleAuthProvider();
 GCAL_SCOPES.forEach((s) => provider.addScope(s));
-provider.setCustomParameters({ prompt: "consent select_account" });
+provider.setCustomParameters({ prompt: "select_account consent" });
 
 // Strictly in-memory OAuth access token cache (never persisted to localStorage/sessionStorage)
 let cachedAccessToken = null;
@@ -3327,7 +3328,6 @@ let tokenSource = null; // "firebase" | "gis" | null
 let currentUser = null;
 let gisLoadPromise = null;
 let inFlightSignIn = null;
-let preferGisOnRetry = false;
 const listeners = [];
 
 function notifyListeners() {
@@ -3402,7 +3402,7 @@ function loadGis() {
   return gisLoadPromise;
 }
 
-// Preload GIS script silently so fallback token requests work inside user gestures
+// Preload GIS script silently so fallback token requests work if needed
 loadGis().catch(() => {});
 
 async function resolveCalendarEmail(token) {
@@ -3500,7 +3500,7 @@ function gisSignIn() {
   if (window.google && window.google.accounts && window.google.accounts.oauth2) {
     return runGisTokenRequest(window.google.accounts.oauth2);
   }
-  return loadGis().then((oauth2) => runGisTokenRequest(oauth2));
+  return Promise.reject(new Error("gis-unavailable"));
 }
 
 onAuthStateChanged(auth, (user) => {
@@ -3522,15 +3522,12 @@ function isCapacitorNative() {
   return !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === "function" && window.Capacitor.isNativePlatform());
 }
 
-function isMobileOrPartitionedContext() {
-  const ua = (navigator && navigator.userAgent) ? navigator.userAgent : "";
-  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
-  let inFrame = false;
-  try { inFrame = window.self !== window.top; } catch (_e) { inFrame = true; }
-  return isMobile || inFrame;
+function inEmbeddedFrame() {
+  try { return window.self !== window.top; } catch (_e) { return true; }
 }
 
 window.__gcalAuth = {
+  inEmbeddedFrame,
   onChange(fn) {
     if (typeof fn === "function") {
       listeners.push(fn);
@@ -3549,6 +3546,7 @@ window.__gcalAuth = {
       return Promise.reject(new Error("In the Android app, Google blocks web sign-in popups inside WebViews. Tap Connect phone calendar below to sync your device's Google Calendar directly, or paste your Secret iCal (.ics) URL."));
     }
     validateOAuthConfigAndRedirect();
+    const embedded = inEmbeddedFrame();
     const buildUnauthorizedError = () => {
       if (location.hostname === "127.0.0.1") {
         return new Error("This local address (127.0.0.1) is not in Firebase Authorized Domains. Add \"localhost\" to Firebase Authentication Authorized Domains and open http://localhost:" + (location.port || "3000") + ", or paste your Secret iCal (.ics) URL below.");
@@ -3556,14 +3554,27 @@ window.__gcalAuth = {
       if (location.hostname === "localhost" || window.missionDesktop) {
         return new Error("This domain (" + location.hostname + ") is not listed under Firebase Authorized Domains for project " + firebaseConfig.projectId + ". Add it in Firebase Console -> Authentication -> Settings -> Authorized domains, or paste your Secret iCal (.ics) URL below.");
       }
-      return new Error("This origin (" + location.origin + ") is not listed under Firebase Authorized Domains. Add \"" + location.hostname + "\" in Firebase Console -> Authentication -> Settings -> Authorized domains, open in an authorized browser tab, or paste your Google Calendar Secret iCal address below.");
+      return new Error("This origin (" + location.origin + ") is not listed under Firebase Authorized Domains. Add \"" + location.hostname + "\" in Firebase Console -> Authentication -> Settings -> Authorized domains, or paste your Google Calendar Secret iCal address below.");
+    };
+    const buildPartitionedError = () => {
+      if (embedded) {
+        return new Error("This preview is inside an embedded frame where your browser partitions sessionStorage during Google sign-in. Tap Open in browser tab below, then sign in with Google there.");
+      }
+      return new Error("Your browser blocked or cleared sessionStorage during Google sign-in. Make sure cookies/site data are enabled in Chrome (avoid Incognito/strict blocking) and try again, or paste your Secret iCal (.ics) URL below.");
     };
     const formatFbErr = (err) => {
       const code = err && err.code ? String(err.code) : "";
+      const msg = err && err.message ? String(err.message) : "";
       if (code === "auth/popup-blocked") return new Error("Sign-in popup was blocked by the browser. Allow popups for this site and try again.");
-      if (code === "auth/popup-closed-by-user") return new Error("Sign-in window was closed before finishing.");
+      if (code === "auth/popup-closed-by-user") {
+        return embedded
+          ? new Error("Sign-in popup closed before finishing. If Google showed a missing initial state error inside this embedded preview, tap Open in browser tab below and sign in there.")
+          : new Error("Sign-in window was closed before finishing.");
+      }
       if (code === "auth/cancelled-popup-request") return new Error("Previous sign-in was cancelled. Please try again.");
-      if (code === "auth/web-storage-unsupported" || code === "auth/operation-not-supported-in-this-environment") return new Error("Browser storage is blocked or partitioned in this tab. Open in a normal browser tab or paste your Google Calendar Secret iCal address below.");
+      if (code === "auth/web-storage-unsupported" || code === "auth/operation-not-supported-in-this-environment" || /missing initial state|sessionStorage/i.test(msg)) {
+        return buildPartitionedError();
+      }
       if (code === "auth/bad-request") return new Error("Google sign-in request was rejected for this window (" + location.origin + "). Open in a normal browser tab or paste your Google Calendar Secret iCal address below.");
       if (code === "auth/unauthorized-domain") return buildUnauthorizedError();
       return err;
@@ -3581,7 +3592,6 @@ window.__gcalAuth = {
       }
       cachedAccessToken = token;
       tokenSource = "firebase";
-      preferGisOnRetry = false;
       currentUser = result.user ? { uid: result.user.uid, email: userEmail(result.user), displayName: result.user.displayName || "" } : currentUser;
       notifyListeners();
       return { token: cachedAccessToken, user: currentUser };
@@ -3596,66 +3606,29 @@ window.__gcalAuth = {
       notifyListeners();
       return { token: cachedAccessToken, user: currentUser };
     };
-    const runGisFallback = async (fbErr) => {
-      try {
-        const token = await gisSignIn();
-        preferGisOnRetry = true;
-        return await finishGisToken(token);
-      } catch (gisErr) {
-        const gMsg = gisErr && gisErr.message ? String(gisErr.message) : "";
-        if (gMsg === "gis-unavailable" && fbErr) throw formatFbErr(fbErr);
-        if (fbErr && fbErr.code === "auth/unauthorized-domain") throw formatFbErr(fbErr);
-        throw gisErr;
-      }
-    };
+    // Call Firebase signInWithPopup synchronously inside the click gesture so mobile/desktop browsers never block the popup.
+    const fbPromise = signInWithPopup(auth, provider, browserPopupRedirectResolver);
     inFlightSignIn = (async () => {
-      const gisReady = !!(window.google && window.google.accounts && window.google.accounts.oauth2);
-      // On mobile browsers (e.g. Android Chrome) and embedded iframes, Firebase's firebaseapp.com
-      // popup/redirect handler fails with missing initial state under third-party storage partitioning.
-      // Use direct Google Identity Services (GIS) popup first when ready.
-      if ((preferGisOnRetry || (isMobileOrPartitionedContext() && gisReady)) && (location.protocol === "https:" || location.protocol === "http:")) {
-        try {
-          const token = await gisSignIn();
-          preferGisOnRetry = true;
-          return await finishGisToken(token);
-        } catch (gisErr) {
-          const gMsg = gisErr && gisErr.message ? String(gisErr.message) : "";
-          // Only fall back to Firebase popup if GIS library itself wasn't usable;
-          // do not swallow explicit user cancellation or popup-blocked errors.
-          if (gMsg !== "gis-unavailable") {
-            throw gisErr;
-          }
-        }
-      }
-      if (isMobileOrPartitionedContext() && !gisReady) {
-        // Attempt loading GIS before touching firebaseapp.com popup handler on mobile/partitioned contexts
-        try {
-          const token = await gisSignIn();
-          preferGisOnRetry = true;
-          return await finishGisToken(token);
-        } catch (gisErr) {
-          const gMsg = gisErr && gisErr.message ? String(gisErr.message) : "";
-          if (gMsg !== "gis-unavailable") {
-            throw gisErr;
-          }
-        }
-      }
       try {
-        const result = await signInWithPopup(auth, provider, browserPopupRedirectResolver);
+        const result = await fbPromise;
         return await finishFirebaseResult(result);
       } catch (err) {
         const code = err && err.code ? String(err.code) : "";
         const msg = err && err.message ? String(err.message) : "";
-        const canTryGis = code === "auth/web-storage-unsupported" ||
+        const isStorageErr = code === "auth/web-storage-unsupported" ||
           code === "auth/operation-not-supported-in-this-environment" ||
-          code === "auth/bad-request" ||
           code === "auth/internal-error" ||
-          code === "auth/unauthorized-domain" ||
+          code === "auth/bad-request" ||
           /internal assertion|missing initial state|sessionStorage/i.test(msg);
-        if (!canTryGis) {
-          throw formatFbErr(err);
+        if (isStorageErr && window.google && window.google.accounts && window.google.accounts.oauth2) {
+          try {
+            const token = await gisSignIn();
+            return await finishGisToken(token);
+          } catch (_gisErr) {
+            throw formatFbErr(err);
+          }
         }
-        return await runGisFallback(err);
+        throw formatFbErr(err);
       }
     })().finally(() => {
       inFlightSignIn = null;
@@ -3667,7 +3640,6 @@ window.__gcalAuth = {
     cachedAccessToken = null;
     tokenSource = null;
     currentUser = null;
-    preferGisOnRetry = false;
     try {
       if (prevTok && window.google && window.google.accounts && window.google.accounts.oauth2 && typeof window.google.accounts.oauth2.revoke === "function") {
         window.google.accounts.oauth2.revoke(prevTok, () => {});
@@ -5868,7 +5840,7 @@ window.__gcalAuth = {
       var freshCopy = plan.ready ? buildProdNotifCopy(plan) : { title: job.title, body: job.body };
       toast(freshCopy.body);
       fx("chime");
-      fireDesktopNotif(freshCopy.title, freshCopy.body, "", { channelId: "productivity" });
+      fireDesktopNotif(freshCopy.title, freshCopy.body, "", { channelId: "productivity", id: hash32(job.id) });
     }
     syncProductiveScheduler({ skipPhone: true });
     return true;
@@ -7143,12 +7115,20 @@ window.__gcalAuth = {
   }
   var DESKTOP = window.desktopAPI && window.desktopAPI.isDesktop ? window.desktopAPI : null;
   var NATIVE = false, LN = null, CAL = null, AP = null;
+  function capPlugin(name) {
+    try {
+      if (!window.Capacitor) return null;
+      if (Capacitor.Plugins && Capacitor.Plugins[name]) return Capacitor.Plugins[name];
+      if (typeof Capacitor.registerPlugin === "function") return Capacitor.registerPlugin(name);
+    } catch (e) {}
+    return null;
+  }
   try {
     NATIVE = !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
     if (NATIVE) {
-      LN = Capacitor.registerPlugin("LocalNotifications");
-      CAL = Capacitor.registerPlugin("CapacitorCalendar");
-      AP = Capacitor.registerPlugin("AndroidPermissions");
+      LN = capPlugin("LocalNotifications");
+      CAL = capPlugin("CapacitorCalendar");
+      AP = capPlugin("AndroidPermissions");
     }
   } catch (e) { NATIVE = false; }
   var androidChannelsReady = false;
@@ -9554,7 +9534,7 @@ window.__gcalAuth = {
         if (opts.reminders) {
           toast("Time limit reached: " + it.text);
           fx("chime");
-          fireDesktopNotif("Mission time limit", it.text + " (" + placeInfo(it.place).n + ")", "");
+          fireDesktopNotif("Mission time limit", it.text + " (" + placeInfo(it.place).n + ")", "", { channelId: "missions", id: hash32("lim:" + it.id + ":" + it.limitAt) });
         }
       }
     });
@@ -9585,7 +9565,7 @@ window.__gcalAuth = {
           FIRED[key] = now; changed = true;
           var msg = e.title + (e.allDay || !e.start ? " (today)" : " at " + e.start);
           toast("Reminder: " + msg); fx("chime");
-          fireDesktopNotif(e.title, msg, "");
+          fireDesktopNotif(e.title, msg, "", { channelId: "events", id: hash32(e.id + ":" + at) });
         }
       });
       if (opts.prodReminders) {
@@ -9723,7 +9703,7 @@ window.__gcalAuth = {
           return requestAndroidExactAlarmPerm().then(checkExact);
         }
       }).then(function () {
-        var at = new Date(Date.now() + 5000);
+        var atIso = new Date(Date.now() + 5000).toISOString();
         return LN.schedule({
           notifications: [{
             id: 989105,
@@ -9733,7 +9713,7 @@ window.__gcalAuth = {
             smallIcon: "ic_stat_mission",
             foreground: true,
             autoCancel: true,
-            schedule: { at: at, allowWhileIdle: true },
+            schedule: { at: atIso, allowWhileIdle: true },
             isExactNotification: !!exactOK
           }]
         }).then(function () {
@@ -9890,16 +9870,16 @@ window.__gcalAuth = {
             if (e.place) bits.push(placeInfo(e.place).n);
             if (e.where) bits.push(e.where);
             return { id: hash32(e.id + ":" + o.at), title: e.title, body: bits.join(" · "), channelId: "events", smallIcon: "ic_stat_mission",
-              foreground: true, autoCancel: true, schedule: { at: new Date(o.at), allowWhileIdle: true }, isExactNotification: !!exactOK, extra: { evId: e.id } };
+              foreground: true, autoCancel: true, schedule: { at: new Date(o.at).toISOString(), allowWhileIdle: true }, isExactNotification: !!exactOK, extra: { evId: e.id } };
           }).concat(missionAlarms.map(function (mo) {
             return { id: mo.id, title: mo.title, body: mo.body, channelId: "missions", smallIcon: "ic_stat_mission",
-              foreground: true, autoCancel: true, schedule: { at: new Date(mo.at), allowWhileIdle: true }, isExactNotification: !!exactOK, extra: mo.extra };
+              foreground: true, autoCancel: true, schedule: { at: new Date(mo.at).toISOString(), allowWhileIdle: true }, isExactNotification: !!exactOK, extra: mo.extra };
           })).concat(pomoAlarms.map(function (pm) {
             return { id: pm.id, title: pm.title, body: pm.body, channelId: "pomodoro", smallIcon: "ic_stat_mission",
-              foreground: true, autoCancel: true, schedule: { at: new Date(pm.at), allowWhileIdle: true }, isExactNotification: !!exactOK, extra: pm.extra };
+              foreground: true, autoCancel: true, schedule: { at: new Date(pm.at).toISOString(), allowWhileIdle: true }, isExactNotification: !!exactOK, extra: pm.extra };
           })).concat(prodAlarms.map(function (po) {
             return { id: po.id, title: po.title, body: po.body, channelId: "productivity", smallIcon: "ic_stat_mission",
-              foreground: true, autoCancel: true, schedule: { at: new Date(po.at), allowWhileIdle: true }, isExactNotification: !!exactOK, extra: po.extra };
+              foreground: true, autoCancel: true, schedule: { at: new Date(po.at).toISOString(), allowWhileIdle: true }, isExactNotification: !!exactOK, extra: po.extra };
           }));
           lastArmedCount = notifs.length;
           return LN.schedule({ notifications: notifs }).then(function () { notifState(); });
@@ -9975,7 +9955,7 @@ window.__gcalAuth = {
   function sigOf(o) { return String(hash32([o.title, o.startDate, o.endDate, o.isAllDay, o.location, o.description, o.color, o.calendarId].join("|"))); }
   function pushLocal(canWrite) {
     var chain = Promise.resolve(), changed = false, dels = phone.del.slice(); phone.del = []; saveP();
-    if (canWrite) dels.forEach(function (id) { chain = chain.then(function () { return CAL.deleteEvent({ id: id }).catch(function () {}); }); });
+    if (canWrite) dels.forEach(function (id) { chain = chain.then(function () { return Promise.resolve(CAL.deleteEvent({ id: id })).catch(function () {}); }); });
     if (!canWrite || !phone.writeCal) return chain;
     events.forEach(function (e) {
       if (e.src === "device") return;
@@ -9984,7 +9964,7 @@ window.__gcalAuth = {
         if (e.ext) {
           if (e.ext.cal !== phone.writeCal || e.ext.sig === sig) return;
           var m = {}; Object.keys(o).forEach(function (k) { m[k] = o[k]; }); m.id = e.ext.id;
-          return CAL.modifyEvent(m).then(function () { e.ext.sig = sig; changed = true; }).catch(function () {});
+          return Promise.resolve(CAL.modifyEvent(m)).then(function () { e.ext.sig = sig; changed = true; }).catch(function () {});
         }
         return CAL.createEvent(o).then(function (r) { if (r && r.id) { e.ext = { id: String(r.id), cal: phone.writeCal, sig: sig }; changed = true; } });
       });
@@ -10103,17 +10083,20 @@ window.__gcalAuth = {
     });
     window.addEventListener("pagehide", function () { schedulePhone(true); });
     if (LN && typeof LN.addListener === "function") {
-      LN.addListener("localNotificationActionPerformed", function (ev) {
-        var extra = ev && ev.notification && ev.notification.extra ? ev.notification.extra : null;
-        if (!extra) return;
-        if (extra.wrap && typeof openWrapDayModal === "function") {
-          openWrapDayModal();
-        } else if (extra.evId) {
-          calOpen = true;
-          try { localStorage.setItem("mission-map-cal", "1"); } catch (e) {}
-          render();
-        }
-      }).catch(function () {});
+      try {
+        var lnHandle = LN.addListener("localNotificationActionPerformed", function (ev) {
+          var extra = ev && ev.notification && ev.notification.extra ? ev.notification.extra : null;
+          if (!extra) return;
+          if (extra.wrap && typeof openWrapDayModal === "function") {
+            openWrapDayModal();
+          } else if (extra.evId) {
+            calOpen = true;
+            try { localStorage.setItem("mission-map-cal", "1"); } catch (e) {}
+            render();
+          }
+        });
+        if (lnHandle && typeof lnHandle.catch === "function") lnHandle.catch(function () {});
+      } catch (e) {}
     }
     if (LN && typeof LN.checkPermissions === "function" && opts.reminders && phone.remind) {
       LN.checkPermissions().then(function (pm) {
@@ -10673,9 +10656,14 @@ window.__gcalAuth = {
   function gcalInitUI() {
     var user = gcalUser(), hasTok = gcalHasAuth(), hasIcal = !!gcal.icalUrl;
     var needsAuth = !hasTok;
-    var gBtn = $("gcalGoogleBtn"), pBtn = $("gcalPhoneSyncBtn"), syncBtn = $("gcalSyncBtn"), discBtn = $("gcalDisconnect"), uBox = $("gcalUser");
+    var embedded = !!(window.__gcalAuth && typeof window.__gcalAuth.inEmbeddedFrame === "function" && window.__gcalAuth.inEmbeddedFrame());
+    var gBtn = $("gcalGoogleBtn"), pBtn = $("gcalPhoneSyncBtn"), tabBtn = $("gcalOpenTabBtn"), syncBtn = $("gcalSyncBtn"), discBtn = $("gcalDisconnect"), uBox = $("gcalUser");
     if (gBtn) gBtn.hidden = !needsAuth || !!NATIVE;
     if (pBtn) pBtn.hidden = !(NATIVE && !hasTok);
+    if (tabBtn) {
+      tabBtn.hidden = !(!NATIVE && needsAuth && embedded);
+      if (!tabBtn.hidden) tabBtn.href = location.href;
+    }
     if (syncBtn) syncBtn.hidden = !(hasTok || hasIcal);
     if (discBtn) discBtn.hidden = !(user || hasTok || hasIcal);
     if (uBox) {
@@ -10735,9 +10723,12 @@ window.__gcalAuth = {
         gcal.enabled = true;
         saveGcal();
         gcalInitUI();
-        return gcalListCalendars();
-      }).then(function () {
-        return gcalSyncNow(true);
+        return gcalListCalendars().then(function () {
+          return gcalSyncNow(true);
+        }).catch(function (calErr) {
+          gcalMsg("Signed in, but could not load calendars: " + (calErr && calErr.message ? calErr.message : String(calErr)));
+          gcalInitUI();
+        });
       }).catch(function (e) {
         btn.disabled = false;
         gcalMsg("Sign in failed: " + (e && e.message ? e.message : String(e)));
@@ -10809,7 +10800,7 @@ window.__gcalAuth = {
 
   /* ---------- ambient screen: a dark always-on view (clock, next event, open missions, stress) ---------- */
   var aodOn = false, aodLast = Date.now(), aodWL = null, aodSaved = null, aodShift = 0, aodOpened = 0;
-  function plug(n) { try { return NATIVE ? Capacitor.registerPlugin(n) : null; } catch (e) { return null; } }
+  function plug(n) { return NATIVE ? capPlugin(n) : null; }
   function aodNextEvent() {
     var now = new Date(), hm = pad(now.getHours()) + ":" + pad(now.getMinutes());
     for (var off = 0; off < 15; off++) {

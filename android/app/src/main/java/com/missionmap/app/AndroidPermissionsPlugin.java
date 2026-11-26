@@ -23,6 +23,7 @@ import android.provider.Settings;
 import android.util.Base64;
 import android.view.View;
 import android.view.Window;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -139,7 +140,13 @@ public class AndroidPermissionsPlugin extends Plugin {
             res.put("backgroundLocation", bg != null ? bg.toString() : "prompt");
         }
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        boolean osNotifsOn = true;
+        try {
+            osNotifsOn = NotificationManagerCompat.from(getContext()).areNotificationsEnabled();
+        } catch (Exception ignored) {}
+        if (!osNotifsOn) {
+            res.put("notifications", "denied");
+        } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             res.put("notifications", "granted");
         } else {
             PermissionState notif = getPermissionState("notifications");

@@ -1098,6 +1098,8 @@ body.has-wall::after { content: ""; position: fixed; inset: 0; z-index: -1; back
 .wobAll path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
 body.wob-all [data-wa] { border-color: transparent !important; }
 .cal { color: var(--ink); }
+.cal-sync-status { font-size: 12px; letter-spacing: .08em; color: var(--ink-soft); margin-top: calc(-1 * clamp(6px, 1vw, 12px)); padding: 0 2px; position: relative; z-index: 1; }
+.cal-sync-status[hidden] { display: none; }
 
 /* ===== v4: events ===== */
 .calday .dr { display: flex; align-items: flex-end; justify-content: space-between; width: 100%; gap: 2px; }
@@ -2462,6 +2464,7 @@ body.sheet-open .tape-dock { opacity: 0; pointer-events: none; transform: transl
     </section>
   </div>
   <section class="cal" id="cal" hidden aria-label="Month calendar"></section>
+  <div class="cal-sync-status" id="calSyncStatus" hidden role="status" aria-live="polite">syncing</div>
   <form class="evform" id="evForm" hidden autocomplete="off" aria-label="Event">
     <input id="evTitle" maxlength="60" placeholder="Event title" aria-label="Event title">
     <div class="evrow"><label>Date <input type="date" id="evDate"></label><label>Until (optional) <input type="date" id="evEnd"></label></div>
@@ -5255,7 +5258,6 @@ window.__gcalAuth = {
       { label: "Calendar", pressed: calOpen, hot: false, badge: "", onClick: function () {
         calOpen = !calOpen;
         try { localStorage.setItem("mission-map-cal", calOpen ? "1" : "0"); } catch (e) {}
-        if (calOpen && typeof gcalAutoSync === "function") gcalAutoSync();
       } },
       { label: "Patterns", pressed: patOpen, hot: false, badge: "", onClick: function () { patOpen = !patOpen; } },
       { label: "Productivity", pressed: prodOpen, hot: peakNow0, badge: stProd.score !== null ? String(stProd.score) : "--", onClick: function () { prodOpen = !prodOpen; } },
@@ -5278,6 +5280,7 @@ window.__gcalAuth = {
         setToolsMenu(false);
         d.onClick();
         render();
+        if (d.label === "Calendar" && calOpen && typeof gcalAutoSync === "function") gcalAutoSync();
         fx("click");
       });
       menu.appendChild(b);
@@ -5332,8 +5335,18 @@ window.__gcalAuth = {
     var dd = parseKey(calFocus);
     return dateLabel(calFocus) + " " + dd.getFullYear();
   }
+  function updateCalSyncUi() {
+    var st = $("calSyncStatus");
+    var active = !!(calOpen && ((typeof gcalSyncing !== "undefined" && gcalSyncing) || (typeof syncing !== "undefined" && syncing)));
+    if (st) {
+      st.textContent = "syncing";
+      st.hidden = !active;
+    }
+    var gcb = document.querySelector("#cal .cal-gcal-btn");
+    if (gcb) gcb.setAttribute("aria-busy", active ? "true" : "false");
+  }
   function renderCal(mine) {
-    var box = $("cal"); box.hidden = !calOpen; if (box.hidden) { $("evForm").hidden = true; return; }
+    var box = $("cal"); box.hidden = !calOpen; updateCalSyncUi(); if (box.hidden) { $("evForm").hidden = true; return; }
     if (dayFilter && dayFilter !== calFocus && calMode === "day") calFocus = dayFilter;
     if (!calFocus || !DRE.test(calFocus)) calFocus = todayKey();
     if (!calM) { var n = parseKey(calFocus); calM = { y: n.getFullYear(), m: n.getMonth() }; }
@@ -5394,8 +5407,9 @@ window.__gcalAuth = {
     });
     actG.appendChild(tb);
 
-    var gcb = el("button", "calbtn", "GCal Sync"); gcb.type = "button";
+    var gcb = el("button", "calbtn cal-gcal-btn", "GCal Sync"); gcb.type = "button";
     gcb.setAttribute("aria-label", "Sync with Google Calendar");
+    gcb.setAttribute("aria-busy", (typeof gcalSyncing !== "undefined" && gcalSyncing) || (typeof syncing !== "undefined" && syncing) ? "true" : "false");
     gcb.addEventListener("click", function () {
       fx("click");
       if (typeof gcalHasAuth === "function" && gcalHasAuth()) {
@@ -9972,13 +9986,20 @@ window.__gcalAuth = {
     return chain.then(function () { if (changed) persist(); });
   }
   function pullDevice() {
-    if (!phone.readCals.length) { events = events.filter(function (e) { return e.src !== "device"; }); return Promise.resolve(0); }
+    if (!phone.readCals.length) {
+      if (calList.length) {
+        events = events.filter(function (e) { return e.src !== "device"; });
+        persist(); render();
+      }
+      return Promise.resolve(0);
+    }
     var from = Date.now() - 30 * 86400000, to = Date.now() + 365 * 86400000, mine = {}, col = {};
-    events.forEach(function (e) { if (e.ext) mine[e.ext.id] = 1; });
+    events.forEach(function (e) { if (e.ext && e.src !== "device") mine[e.ext.id] = 1; });
     calList.forEach(function (c) { col[c.id] = c.color; });
     return CAL.listEventsInRange({ from: from, to: to }).then(function (r) {
+      if (!r || !Array.isArray(r.result)) throw new Error("Could not read phone calendar events.");
       var out = [];
-      (r.result || []).forEach(function (d) {
+      r.result.forEach(function (d) {
         if (phone.readCals.indexOf(String(d.calendarId)) < 0 || mine[String(d.id)]) return;
         var rec = devToEvent(d, col[d.calendarId]); if (rec) out.push(rec);
       });
@@ -9990,11 +10011,14 @@ window.__gcalAuth = {
   }
   function loadCals() {
     return CAL.listCalendars().then(function (r) {
-      calList = (r.result || []).filter(function (c) { return c && c.id != null; }).map(function (c) { c.id = String(c.id); return c; });
-      var known = {}; calList.forEach(function (c) { known[c.id] = 1; });
-      phone.readCals = phone.readCals.filter(function (id) { return known[id]; });
-      if (phone.writeCal && !known[phone.writeCal]) phone.writeCal = "";
-      saveP(); renderCalList();
+      calList = (r && Array.isArray(r.result) ? r.result : []).filter(function (c) { return c && c.id != null; }).map(function (c) { c.id = String(c.id); return c; });
+      if (calList.length) {
+        var known = {}; calList.forEach(function (c) { known[c.id] = 1; });
+        phone.readCals = phone.readCals.filter(function (id) { return known[id]; });
+        if (phone.writeCal && !known[phone.writeCal]) phone.writeCal = "";
+        saveP();
+      }
+      renderCalList();
     });
   }
   function renderCalList() {
@@ -10021,13 +10045,21 @@ window.__gcalAuth = {
   }
   function phoneSync() {
     if (!NATIVE || !CAL || !phone.calOn || syncing) return Promise.resolve();
-    syncing = true; pMsg("Syncing with the phone calendar...");
+    syncing = true; updateCalSyncUi(); pMsg("Syncing with the phone calendar...");
+    var pulledCount = 0;
     return CAL.checkAllPermissions().then(function (p) {
       var r = p.result || {};
       if (r.readCalendar !== "granted") throw new Error("Calendar access is off. Tap Connect phone calendar.");
-      return pushLocal(r.writeCalendar === "granted").then(function () { return calList.length ? null : loadCals(); }).then(pullDevice);
+      return (calList.length ? Promise.resolve() : loadCals())
+        .then(function () { return pullDevice(); })
+        .then(function (n) {
+          pulledCount = n || 0;
+          return pushLocal(r.writeCalendar === "granted");
+        })
+        .then(function () { return pulledCount; });
     }).then(function (n) { phone.last = Date.now(); saveP(); pMsg("Synced. " + n + " events from the phone calendar."); })
-      .catch(function (e) { pMsg("Calendar sync failed: " + errText(e)); }).then(function () { syncing = false; });
+      .catch(function (e) { pMsg("Calendar sync failed: " + errText(e)); })
+      .then(function () { syncing = false; updateCalSyncUi(); });
   }
   function syncSoon() { if (!NATIVE || !phone.calOn) return; clearTimeout(syncT); syncT = setTimeout(phoneSync, 2500); }
   function phoneForget(e) { if (e && e.ext && e.src !== "device") { phone.del.push(e.ext.id); saveP(); } }
@@ -10562,27 +10594,35 @@ window.__gcalAuth = {
       var cal = encodeURIComponent(gcal.calId || "primary");
       var from = new Date(Date.now() - 30 * 86400000).toISOString();
       var to = new Date(Date.now() + 365 * 86400000).toISOString();
-      var url = "https://www.googleapis.com/calendar/v3/calendars/" + cal + "/events?singleEvents=true&timeMin=" + encodeURIComponent(from) + "&timeMax=" + encodeURIComponent(to) + "&maxResults=250";
-      return fetch(url, { headers: gcalHeaders() })
-        .then(gcalHandleAuthError)
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          if (!data || !Array.isArray(data.items)) throw new Error(data && data.error ? data.error.message : "Invalid events data");
-          var mine = {}, missionExt = {};
-          events.forEach(function (e) { if (e.ext && e.src !== "gcal") mine[e.ext.id] = 1; });
-          items.forEach(function (it) { if (it.gcalId) missionExt[it.gcalId] = 1; });
-          var gEvents = [];
-          data.items.forEach(function (item) {
-            if (mine[item.id] || missionExt[item.id]) return;
-            var ev = gcalItemToEvent(item);
-            if (ev) gEvents.push(ev);
+      var baseUrl = "https://www.googleapis.com/calendar/v3/calendars/" + cal + "/events?singleEvents=true&orderBy=startTime&timeMin=" + encodeURIComponent(from) + "&timeMax=" + encodeURIComponent(to) + "&maxResults=250";
+      var collected = [];
+      function fetchPage(pageToken, depth) {
+        var pageUrl = baseUrl + (pageToken ? "&pageToken=" + encodeURIComponent(pageToken) : "");
+        return fetch(pageUrl, { headers: gcalHeaders() })
+          .then(gcalHandleAuthError)
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (!data || !Array.isArray(data.items)) throw new Error(data && data.error ? data.error.message : "Invalid events data");
+            collected = collected.concat(data.items);
+            if (data.nextPageToken && depth < 4) return fetchPage(data.nextPageToken, depth + 1);
           });
-          gEvents.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
-          events = events.filter(function (e) { return e.src !== "gcal"; }).concat(gEvents);
-          persist();
-          render();
-          return gEvents.length;
+      }
+      return fetchPage("", 0).then(function () {
+        var mine = {}, missionExt = {};
+        events.forEach(function (e) { if (e.ext && e.src !== "gcal") mine[e.ext.id] = 1; });
+        items.forEach(function (it) { if (it.gcalId) missionExt[it.gcalId] = 1; });
+        var gEvents = [];
+        collected.forEach(function (item) {
+          if (mine[item.id] || missionExt[item.id]) return;
+          var ev = gcalItemToEvent(item);
+          if (ev) gEvents.push(ev);
         });
+        gEvents.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+        events = events.filter(function (e) { return e.src !== "gcal"; }).concat(gEvents);
+        persist();
+        render();
+        return gEvents.length;
+      });
     } else if (gcal.icalUrl) {
       return fetchIcal(gcal.icalUrl).then(function (icsText) {
         var gEvents = parseIcal(icsText);
@@ -10604,32 +10644,39 @@ window.__gcalAuth = {
       return Promise.resolve();
     }
     gcalSyncing = true;
+    updateCalSyncUi();
     gcalMsg("Syncing with Google Calendar...");
     var writeReport = { applied: 0, skipped: false };
-    return Promise.resolve()
-      .then(function () {
-        if (gcalHasAuth() && !gcal.cals.length) return gcalListCalendars();
-      })
+    var pulledCount = 0;
+    return Promise.all([
+      gcalHasAuth() && !gcal.cals.length ? gcalListCalendars() : Promise.resolve(),
+      gcalPullEvents().then(function (n) { pulledCount = n || 0; })
+    ])
       .then(function () {
         if (!allowInteractiveWrites || !gcalHasAuth() || !gcal.twoWay) return null;
         var ops = gcalCollectPendingWrites();
         if (!ops.length) return null;
-        return gcalExecuteWrites(ops).then(function (res) { if (res) writeReport = res; });
+        return gcalExecuteWrites(ops).then(function (res) {
+          if (res) writeReport = res;
+          if (writeReport.applied) {
+            return gcalPullEvents().then(function (n) { pulledCount = n || 0; });
+          }
+        });
       })
-      .then(function () { return gcalPullEvents(); })
-      .then(function (n) {
+      .then(function () {
         gcal.last = Date.now();
         saveGcal();
         var d = new Date(), timeStr = pad(d.getHours()) + ":" + pad(d.getMinutes());
         var pendingAfter = gcalHasAuth() && gcal.twoWay ? gcalCollectPendingWrites().length : 0;
         var extra = writeReport.applied ? " Saved " + writeReport.applied + " change(s)." : (writeReport.skipped || (!allowInteractiveWrites && pendingAfter)) ? " " + pendingAfter + " local change(s) ready — tap Sync now to push." : "";
-        gcalMsg("Synced. " + (n || 0) + " calendar event(s) loaded at " + timeStr + "." + extra);
+        gcalMsg("Synced. " + pulledCount + " calendar event(s) loaded at " + timeStr + "." + extra);
       })
       .catch(function (e) {
         gcalMsg("Sync failed: " + (e && e.message ? e.message : String(e)));
       })
       .then(function () {
         gcalSyncing = false;
+        updateCalSyncUi();
         gcalInitUI();
       });
   }

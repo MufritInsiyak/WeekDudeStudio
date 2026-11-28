@@ -165,13 +165,118 @@ body[data-view="notes"] .count { background: var(--paper); display: inline-block
 .map-comp { fill: none; stroke: var(--ink-soft); stroke-width: 1.2; opacity: .75; }
 .map-comptxt { fill: var(--ink-soft); font-family: var(--font-type); font-size: 7px; text-anchor: middle; letter-spacing: .08em; }
 .ico { fill: var(--map-bg); stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-.plabel { font-family: var(--font-hand); font-size: 17px; font-weight: 700; fill: var(--ink); text-anchor: middle; }
+.ico-anim {
+  transform-box: fill-box;
+  transform-origin: center center;
+  transition: transform .26s cubic-bezier(.22, 1, .36, 1), filter .24s ease;
+}
+[data-ico].hov .ico-anim { transform: scale(1.1); }
+[data-ico].sel .ico-anim { transform: scale(1.16); }
+[data-ico].hov.sel .ico-anim { transform: scale(1.21); }
+.ico .post-lid {
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+  transition: transform .34s cubic-bezier(.22, 1, .36, 1);
+}
+.ico .post-letter {
+  transition: transform .32s cubic-bezier(.22, 1, .36, 1);
+}
+.ico .post-letter-lines { stroke-width: 1.3; opacity: .78; }
+@media (hover: hover) {
+  [data-ico="post"]:hover .post-lid { transform: scaleY(.58); }
+}
+[data-ico="post"].hov .post-lid { transform: scaleY(.58); }
+[data-ico="post"].sel .post-lid {
+  animation: postLidCycle 3.2s cubic-bezier(.37, 0, .63, 1) infinite;
+}
+[data-ico="post"].sel .post-letter {
+  animation: postLetterCycle 3.2s cubic-bezier(.37, 0, .63, 1) infinite;
+}
+@keyframes postLidCycle {
+  0%, 10% { transform: scaleY(1); }
+  28%, 62% { transform: scaleY(-.92); }
+  80%, 100% { transform: scaleY(1); }
+}
+@keyframes postLetterCycle {
+  0%, 24% { transform: translateY(0); }
+  38%, 52% { transform: translateY(-5.5px); }
+  64%, 100% { transform: translateY(0); }
+}
+.ico .campus-flag {
+  transform-box: fill-box;
+  transform-origin: 0% 50%;
+  transition: transform .28s cubic-bezier(.22, 1, .36, 1);
+}
+[data-ico="campus"].hov .campus-flag { transform: skewY(-6deg) scaleX(1.06); }
+[data-ico="campus"].sel .campus-flag { animation: flagWave 1.9s ease-in-out infinite; }
+@keyframes flagWave {
+  0%, 100% { transform: skewY(0deg) scaleX(1); }
+  35% { transform: skewY(-8deg) scaleX(1.08); }
+  70% { transform: skewY(5deg) scaleX(.95); }
+}
+.ico .park-canopy {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transition: transform .3s cubic-bezier(.22, 1, .36, 1);
+}
+[data-ico="park"].hov .park-canopy { transform: rotate(-2.5deg); }
+[data-ico="park"].sel .park-canopy { animation: parkSway 3.4s ease-in-out infinite; }
+@keyframes parkSway {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-3.5deg); }
+}
+.ico .metro-post-wave {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transition: opacity .25s ease, transform .25s ease;
+}
+[data-ico="post"].sel .metro-post-wave {
+  animation: metroBeaconWave 1.8s ease-in-out infinite;
+}
+@keyframes metroBeaconWave {
+  0%, 100% { opacity: .55; transform: scale(.96); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+.place.pin .pin-vis {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transition: transform .26s cubic-bezier(.22, 1, .36, 1);
+}
+@media (hover: hover) {
+  .place.pin:hover .pin-vis { transform: scale(1.13); }
+  .place.pin.sel:hover .pin-vis { transform: scale(1.22); }
+}
+.place.pin.hov .pin-vis,
+.place.pin:focus-visible .pin-vis { transform: scale(1.13); }
+.place.pin.sel .pin-vis { transform: scale(1.18); }
+.place.pin.sel.hov .pin-vis,
+.place.pin.sel:focus-visible .pin-vis { transform: scale(1.22); }
+.place.pin.pin-dragging .pin-vis { transform: scale(1.2) translateY(-2px); }
+.plabel {
+  font-family: var(--font-hand); font-size: 17px; font-weight: 700; fill: var(--ink); text-anchor: middle;
+  transition: transform .24s cubic-bezier(.22, 1, .36, 1), fill .2s ease;
+}
+@media (hover: hover) {
+  .place:hover .plabel { transform: translateY(2px); }
+}
+.place.hov .plabel,
+.place:focus-visible .plabel { transform: translateY(2px); }
+.place.sel .plabel { transform: translateY(3px); }
 .maptitle { font-family: var(--font-type); font-size: 12px; letter-spacing: .2em; fill: var(--ink-soft); }
 .place { cursor: pointer; }
-.place .ring { fill: none; stroke: var(--red); stroke-width: 2; stroke-dasharray: 4 4; opacity: 0; }
-.place.sel .ring { opacity: 1; }
+.place .ring {
+  fill: none; stroke: var(--red); stroke-width: 2; stroke-dasharray: 4 4; opacity: 0;
+  transform-box: fill-box; transform-origin: center center;
+  transform: scale(.86);
+  transition: opacity .22s ease, transform .28s cubic-bezier(.22, 1, .36, 1), stroke-width .2s ease;
+}
+@media (hover: hover) {
+  .place:hover .ring { opacity: .45; transform: scale(1.04); }
+}
+.place.hov .ring { opacity: .45; transform: scale(1.04); }
+.place.sel .ring { opacity: 1; transform: scale(1.1); }
 .place:focus-visible { outline: none; }
-.place:focus-visible .ring { opacity: 1; }
+.place:focus-visible .ring { opacity: 1; transform: scale(1.1); }
 .bdg { fill: var(--red); }
 .bdgt { fill: var(--on-red); font-family: var(--font-type); font-size: 12px; text-anchor: middle; }
 .bdgx { fill: var(--map-bg); stroke: var(--ink); stroke-width: 1.5; }
@@ -1855,6 +1960,7 @@ body.evil .item.evil .t { text-decoration: none; }
   .pin3d, .place.pin .pin-sprite-spin { transform: none !important; filter: none !important; }
   .item.printing, .item.printing .row { animation: none; }
   .place .fog { transition: none; }
+  .ico-anim, .ico .post-lid, .ico .post-letter, .ico .campus-flag, .ico .park-canopy, .ico .metro-post-wave, .place.pin .pin-vis, .place .ring, .plabel { transition: none !important; animation: none !important; }
   .bike { transition: none; }
   body[data-view="metro"]::before, .nixie-tube, .nixie-digit, .nixie-sep i, .m-gear-big, .m-gear-sm, .m-crank-arm, .m-piston-rod, .m-pendulum, .m-escapement, .m-fan-blades, .m-needle-jitter, .m-tube-glow { animation: none !important; }
 }
@@ -3869,6 +3975,42 @@ body.calm .tut-prog i { transition: none; }
 }
 .share-voice-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border: 1px dashed var(--ink-soft); background: var(--map-bg); font-size: 12.5px; }
 .share-voice-row[hidden] { display: none; }
+.upd-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  border: 2px solid var(--red);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .14);
+}
+.upd-banner[hidden] { display: none; }
+.upd-banner-txt { font-size: 13.5px; font-weight: 700; flex: 1 1 200px; }
+.upd-banner-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.gh-upd-box { display: grid; gap: 8px; padding: 8px 10px; border: 1.5px dashed var(--ink-soft); background: var(--map-bg); }
+.gh-ver-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 700; }
+.gh-plat-badge { font-size: 11px; padding: 2px 7px; border: 1px solid var(--ink-soft); background: var(--paper); color: var(--ink); }
+.gh-repo-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.gh-repo-row input { flex: 1 1 180px; min-width: 0; }
+.gh-prog { height: 6px; border: 1px solid var(--ink-soft); background: var(--paper); overflow: hidden; }
+.gh-prog[hidden] { display: none; }
+.gh-prog i { display: block; height: 100%; width: 0%; background: var(--red); transition: width .16s linear; }
+.gh-notes {
+  max-height: 120px;
+  overflow: auto;
+  padding: 6px 8px;
+  border: 1px solid var(--ink-soft);
+  background: var(--paper);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.gh-notes[hidden] { display: none; }
 </style>
 <style id="customPackCss"></style>
 </head>
@@ -3937,6 +4079,14 @@ body.calm .tut-prog i { transition: none; }
       </div>
     </div>
   </header>
+
+  <div class="upd-banner" id="updateBanner" hidden role="status" aria-live="polite">
+    <span class="upd-banner-txt" id="updateBannerTxt">New version available on GitHub</span>
+    <div class="upd-banner-acts">
+      <button class="btn" id="updateBannerGo" type="button">Install update</button>
+      <button class="btn ghost" id="updateBannerHide" type="button" aria-label="Dismiss update banner">Later</button>
+    </div>
+  </div>
 
   <div class="meters" id="meters" hidden>
     <div class="stress" id="stressBox"><span>Stress</span><div class="sq5" id="stressSq" role="img" aria-label="Stress"></div><b id="stressWord" hidden>Good Luck.</b></div>
@@ -5061,6 +5211,28 @@ body.calm .tut-prog i { transition: none; }
             <div class="msg">Taskbar and system tray icons dynamically show Do / Don't-do mode, open mission count badge, Pomodoro focus/break indicator, and custom pin icons.</div>
           </div>
 
+          <div class="pola-sec" id="githubUpdateSec" data-search="github auto update release version apk windows installer download check">
+            <h3 class="pola-sh">GitHub Auto-Update</h3>
+            <div class="gh-upd-box">
+              <div class="gh-ver-row">
+                <span id="ghCurVerLbl">Current version: 1.0.0</span>
+                <span class="gh-plat-badge" id="ghPlatLbl">Web</span>
+              </div>
+              <div class="gh-repo-row">
+                <input id="ghRepoInp" maxlength="140" placeholder="owner/repo or https://github.com/owner/repo" aria-label="GitHub repository for updates">
+                <button class="btn ghost" id="ghCheckBtn" type="button">Check now</button>
+              </div>
+              <label class="chk"><input type="checkbox" id="ghAutoChk"> Automatically check GitHub for updates on startup</label>
+              <div class="msg" id="ghStatusMsg" role="status">Enter your GitHub repository (owner/repo) to enable automatic update checks from GitHub Releases.</div>
+              <div class="gh-prog" id="ghProgWrap" hidden><i id="ghProgBar"></i></div>
+              <div class="gh-notes" id="ghRelNotes" hidden></div>
+              <div class="row-actions" id="ghActRow" hidden>
+                <button class="btn" id="ghInstallBtn" type="button">Install update</button>
+                <button class="btn ghost" id="ghOpenBtn" type="button">Open release</button>
+              </div>
+            </div>
+          </div>
+
           <div class="pola-sec" data-search="reset defaults factory preferences theme switches">
             <h3 class="pola-sh">Reset Options</h3>
             <div class="msg">Restore theme, fonts, audio settings, and visual toggles to their defaults without removing your missions, notes, events, or uploads.</div>
@@ -5579,12 +5751,12 @@ window.__gcalAuth = {
   var ICONS = {
     home: '<path d="M-13 10V-4L0-15L13-4V10Z"/><path d="M-3 10V2H3V10"/>',
     market: '<path d="M-14 10V-2H14V10Z"/><path d="M-16-2L-12-12H12L16-2Z"/><path d="M-6-12L-7-2M0-12V-2M6-12L7-2"/>',
-    post: '<path d="M-14-10H14V10H-14Z"/><path d="M-14-10L0 2L14-10"/>',
+    post: '<path d="M-14-10H14V10H-14Z"/><g class="post-letter"><path d="M-9-8H9V4H-9Z"/><path class="post-letter-lines" d="M-5-4H5M-5-1H2"/></g><path d="M-14-10L0 2L14-10V10H-14Z"/><path class="post-lid" d="M-14-10L0 2L14-10Z"/>',
     library: '<path d="M-14 10H14M-12-2V10M-4-2V10M4-2V10M12-2V10M-15-2H15L0-14Z"/>',
     bank: '<path d="M-14 10V-8H14V10Z"/><path d="M-5 10V2a5 5 0 0 1 10 0V10"/>',
     gas: '<path d="M-8 10V-12H4V10Z"/><path d="M-8-6H4M4-4H9V6a2 2 0 0 0 4 0V-6L9-10"/>',
-    campus: '<path d="M-14 10V-4H14V10Z"/><path d="M-14-4L0-13L14-4M-4 10V3H4V10M0-13V-21L7-18L0-16"/>',
-    park: '<circle cx="-6" cy="-3" r="8"/><circle cx="7" cy="0" r="6"/><path d="M-6 5V12M7 6V12"/>'
+    campus: '<path d="M-14 10V-4H14V10Z"/><path d="M-14-4L0-13L14-4M-4 10V3H4V10M0-13V-21"/><path class="campus-flag" d="M0-21L7-18L0-16Z"/>',
+    park: '<g class="park-canopy"><circle cx="-6" cy="-3" r="8"/><circle cx="7" cy="0" r="6"/></g><path d="M-6 5V12M7 6V12"/>'
   };
   var MAP_VARIANTS = {
     town: {
@@ -6147,7 +6319,7 @@ window.__gcalAuth = {
   var METRO_ICONS = {
     home: '<circle cx="0" cy="0" r="14" fill="url(#mMapIron)" stroke="url(#mMapBrass)" stroke-width="2"/><path d="M-7 8V-1A7 7 0 0 1 7-1V8Z" fill="none" stroke="#e9d8b2" stroke-width="1.8"/><path d="M-3 8V2H3V8M0-9v3" fill="none" stroke="#ff9c47" stroke-width="1.6"/>',
     market: '<circle cx="0" cy="0" r="14" fill="url(#mMapIron)" stroke="url(#mMapBrass)" stroke-width="2"/><circle cx="0" cy="0" r="8.5" fill="none" stroke="#d5b36d" stroke-width="1.3" stroke-dasharray="3 2"/><path d="M-6-3H6V6H-6Z" fill="none" stroke="#e9d8b2" stroke-width="1.6"/><path d="M-3-6V-3M3-6V-3" fill="none" stroke="#ff9c47" stroke-width="1.5"/>',
-    post: '<circle cx="0" cy="0" r="14" fill="url(#mMapIron)" stroke="url(#mMapBrass)" stroke-width="2"/><path d="M0 9V-7M-5-2A7 7 0 0 1 5-2M-8-5A11 11 0 0 1 8-5" fill="none" stroke="#e9d8b2" stroke-width="1.6"/><circle cx="0" cy="-7" r="2" fill="#ff9c47" stroke="none"/>',
+    post: '<circle cx="0" cy="0" r="14" fill="url(#mMapIron)" stroke="url(#mMapBrass)" stroke-width="2"/><path d="M0 9V-7" fill="none" stroke="#e9d8b2" stroke-width="1.6"/><path class="metro-post-wave" d="M-5-2A7 7 0 0 1 5-2M-8-5A11 11 0 0 1 8-5" fill="none" stroke="#e9d8b2" stroke-width="1.6"/><circle cx="0" cy="-7" r="2" fill="#ff9c47" stroke="none"/>',
     library: '<circle cx="0" cy="0" r="14" fill="url(#mMapIron)" stroke="url(#mMapBrass)" stroke-width="2"/><path d="M-7-6H7V3L0 9L-7 3Z" fill="none" stroke="#e9d8b2" stroke-width="1.6"/><path d="M0-4V6M-4 0H4" fill="none" stroke="#ff9c47" stroke-width="1.5"/>',
     bank: '<circle cx="0" cy="0" r="14" fill="url(#mMapIron)" stroke="url(#mMapBrass)" stroke-width="2"/><circle cx="0" cy="0" r="6" fill="none" stroke="#e9d8b2" stroke-width="1.7"/><path d="M0-9V9M-9 0H9" fill="none" stroke="#ff9c47" stroke-width="1.4"/>',
     gas: '<circle cx="0" cy="0" r="14" fill="url(#mMapIron)" stroke="url(#mMapBrass)" stroke-width="2"/><rect x="-5" y="-6" width="10" height="14" rx="1" fill="none" stroke="#e9d8b2" stroke-width="1.6"/><path d="M-5-1H5M-2-8H2M0 2v4" fill="none" stroke="#ff9c47" stroke-width="1.5"/>',
@@ -6203,7 +6375,7 @@ window.__gcalAuth = {
       ROADS.forEach(function (d, idx) { s += '<path class="' + (lineCls[idx] || "metro-line-ring") + '" d="' + d + '"/>'; });
       Object.keys(PLACES).forEach(function (k) {
         var p = PLACES[k];
-        s += '<g class="ico" filter="url(#mMapDrop)" transform="translate(' + p.x + ' ' + p.y + ')">' + (METRO_ICONS[k] || ICONS[k]) + '</g>';
+        s += '<g class="ico" data-ico="' + k + '" filter="url(#mMapDrop)" transform="translate(' + p.x + ' ' + p.y + ')"><g class="ico-anim"><rect x="-18" y="-18" width="36" height="36" fill="transparent" stroke="none" pointer-events="none"/>' + (METRO_ICONS[k] || ICONS[k]) + '</g></g>';
       });
       s += '</g>';
     } else if (isCgi) {
@@ -6215,11 +6387,12 @@ window.__gcalAuth = {
       ROADS.forEach(function (d) { s += '<path class="rd-i" d="' + d + '"/>'; });
       Object.keys(PLACES).forEach(function (k) {
         var p = PLACES[k];
-        s += '<g filter="url(#cgiDrop)" transform="translate(' + p.x + ' ' + p.y + ')">' +
+        s += '<g data-ico="' + k + '" filter="url(#cgiDrop)" transform="translate(' + p.x + ' ' + p.y + ')"><g class="ico-anim">' +
+          '<rect x="-20" y="-22" width="40" height="42" fill="transparent" stroke="none" pointer-events="none"/>' +
           '<polygon points="0,-19 18,-8 18,9 0,19 -18,9 -18,-8" fill="url(#cgiNodeTop)" stroke="#7ceeff" stroke-width="1.2"/>' +
           '<polygon points="0,-15 14,-6 14,7 0,15 -14,7 -14,-6" fill="#132244" fill-opacity="0.45" stroke="#ffffff" stroke-opacity="0.45" stroke-width="0.7"/>' +
           '<g class="ico" style="color:#f0f8ff;stroke:#f0f8ff">' + ICONS[k] + '</g>' +
-          '</g>';
+          '</g></g>';
       });
       s += '<g transform="translate(360 264)" font-family="Share Tech Mono, monospace" font-size="8.5" font-weight="700">' +
         '<path d="M0 0L20 5" stroke="#ff5a4a" stroke-width="1.8"/><text x="23" y="8" fill="#ff7d70">X</text>' +
@@ -6234,7 +6407,7 @@ window.__gcalAuth = {
       ROADS.forEach(function (d) { s += '<path class="rd-i" d="' + d + '"/>'; });
       Object.keys(PLACES).forEach(function (k) {
         var p = PLACES[k];
-        s += '<g class="ico" transform="translate(' + p.x + ' ' + p.y + ')">' + ICONS[k] + '</g>';
+        s += '<g class="ico" data-ico="' + k + '" transform="translate(' + p.x + ' ' + p.y + ')"><g class="ico-anim"><rect x="-20" y="-22" width="40" height="36" fill="transparent" stroke="none" pointer-events="none"/>' + ICONS[k] + '</g></g>';
       });
       s += '</g>';
     }
@@ -6250,6 +6423,7 @@ window.__gcalAuth = {
     });
     s += '<g id="pinLayer"></g><g id="tempLayer" pointer-events="none"></g><g id="youHereLayer" pointer-events="none"></g>';
     $("map").innerHTML = s;
+    mapHoverPlace = null;
     $("map").setAttribute("aria-label", isMetro ? "Metro tactical tunnel map" : (isCgi ? "1990s CGI 3D perspective viewport map" : ("Map: " + mv.name)));
   }
 
@@ -6489,6 +6663,7 @@ window.__gcalAuth = {
     }
     pinMapAnim.raf = requestAnimationFrame(step);
   }
+  var lastMapPinSelKey = null;
   function renderPins(mine) {
     if (pinMapAnim.raf) { cancelAnimationFrame(pinMapAnim.raf); pinMapAnim.raf = 0; }
     var layer = $("pinLayer"), act = document.activeElement, focusKey = act && act.getAttribute ? act.getAttribute("data-p") : null;
@@ -6502,10 +6677,15 @@ window.__gcalAuth = {
     var frontUrl = evil ? evilPinUrl : smilePinUrl;
     var backUrl = evil ? smilePinUrl : evilPinUrl;
     var spinTargetEl = null;
+    var nextSelPinKey = (filter && isPinKey(filter)) ? filter : null;
+    var canAnimPin = !isReduced();
     pins.forEach(function (p) {
       var k = "p:" + p.id;
       var app = resolvePinAppearance(p, mine);
-      var cls = "place pin" + (app.active ? " pin-colored" : "") + (filter === k ? " sel" : "") + (geofences[k] ? " has-geo" : "") + (geoInside[k] ? " in-geo" : "");
+      var isSel = filter === k;
+      var justSel = canAnimPin && isSel && lastMapPinSelKey !== k && pinMapAnim.triggerKey === k;
+      var justDesel = canAnimPin && !isSel && lastMapPinSelKey === k;
+      var cls = "place pin" + (app.active ? " pin-colored" : "") + (((isSel && !justSel) || justDesel) ? " sel" : "") + (geofences[k] ? " has-geo" : "") + (geoInside[k] ? " in-geo" : "");
       var g = svgEl("g", { "class": cls, "data-p": k, tabindex: 0, role: "button", "aria-label": p.name + (app.active ? " (" + app.label + ")" : ""), transform: "translate(" + p.x + " " + p.y + ")" });
       if (app.active) {
         g.style.setProperty("--pin-stroke", app.stroke);
@@ -6516,6 +6696,7 @@ window.__gcalAuth = {
       if (app.active) ringAttrs.stroke = app.stroke;
       g.appendChild(svgEl("circle", ringAttrs));
       var hit = svgEl("circle", { r: 24, fill: "transparent" }); g.appendChild(hit);
+      var vis = svgEl("g", { "class": "pin-vis" });
       var sym = cleanPinSymbol(p.symbol);
       if (sym) {
         var ndlSym = svgEl("g", { "class": "pin-needle", transform: "translate(-10 -25.8) scale(.4167)" });
@@ -6526,7 +6707,7 @@ window.__gcalAuth = {
         var colSymAttrs = { "class": "pin-collar", cx: 24, cy: 38, rx: 6.4, ry: 2.3, fill: app.active ? app.stroke : "url(#gMetal)" };
         if (app.active) { colSymAttrs.stroke = "#111"; colSymAttrs["stroke-width"] = 0.9; }
         ndlSym.appendChild(svgEl("ellipse", colSymAttrs));
-        g.appendChild(ndlSym);
+        vis.appendChild(ndlSym);
 
         var anchSym = svgEl("g", { "class": "pin-sprite-anchor", transform: "translate(0 -16.63)" });
         var spinSym = svgEl("g", { "class": "pin-sprite-spin" });
@@ -6552,7 +6733,7 @@ window.__gcalAuth = {
         spinSym.appendChild(bFace);
 
         anchSym.appendChild(spinSym);
-        g.appendChild(anchSym);
+        vis.appendChild(anchSym);
       } else if (hasCustomPin) {
         var anch = svgEl("g", { "class": "pin-sprite-anchor", transform: "translate(0 -13)" });
         var spinG = svgEl("g", { "class": "pin-sprite-spin" });
@@ -6566,7 +6747,7 @@ window.__gcalAuth = {
         spinG.appendChild(svgEl("image", { "class": "pin-face front", href: frontUrl, x: -12, y: -15, width: 24, height: 30, preserveAspectRatio: "xMidYMid meet" }));
         spinG.appendChild(svgEl("image", { "class": "pin-face back", href: backUrl, x: -12, y: -15, width: 24, height: 30, preserveAspectRatio: "xMidYMid meet", visibility: "hidden" }));
         anch.appendChild(spinG);
-        g.appendChild(anch);
+        vis.appendChild(anch);
       } else {
         var ndl = svgEl("g", { "class": "pin-needle", transform: "translate(-10 -25.8) scale(.4167)" });
         ndl.appendChild(svgEl("ellipse", { cx: 31, cy: 61.5, rx: 11, ry: 2.6, fill: "#000", opacity: ".3", filter: "url(#pinBlur)" }));
@@ -6576,7 +6757,7 @@ window.__gcalAuth = {
         var colAttrs = { "class": "pin-collar", cx: 24, cy: 38, rx: 6.4, ry: 2.3, fill: app.active ? app.stroke : "url(#gMetal)" };
         if (app.active) { colAttrs.stroke = "#111"; colAttrs["stroke-width"] = 0.9; }
         ndl.appendChild(svgEl("ellipse", colAttrs));
-        g.appendChild(ndl);
+        vis.appendChild(ndl);
         var anch2 = svgEl("g", { "class": "pin-sprite-anchor", transform: "translate(0 -16.63)" });
         var spinG2 = svgEl("g", { "class": "pin-sprite-spin" });
         spinG2.appendChild(svgEl("circle", {
@@ -6589,16 +6770,20 @@ window.__gcalAuth = {
         spinG2.appendChild(svgEl("image", { "class": "pin-face front", href: frontUrl, x: -7.71, y: -7.71, width: 15.42, height: 15.42, preserveAspectRatio: "xMidYMid meet" }));
         spinG2.appendChild(svgEl("image", { "class": "pin-face back", href: backUrl, x: -7.71, y: -7.71, width: 15.42, height: 15.42, preserveAspectRatio: "xMidYMid meet", visibility: "hidden" }));
         anch2.appendChild(spinG2);
-        g.appendChild(anch2);
+        vis.appendChild(anch2);
       }
+      g.appendChild(vis);
       var tx = svgEl("text", { "class": "plabel", y: 13 }); tx.textContent = p.name; g.appendChild(tx);
       var b = svgEl("g", { "class": "badge", transform: "translate(12 -26)" });
       var open = mine.filter(function (i) { return i.place === k && !i.done; }).length, all = mine.filter(function (i) { return i.place === k; }).length;
       b.innerHTML = stampHTML(open, all, k);
       g.appendChild(b);
       layer.appendChild(g);
+      if (justSel) requestAnimationFrame(function () { if (g.isConnected) g.classList.add("sel"); });
+      else if (justDesel) requestAnimationFrame(function () { if (g.isConnected) g.classList.remove("sel"); });
       if (pinMapAnim.triggerKey === k) spinTargetEl = g;
     });
+    lastMapPinSelKey = nextSelPinKey;
     if (focusKey && isPinKey(focusKey)) { var f = layer.querySelector('[data-p="' + focusKey + '"]'); if (f && f.focus) f.focus(); }
     var tl = $("tempLayer"); tl.innerHTML = "";
     if (tempPin) tl.appendChild(svgEl("circle", { "class": "temp", cx: tempPin.x, cy: tempPin.y, r: 12 }));
@@ -8498,11 +8683,13 @@ window.__gcalAuth = {
     // map badges, fog, geofences, pins
     Object.keys(PLACES).forEach(function (k) {
       var g = document.querySelector('.place[data-p="' + k + '"]'); if (!g) return;
+      var icoG = document.querySelector('#map [data-ico="' + k + '"]');
       var here = mine.filter(function (i) { return i.place === k; });
       var open = here.filter(function (i) { return !i.done; }).length;
       var b = g.querySelector(".badge");
       b.innerHTML = stampHTML(open, here.length, k);
       g.classList.toggle("sel", filter === k);
+      if (icoG) icoG.classList.toggle("sel", filter === k);
       g.classList.toggle("has-geo", !!geofences[k]);
       g.classList.toggle("in-geo", !!geoInside[k]);
       var gr = g.querySelector(".gf-ring"); if (gr) gr.setAttribute("r", String(gfRingRadius(30, k)));
@@ -10127,6 +10314,33 @@ window.__gcalAuth = {
       toggleFilter(gk);
     }
   });
+  var mapHoverPlace = null;
+  function setMapHoverPlace(k) {
+    var next = k || null;
+    if (mapHoverPlace === next) return;
+    if (mapHoverPlace) {
+      var prevP = document.querySelector('#map .place[data-p="' + mapHoverPlace + '"]');
+      if (prevP) prevP.classList.remove("hov");
+      var prevI = document.querySelector('#map [data-ico="' + mapHoverPlace + '"]');
+      if (prevI) prevI.classList.remove("hov");
+    }
+    mapHoverPlace = next;
+    if (mapHoverPlace) {
+      var nextP = document.querySelector('#map .place[data-p="' + mapHoverPlace + '"]');
+      if (nextP) nextP.classList.add("hov");
+      var nextI = document.querySelector('#map [data-ico="' + mapHoverPlace + '"]');
+      if (nextI) nextI.classList.add("hov");
+    }
+  }
+  $("map").addEventListener("pointerover", function (e) {
+    if (e.pointerType === "touch") return;
+    var g = e.target.closest ? e.target.closest(".place") : null;
+    var k = g ? g.getAttribute("data-p") : null;
+    setMapHoverPlace(k);
+  });
+  $("map").addEventListener("pointerleave", function () {
+    setMapHoverPlace(null);
+  });
   $("map").addEventListener("mouseover", function (e) {
     var g = e.target.closest ? e.target.closest(".place") : null;
     var k = g ? g.getAttribute("data-p") : null;
@@ -10134,11 +10348,13 @@ window.__gcalAuth = {
     if (hoverPin !== k) { hoverPin = k; renderYouHere(); }
   });
   $("map").addEventListener("mouseleave", function () {
+    setMapHoverPlace(null);
     if (hoverPin !== null) { hoverPin = null; renderYouHere(); }
   });
   $("map").addEventListener("focusin", function (e) {
     var g = e.target.closest ? e.target.closest(".place") : null;
     var k = g ? g.getAttribute("data-p") : null;
+    setMapHoverPlace(k);
     if (k && !isPinKey(k) && !geofences[k] && !geoInside[k]) k = null;
     if (hoverPin !== k) { hoverPin = k; renderYouHere(); }
   });
@@ -10146,6 +10362,7 @@ window.__gcalAuth = {
     setTimeout(function () {
       var act = document.activeElement;
       var k = act && act.classList && act.classList.contains("place") ? act.getAttribute("data-p") : null;
+      setMapHoverPlace(k);
       if (k && !isPinKey(k) && !geofences[k] && !geoInside[k]) k = null;
       if (hoverPin !== k) { hoverPin = k; renderYouHere(); }
     }, 0);
@@ -11500,7 +11717,7 @@ window.__gcalAuth = {
     print: true, week: true, hassles: true, stress: true, bring: false, rank: true, race: true, road: false, station: "auto", ads: true,
     fog: true, moving: false, mapAll: false, geo: false, wobAll: true, wobSlow: false, stressRed: true, stampRound: true, practiceOn: true, practiceTailor: true,
     aodIdle: "0", aodLevel: "10", aodHideBar: true, mapVariant: "town", tapeStyle: "realistic", tapeFilter: true, tapeRate: 1, fontAll: "", fontMission: "", pinAlt: false,
-    reminders: true, prodReminders: true, m3Seed: "#386a52" };
+    reminders: true, prodReminders: true, m3Seed: "#386a52", ghAutoUpdate: true };
   var opts = JSON.parse(JSON.stringify(OPT_DEFAULTS));
   var modeTouched = false;
   try {
@@ -12015,6 +12232,7 @@ window.__gcalAuth = {
     syncFontSwatches();
     if (typeof renderPinColorSettings === "function") renderPinColorSettings();
     if (typeof syncProdRemUi === "function") syncProdRemUi();
+    if ($("ghAutoChk")) $("ghAutoChk").checked = !!opts.ghAutoUpdate;
     if (typeof notifState === "function") notifState();
     if (typeof syncAppIcon === "function") syncAppIcon();
     renderAch();
@@ -16141,9 +16359,328 @@ window.__gcalAuth = {
   });
   window.addEventListener("resize", positionTutorial);
 
+  /* ---------- GitHub auto-update checker & installer ---------- */
+  var GH_REPO_KEY = "mission-map-gh-repo";
+  var GH_CACHE_KEY = "mission-map-gh-last";
+  var GH_DISMISS_KEY = "mission-map-gh-dismiss";
+  var APP_VERSION = "1.0.0";
+  var ghLatestRelease = null;
+  var ghChecking = false;
+  var ghInstalling = false;
+
+  function parseGitHubRepoSlug(raw) {
+    var s = String(raw || "").trim();
+    if (!s) return "";
+    var urlM = s.match(/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)(?:\/|\.git|$)/i);
+    if (urlM) return urlM[1] + "/" + urlM[2].replace(/\.git$/i, "");
+    s = s.replace(/^\/+|\/+$/g, "");
+    if (/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(s)) return s;
+    return "";
+  }
+  function parseSemverParts(v) {
+    var s = String(v || "").trim().replace(/^v/i, "").split(/[-+]/)[0];
+    if (!s) return [];
+    return s.split(".").map(function (p) { var n = parseInt(p, 10); return isFinite(n) ? n : 0; });
+  }
+  function cmpSemver(a, b) {
+    var pa = parseSemverParts(a), pb = parseSemverParts(b);
+    if (!pa.length || !pb.length) return 0;
+    var len = Math.max(pa.length, pb.length);
+    for (var i = 0; i < len; i++) {
+      var av = pa[i] || 0, bv = pb[i] || 0;
+      if (av > bv) return 1;
+      if (av < bv) return -1;
+    }
+    return 0;
+  }
+  function ghPlatformKind() {
+    if (NATIVE) return "android";
+    if (DESKTOP) return "windows";
+    return "web";
+  }
+  function pickReleaseAsset(rel) {
+    if (!rel || !Array.isArray(rel.assets) || !rel.assets.length) return null;
+    var plat = ghPlatformKind(), assets = rel.assets;
+    var findMatch = function (re) {
+      for (var i = 0; i < assets.length; i++) {
+        if (assets[i] && re.test(String(assets[i].name || "")) && String(assets[i].browser_download_url || "").indexOf("https://") === 0) {
+          return assets[i];
+        }
+      }
+      return null;
+    };
+    if (plat === "android") return findMatch(/\.apk$/i);
+    if (plat === "windows") return findMatch(/setup.*\.exe$/i) || findMatch(/\.exe$/i);
+    return findMatch(/\.apk$/i) || findMatch(/\.exe$/i) || findMatch(/\.zip$/i) || assets[0];
+  }
+  function ghSetProgress(pct, show) {
+    var w = $("ghProgWrap"), b = $("ghProgBar");
+    if (!w || !b) return;
+    w.hidden = !show;
+    if (show) b.style.width = Math.max(0, Math.min(100, Number(pct) || 0)) + "%";
+  }
+  function ghOpenExternal(url) {
+    if (!url || String(url).indexOf("https://") !== 0) return;
+    if (DESKTOP && DESKTOP.openExternal) {
+      DESKTOP.openExternal(url).catch(function () {});
+      return;
+    }
+    try { window.location.assign(url); } catch (e) {}
+  }
+  function ghRenderState(rel, errMsg) {
+    var plat = ghPlatformKind();
+    if ($("ghCurVerLbl")) $("ghCurVerLbl").textContent = "Current version: v" + APP_VERSION;
+    if ($("ghPlatLbl")) $("ghPlatLbl").textContent = plat === "android" ? "Android APK" : (plat === "windows" ? "Windows Desktop" : "Web");
+    var msgEl = $("ghStatusMsg"), notesEl = $("ghRelNotes"), actRow = $("ghActRow"), instBtn = $("ghInstallBtn"), openBtn = $("ghOpenBtn");
+    var banner = $("updateBanner"), bannerTxt = $("updateBannerTxt"), bannerGo = $("updateBannerGo");
+    if (errMsg) {
+      if (msgEl) msgEl.textContent = errMsg;
+      if (notesEl) notesEl.hidden = true;
+      if (actRow) actRow.hidden = true;
+      if (banner) banner.hidden = true;
+      return;
+    }
+    if (!rel) {
+      if (notesEl) notesEl.hidden = true;
+      if (actRow) actRow.hidden = true;
+      if (banner) banner.hidden = true;
+      return;
+    }
+    var latestTag = rel.tag_name || rel.name || "";
+    var isNewer = cmpSemver(latestTag, APP_VERSION) > 0;
+    var asset = pickReleaseAsset(rel);
+    if (msgEl) {
+      if (isNewer) {
+        msgEl.textContent = "Update available: " + latestTag + (asset ? (" (" + asset.name + ")") : " (release on GitHub)") + ".";
+      } else if (latestTag) {
+        msgEl.textContent = "Up to date (" + latestTag + " matches v" + APP_VERSION + ").";
+      } else {
+        msgEl.textContent = "Release check complete.";
+      }
+    }
+    if (notesEl) {
+      var body = String(rel.body || "").trim();
+      notesEl.textContent = body ? body.slice(0, 900) : "";
+      notesEl.hidden = !body;
+    }
+    if (actRow) actRow.hidden = !(isNewer || asset || rel.html_url);
+    if (instBtn) {
+      instBtn.hidden = !(asset || rel.html_url);
+      if (plat === "android" && asset) instBtn.textContent = isNewer ? "Install APK update" : "Reinstall APK";
+      else if (plat === "windows" && asset) instBtn.textContent = isNewer ? "Download & install" : "Download installer";
+      else if (asset) instBtn.textContent = "Download " + asset.name;
+      else instBtn.textContent = "View release";
+    }
+    if (openBtn) openBtn.hidden = !rel.html_url;
+
+    var dismissedTag = "";
+    try { dismissedTag = localStorage.getItem(GH_DISMISS_KEY) || ""; } catch (e) {}
+    if (banner) {
+      var showBan = isNewer && dismissedTag !== latestTag;
+      banner.hidden = !showBan;
+      if (showBan && bannerTxt) {
+        bannerTxt.textContent = "Update available on GitHub: " + latestTag + (asset ? (" · " + asset.name) : "");
+      }
+      if (showBan && bannerGo) {
+        bannerGo.textContent = asset ? (plat === "android" ? "Install APK" : (plat === "windows" ? "Update now" : "Download")) : "View release";
+      }
+    }
+  }
+  function fetchGithubReleaseForRepo(repo) {
+    var parts = repo.split("/");
+    var ghUrl = "https://api.github.com/repos/" + encodeURIComponent(parts[0]) + "/" + encodeURIComponent(parts[1]) + "/releases/latest";
+    var useServerProxy = !NATIVE && !DESKTOP && window.location && /^https?:$/i.test(window.location.protocol);
+    var firstReq = useServerProxy
+      ? fetch("/api/github-release?repo=" + encodeURIComponent(repo)).then(function (r) {
+          if (!r.ok) return r.json().catch(function () { return {}; }).then(function (d) { throw new Error(d.error || ("HTTP " + r.status)); });
+          return r.json();
+        })
+      : Promise.reject(new Error("direct"));
+    return firstReq.catch(function () {
+      return fetch(ghUrl, { headers: { "Accept": "application/vnd.github+json" } }).then(function (r) {
+        if (r.status === 404) {
+          return fetch("https://api.github.com/repos/" + encodeURIComponent(parts[0]) + "/" + encodeURIComponent(parts[1]) + "/tags?per_page=1", {
+            headers: { "Accept": "application/vnd.github+json" }
+          }).then(function (tr) {
+            if (!tr.ok) throw new Error("No releases or tags found on GitHub.");
+            return tr.json().then(function (tags) {
+              if (!Array.isArray(tags) || !tags.length || !tags[0].name) throw new Error("No published GitHub releases or tags yet.");
+              return { tag_name: tags[0].name, name: tags[0].name, body: "", html_url: "https://github.com/" + repo + "/releases", assets: [] };
+            });
+          });
+        }
+        if (!r.ok) throw new Error("GitHub API returned HTTP " + r.status);
+        return r.json();
+      });
+    });
+  }
+  function checkGithubUpdates(manual) {
+    if (ghChecking) return Promise.resolve();
+    var inpVal = $("ghRepoInp") ? $("ghRepoInp").value : "";
+    var saved = "";
+    try { saved = localStorage.getItem(GH_REPO_KEY) || ""; } catch (e) {}
+    var repo = parseGitHubRepoSlug(inpVal || saved);
+    if (!repo) {
+      if (manual) ghRenderState(null, "Enter a valid GitHub repo (for example: username/mission-map).");
+      return Promise.resolve();
+    }
+    if ($("ghRepoInp")) $("ghRepoInp").value = repo;
+    try { localStorage.setItem(GH_REPO_KEY, repo); } catch (e) {}
+    ghChecking = true;
+    if (manual && $("ghStatusMsg")) $("ghStatusMsg").textContent = "Checking GitHub releases for " + repo + "...";
+    if ($("ghCheckBtn")) $("ghCheckBtn").disabled = true;
+    return fetchGithubReleaseForRepo(repo).then(function (rel) {
+      ghLatestRelease = rel;
+      try { localStorage.setItem(GH_CACHE_KEY, JSON.stringify({ repo: repo, checkedAt: Date.now(), rel: rel })); } catch (e) {}
+      ghRenderState(rel, "");
+      if (manual) {
+        var newer = cmpSemver(rel.tag_name || "", APP_VERSION) > 0;
+        toast(newer ? ("Update " + rel.tag_name + " ready!") : "You're on the latest version.");
+      }
+    }).catch(function (err) {
+      if (manual) ghRenderState(null, err && err.message ? err.message : "Could not check GitHub updates.");
+    }).finally(function () {
+      ghChecking = false;
+      if ($("ghCheckBtn")) $("ghCheckBtn").disabled = false;
+    });
+  }
+  function installGithubUpdate() {
+    if (ghInstalling || !ghLatestRelease) return;
+    var asset = pickReleaseAsset(ghLatestRelease);
+    if (!asset || !asset.browser_download_url) {
+      if (ghLatestRelease.html_url) ghOpenExternal(ghLatestRelease.html_url);
+      return;
+    }
+    var plat = ghPlatformKind();
+    if (plat === "android" && NATIVE && AP && AP.installApkUpdate) {
+      ghInstalling = true;
+      if ($("ghInstallBtn")) $("ghInstallBtn").disabled = true;
+      if ($("ghStatusMsg")) $("ghStatusMsg").textContent = "Downloading " + asset.name + " from GitHub...";
+      ghSetProgress(35, true);
+      AP.installApkUpdate({ url: asset.browser_download_url, filename: asset.name, version: ghLatestRelease.tag_name || "" }).then(function (res) {
+        ghSetProgress(100, true);
+        if (res && res.status === "needs_permission") {
+          if ($("ghStatusMsg")) $("ghStatusMsg").textContent = "Allow 'Install unknown apps' in Android settings, then tap Install APK update again.";
+          toast("Allow app installs in Android settings, then retry.");
+        } else {
+          if ($("ghStatusMsg")) $("ghStatusMsg").textContent = "Android package installer opened for " + asset.name + ".";
+          toast("Opening Android update installer...");
+        }
+      }).catch(function (err) {
+        ghSetProgress(0, false);
+        if ($("ghStatusMsg")) $("ghStatusMsg").textContent = (err && err.message) || "APK download failed.";
+        toast("Update download failed.");
+      }).finally(function () {
+        ghInstalling = false;
+        if ($("ghInstallBtn")) $("ghInstallBtn").disabled = false;
+      });
+      return;
+    }
+    if (plat === "windows" && DESKTOP && DESKTOP.installGithubUpdate) {
+      ghInstalling = true;
+      if ($("ghInstallBtn")) $("ghInstallBtn").disabled = true;
+      if ($("ghStatusMsg")) $("ghStatusMsg").textContent = "Downloading " + asset.name + " from GitHub...";
+      ghSetProgress(5, true);
+      DESKTOP.installGithubUpdate({ url: asset.browser_download_url, filename: asset.name }).then(function (res) {
+        if (res && res.ok) {
+          ghSetProgress(100, true);
+          if ($("ghStatusMsg")) $("ghStatusMsg").textContent = res.launched ? "Installer launched — closing Mission Map to apply update..." : ("Downloaded to: " + (res.path || "Temp folder"));
+          if (!res.launched) toast("Update downloaded.");
+        } else {
+          ghSetProgress(0, false);
+          if ($("ghStatusMsg")) $("ghStatusMsg").textContent = (res && res.error) || "Windows update download failed.";
+          toast("Update download failed.");
+        }
+      }).catch(function () {
+        ghSetProgress(0, false);
+        toast("Update download failed.");
+      }).finally(function () {
+        ghInstalling = false;
+        if ($("ghInstallBtn")) $("ghInstallBtn").disabled = false;
+      });
+      return;
+    }
+    ghOpenExternal(asset.browser_download_url);
+    toast("Downloading " + asset.name + "...");
+  }
+  function ghUpdateInit() {
+    var savedRepo = "";
+    try { savedRepo = localStorage.getItem(GH_REPO_KEY) || ""; } catch (e) {}
+    if ($("ghRepoInp") && savedRepo) $("ghRepoInp").value = savedRepo;
+    if ($("ghAutoChk")) {
+      $("ghAutoChk").checked = !!opts.ghAutoUpdate;
+      $("ghAutoChk").addEventListener("change", function () {
+        opts.ghAutoUpdate = !!this.checked;
+        saveOpts();
+        var curRepo = parseGitHubRepoSlug(($("ghRepoInp") && $("ghRepoInp").value) || savedRepo);
+        if (opts.ghAutoUpdate && curRepo) checkGithubUpdates(false);
+        fx("click");
+      });
+    }
+    if ($("ghRepoInp")) $("ghRepoInp").addEventListener("change", function () {
+      var slug = parseGitHubRepoSlug(this.value);
+      if (slug) {
+        this.value = slug;
+        try { localStorage.setItem(GH_REPO_KEY, slug); } catch (e) {}
+      }
+    });
+    if ($("ghCheckBtn")) $("ghCheckBtn").addEventListener("click", function () { fx("click"); checkGithubUpdates(true); });
+    if ($("ghInstallBtn")) $("ghInstallBtn").addEventListener("click", function () { fx("click"); installGithubUpdate(); });
+    if ($("ghOpenBtn")) $("ghOpenBtn").addEventListener("click", function () {
+      fx("click");
+      if (ghLatestRelease && ghLatestRelease.html_url) ghOpenExternal(ghLatestRelease.html_url);
+    });
+    if ($("updateBannerGo")) $("updateBannerGo").addEventListener("click", function () { fx("click"); installGithubUpdate(); });
+    if ($("updateBannerHide")) $("updateBannerHide").addEventListener("click", function () {
+      fx("click");
+      if ($("updateBanner")) $("updateBanner").hidden = true;
+      if (ghLatestRelease && ghLatestRelease.tag_name) {
+        try { localStorage.setItem(GH_DISMISS_KEY, ghLatestRelease.tag_name); } catch (e) {}
+      }
+    });
+    if (DESKTOP && DESKTOP.onUpdateProgress) {
+      DESKTOP.onUpdateProgress(function (p) {
+        if (!p) return;
+        if (p.status === "downloading") {
+          var pct = p.percent >= 0 ? p.percent : 40;
+          ghSetProgress(pct, true);
+          if ($("ghStatusMsg") && p.percent >= 0) $("ghStatusMsg").textContent = "Downloading update from GitHub (" + p.percent + "%)...";
+        } else if (p.status === "ready") {
+          ghSetProgress(100, true);
+        } else if (p.status === "error") {
+          ghSetProgress(0, false);
+        }
+      });
+    }
+    var verProm = Promise.resolve();
+    if (NATIVE && AP && AP.getAppInfo) {
+      verProm = AP.getAppInfo().then(function (info) {
+        if (info && info.versionName) APP_VERSION = String(info.versionName);
+      }).catch(function () {});
+    } else if (DESKTOP && DESKTOP.getAppInfo) {
+      verProm = DESKTOP.getAppInfo().then(function (info) {
+        if (info && info.version) APP_VERSION = String(info.version);
+      }).catch(function () {});
+    }
+    verProm.then(function () {
+      ghRenderState(null, "");
+      if (!savedRepo) return;
+      var cached = null;
+      try { cached = JSON.parse(localStorage.getItem(GH_CACHE_KEY) || "null"); } catch (e) {}
+      if (cached && cached.repo === savedRepo && cached.rel) {
+        ghLatestRelease = cached.rel;
+        ghRenderState(cached.rel, "");
+      }
+      var stale = !cached || cached.repo !== savedRepo || (Date.now() - (cached.checkedAt || 0)) > 3 * 3600 * 1000;
+      if (opts.ghAutoUpdate && stale) {
+        setTimeout(function () { checkGithubUpdates(false); }, 3200);
+      }
+    });
+  }
+
   /* ---------- start ---------- */
   var hadRecUpdate = checkRecurrences(false);
-  buildMap(); fillSelect(); applyOpts(); render(); if (hadRecUpdate) persist(); initDb(); mediaInit(); phoneInit(); gcalInit(); desktopInit();
+  buildMap(); fillSelect(); applyOpts(); render(); if (hadRecUpdate) persist(); initDb(); mediaInit(); phoneInit(); gcalInit(); desktopInit(); ghUpdateInit();
   if (typeof syncProductiveScheduler === "function") {
     syncProductiveScheduler();
     renderProductivityWidget();

@@ -41,6 +41,69 @@ app.get("/api/ical-proxy", async (req, res) => {
   }
 });
 
+const GH_REPO_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
+app.get("/api/github-release", async (req, res) => {
+  const repo = typeof req.query.repo === "string" ? req.query.repo.trim() : "";
+  if (!GH_REPO_RE.test(repo)) {
+    res.status(400).json({ error: "Expected repo as owner/name." });
+    return;
+  }
+  const [owner, name] = repo.split("/");
+  const headers = {
+    "Accept": "application/vnd.github+json",
+    "User-Agent": "Mission-Map-Updater/1.0"
+  };
+  try {
+    let r = await fetch(`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/releases/latest`, {
+      headers,
+      signal: AbortSignal.timeout(10000)
+    });
+    if (r.status === 404) {
+      const tagsRes = await fetch(`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/tags?per_page=1`, {
+        headers,
+        signal: AbortSignal.timeout(10000)
+      });
+      if (tagsRes.ok) {
+        const tags = await tagsRes.json();
+        if (Array.isArray(tags) && tags.length && tags[0].name) {
+          res.status(200).json({
+            tag_name: tags[0].name,
+            name: tags[0].name,
+            body: "",
+            html_url: `https://github.com/${owner}/${name}/releases`,
+            published_at: "",
+            assets: [],
+            from_tags: true
+          });
+          return;
+        }
+      }
+      res.status(404).json({ error: "No published GitHub releases or tags found for this repository." });
+      return;
+    }
+    if (!r.ok) {
+      res.status(r.status).json({ error: "GitHub API HTTP " + r.status });
+      return;
+    }
+    const data = await r.json();
+    res.status(200).json({
+      tag_name: data.tag_name || "",
+      name: data.name || data.tag_name || "",
+      body: typeof data.body === "string" ? data.body.slice(0, 4000) : "",
+      html_url: data.html_url || `https://github.com/${owner}/${name}/releases`,
+      published_at: data.published_at || "",
+      assets: Array.isArray(data.assets) ? data.assets.slice(0, 20).map((a) => ({
+        name: a.name || "",
+        size: Number(a.size) || 0,
+        browser_download_url: a.browser_download_url || "",
+        content_type: a.content_type || ""
+      })) : []
+    });
+  } catch (err) {
+    res.status(502).json({ error: err && err.message ? err.message : "Could not contact GitHub." });
+  }
+});
+
 app.use(express.static(wwwDir, {
   setHeaders(res, filePath) {
     if (filePath.endsWith(".html")) {

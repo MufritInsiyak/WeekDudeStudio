@@ -10,6 +10,8 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.AudioAttributes;
@@ -36,9 +38,13 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.List;
 
 @CapacitorPlugin(
@@ -471,6 +477,150 @@ public class AndroidPermissionsPlugin extends Plugin {
         res.put("album", (playing && hasRecentBroadcast) ? lastMediaAlbum : "");
         res.put("source", !lastMediaSource.isEmpty() ? lastMediaSource : (audioActive ? "Android Audio" : ""));
         call.resolve(res);
+    }
+
+    private boolean isAllowedGitHubHost(String host) {
+        if (host == null) return false;
+        String h = host.toLowerCase();
+        return h.equals("github.com")
+            || h.equals("api.github.com")
+            || h.equals("codeload.github.com")
+            || h.endsWith(".github.com")
+            || h.equals("objects.githubusercontent.com")
+            || h.equals("release-assets.githubusercontent.com")
+            || h.endsWith(".githubusercontent.com");
+    }
+
+    @PluginMethod
+    public void getAppInfo(PluginCall call) {
+        JSObject res = new JSObject();
+        String verName = "1.0.0";
+        long verCode = 1L;
+        String pkg = getContext().getPackageName();
+        try {
+            PackageManager pm = getContext().getPackageManager();
+            PackageInfo pi = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                ? pm.getPackageInfo(pkg, PackageManager.PackageInfoFlags.of(0))
+                : pm.getPackageInfo(pkg, 0);
+            if (pi != null) {
+                if (pi.versionName != null && !pi.versionName.isEmpty()) verName = pi.versionName;
+                verCode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ? pi.getLongVersionCode() : pi.versionCode;
+            }
+        } catch (Exception ignored) {}
+        boolean canInstall = true;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                canInstall = getContext().getPackageManager().canRequestPackageInstalls();
+            } catch (Exception ignored) {
+                canInstall = false;
+            }
+        }
+        res.put("versionName", verName);
+        res.put("versionCode", verCode);
+        res.put("packageName", pkg);
+        res.put("canInstallPackages", canInstall);
+        call.resolve(res);
+    }
+
+    @PluginMethod
+    public void installApkUpdate(PluginCall call) {
+        final String rawUrl = call.getString("url", "");
+        final String rawName = call.getString("filename", "mission-map-update.apk");
+        if (rawUrl == null || !rawUrl.startsWith("https://")) {
+            call.reject("Invalid update URL.");
+            return;
+        }
+        try {
+            URL parsed = new URL(rawUrl);
+            if (!"https".equalsIgnoreCase(parsed.getProtocol()) || !isAllowedGitHubHost(parsed.getHost())) {
+                call.reject("Update URL must point to GitHub.");
+                return;
+            }
+        } catch (Exception e) {
+            call.reject("Malformed update URL.");
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                if (!getContext().getPackageManager().canRequestPackageInstalls()) {
+                    Intent permIntent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES);
+                    permIntent.setData(Uri.fromParts("package", getContext().getPackageName(), null));
+                    permIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    getActivity().startActivity(permIntent);
+                    JSObject res = new JSObject();
+                    res.put("status", "needs_permission");
+                    call.resolve(res);
+                    return;
+                }
+            } catch (Exception ignored) {}
+        }
+
+        final String safeName = ((rawName != null ? rawName : "mission-map-update.apk")
+            .replaceAll("[^a-zA-Z0-9._-]", "_"))
+            .replaceAll("\\.\\.+", ".");
+        final String apkName = safeName.toLowerCase().endsWith(".apk") ? safeName : (safeName + ".apk");
+
+        new Thread(() -> {
+            HttpURLConnection conn = null;
+            try {
+                URL currentUrl = new URL(rawUrl);
+                for (int hops = 0; hops < 6; hops++) {
+                    if (!"https".equalsIgnoreCase(currentUrl.getProtocol()) || !isAllowedGitHubHost(currentUrl.getHost())) {
+                        throw new SecurityException("Blocked redirect to untrusted host.");
+                    }
+                    conn = (HttpURLConnection) currentUrl.openConnection();
+                    conn.setInstanceFollowRedirects(false);
+                    conn.setConnectTimeout(15000);
+                    conn.setReadTimeout(30000);
+                    conn.setRequestProperty("User-Agent", "Mission-Map-Android-Updater");
+                    int code = conn.getResponseCode();
+                    if (code == HttpURLConnection.HTTP_MOVED_PERM || code == HttpURLConnection.HTTP_MOVED_TEMP || code == 307 || code == 308) {
+                        String loc = conn.getHeaderField("Location");
+                        conn.disconnect();
+                        if (loc == null || loc.isEmpty()) throw new Exception("Empty redirect from GitHub.");
+                        currentUrl = new URL(currentUrl, loc);
+                        continue;
+                    }
+                    if (code < 200 || code >= 300) {
+                        throw new Exception("GitHub returned HTTP " + code);
+                    }
+                    break;
+                }
+
+                File outFile = new File(getContext().getCacheDir(), apkName);
+                long maxBytes = 200L * 1024L * 1024L;
+                long totalRead = 0L;
+                try (InputStream in = new BufferedInputStream(conn.getInputStream());
+                     FileOutputStream fos = new FileOutputStream(outFile)) {
+                    byte[] buf = new byte[16384];
+                    int n;
+                    while ((n = in.read(buf)) != -1) {
+                        totalRead += n;
+                        if (totalRead > maxBytes) throw new Exception("APK download exceeded size limit.");
+                        fos.write(buf, 0, n);
+                    }
+                    fos.flush();
+                }
+
+                String authority = getContext().getPackageName() + ".fileprovider";
+                Uri apkUri = FileProvider.getUriForFile(getContext(), authority, outFile);
+                Intent installIntent = new Intent(Intent.ACTION_VIEW);
+                installIntent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+                installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(installIntent);
+
+                JSObject res = new JSObject();
+                res.put("status", "installing");
+                res.put("bytes", totalRead);
+                res.put("filename", apkName);
+                call.resolve(res);
+            } catch (Exception err) {
+                call.reject(err.getMessage() != null ? err.getMessage() : "Could not download or install APK update.");
+            } finally {
+                if (conn != null) conn.disconnect();
+            }
+        }).start();
     }
 }
 

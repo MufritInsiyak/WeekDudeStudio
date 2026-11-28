@@ -27,6 +27,10 @@ contextBridge.exposeInMainWorld("desktopAPI", {
   setAppIcon: (payload) => ipcRenderer.invoke("desktop:setAppIcon", payload && typeof payload === "object" ? payload : {}),
   notify: (payload) => ipcRenderer.invoke("desktop:notify", payload && typeof payload === "object" ? payload : {}),
   savePng: (payload) => ipcRenderer.invoke("desktop:savePng", payload && typeof payload === "object" ? payload : {}),
+  getAppInfo: () => ipcRenderer.invoke("desktop:getAppInfo"),
+  openExternal: (url) => ipcRenderer.invoke("desktop:openExternal", url),
+  installGithubUpdate: (payload) => ipcRenderer.invoke("desktop:installGithubUpdate", payload && typeof payload === "object" ? payload : {}),
+  onUpdateProgress: (cb) => onChannel("desktop:updateProgress", cb),
   onCommand: (cb) => onChannel("desktop:command", cb),
   onState: (cb) => onChannel("desktop:state", cb)
 });

@@ -18,7 +18,7 @@ const http = require("http");
 const https = require("https");
 const fs = require("fs");
 const path = require("path");
-const { execFile } = require("child_process");
+const { execFile, spawn } = require("child_process");
 
 const APP_ID = "com.missionmap.app";
 const PREFERRED_PORT = 45719;
@@ -867,6 +867,124 @@ function wireIpc() {
     }
     fs.writeFileSync(filePath, Buffer.from(match[1], "base64"));
     return { ok: true, path: filePath };
+  });
+
+  ipcMain.handle("desktop:getAppInfo", () => ({
+    version: app.getVersion(),
+    platform: process.platform,
+    arch: process.arch,
+    isPackaged: !!app.isPackaged
+  }));
+
+  ipcMain.handle("desktop:openExternal", async (_ev, rawUrl) => {
+    if (!isSafeExternalUrl(rawUrl)) return { ok: false, error: "Unsafe URL" };
+    await shell.openExternal(rawUrl);
+    return { ok: true };
+  });
+
+  const isAllowedGitHubAssetUrl = (raw) => {
+    try {
+      const u = new URL(String(raw || ""));
+      if (u.protocol !== "https:") return false;
+      const h = u.hostname.toLowerCase();
+      return (
+        h === "github.com" ||
+        h === "api.github.com" ||
+        h === "codeload.github.com" ||
+        h.endsWith(".github.com") ||
+        h === "objects.githubusercontent.com" ||
+        h === "release-assets.githubusercontent.com" ||
+        h.endsWith(".githubusercontent.com")
+      );
+    } catch (_e) {
+      return false;
+    }
+  };
+
+  ipcMain.handle("desktop:installGithubUpdate", async (_ev, payload) => {
+    const rawUrl = payload && typeof payload.url === "string" ? payload.url.trim() : "";
+    const rawName = payload && typeof payload.filename === "string" ? path.basename(payload.filename) : "Mission-Map-Update.exe";
+    const safeName = (rawName.replace(/[^a-zA-Z0-9._-]/g, "_") || "Mission-Map-Update.exe").replace(/\.\.+/g, ".");
+    if (!isAllowedGitHubAssetUrl(rawUrl)) {
+      return { ok: false, error: "Update URL must be an HTTPS GitHub download link." };
+    }
+    const destPath = path.join(app.getPath("temp"), safeName);
+    const sendProgress = (data) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send("desktop:updateProgress", data);
+      }
+    };
+
+    const downloadWithRedirects = (urlStr, hopsLeft) => new Promise((resolve, reject) => {
+      if (!isAllowedGitHubAssetUrl(urlStr)) {
+        reject(new Error("Blocked redirect to non-GitHub host."));
+        return;
+      }
+      const req = https.get(urlStr, { headers: { "User-Agent": "Mission-Map-Desktop-Updater" } }, (res) => {
+        if (res.statusCode && [301, 302, 303, 307, 308].includes(res.statusCode)) {
+          const nextLoc = res.headers.location ? new URL(res.headers.location, urlStr).toString() : "";
+          res.resume();
+          if (!nextLoc || hopsLeft <= 0) {
+            reject(new Error("Too many redirects from GitHub."));
+            return;
+          }
+          downloadWithRedirects(nextLoc, hopsLeft - 1).then(resolve, reject);
+          return;
+        }
+        if (!res.statusCode || res.statusCode < 200 || res.statusCode >= 300) {
+          res.resume();
+          reject(new Error("GitHub returned HTTP " + (res.statusCode || 0)));
+          return;
+        }
+        const total = Number(res.headers["content-length"]) || 0;
+        let received = 0;
+        const maxBytes = 250 * 1024 * 1024;
+        const out = fs.createWriteStream(destPath);
+        res.on("data", (chunk) => {
+          received += chunk.length;
+          if (received > maxBytes) {
+            req.destroy(new Error("Download exceeded size limit."));
+            return;
+          }
+          const percent = total > 0 ? Math.min(100, Math.round((received / total) * 100)) : -1;
+          sendProgress({ status: "downloading", received, total, percent });
+        });
+        res.pipe(out);
+        out.on("finish", () => {
+          out.close(() => resolve({ destPath, received }));
+        });
+        out.on("error", (err) => {
+          try { fs.unlinkSync(destPath); } catch (_e) {}
+          reject(err);
+        });
+      });
+      req.setTimeout(30000, () => req.destroy(new Error("Download timed out.")));
+      req.on("error", reject);
+    });
+
+    try {
+      sendProgress({ status: "downloading", received: 0, total: 0, percent: 0 });
+      const dlRes = await downloadWithRedirects(rawUrl, 6);
+      sendProgress({ status: "ready", received: dlRes.received, total: dlRes.received, percent: 100, path: dlRes.destPath });
+      if (process.platform === "win32" && /\.exe$/i.test(safeName)) {
+        if (/setup/i.test(safeName)) {
+          const child = spawn(dlRes.destPath, [], { detached: true, stdio: "ignore" });
+          child.unref();
+          setTimeout(() => {
+            isQuitting = true;
+            app.quit();
+          }, 600);
+          return { ok: true, launched: true, quitting: true, path: dlRes.destPath };
+        }
+        shell.showItemInFolder(dlRes.destPath);
+        return { ok: true, launched: false, path: dlRes.destPath };
+      }
+      shell.showItemInFolder(dlRes.destPath);
+      return { ok: true, launched: false, path: dlRes.destPath };
+    } catch (err) {
+      sendProgress({ status: "error", error: err && err.message ? err.message : "Download failed." });
+      return { ok: false, error: err && err.message ? err.message : "Download failed." };
+    }
   });
 }
 
